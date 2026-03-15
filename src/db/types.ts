@@ -20,7 +20,7 @@ export interface Transaction {
   type: TransactionType;
   categoryId: string;
   date: number; // timestamp для удобного индексирования
-  comment: string;
+  comment?: string;
   currency: string; // код валюты (RUB, USD)
   rate: number; // курс к базовой валюте на момент операции
   createdAt: number; // timestamp создания
@@ -40,7 +40,7 @@ export interface Goal {
   id?: number;
   name: string;
   targetAmount: number;
-  currentAmount: number;
+  currentAmount: number; // придется убрать и 
   deadline?: number; // timestamp
   icon: string;
   color: string;
