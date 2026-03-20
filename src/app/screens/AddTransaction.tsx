@@ -1,9 +1,24 @@
 import { useState } from 'react';
-import { X, Calendar, MessageSquare, Mic } from 'lucide-react';
+import { X, Calendar, MessageSquare, Mic, Utensils, Car, Home, PartyPopper, Wallet, Gift } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { useCategories } from '../hooks/useCategories';
 import { useTransactions } from '../hooks/useTransactions';
+
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  Utensils,
+  Car,
+  Home,
+  PartyPopper,
+  Wallet,
+  Gift,
+};
+
+function CategoryIcon({ name, className, color }: { name: string; className?: string; color?: string }) {
+  const Icon = iconMap[name] || Wallet;
+  const IconComponent = Icon as any;
+  return <IconComponent className={className} style={{ color }} />;
+}
 
 export const AddTransaction = () => {
   const navigate = useNavigate();
@@ -130,10 +145,10 @@ export const AddTransaction = () => {
                   }`}
                 >
                   <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+                    className="w-12 h-12 rounded-xl flex items-center justify-center"
                     style={{ backgroundColor: category.color + '20' }}
                   >
-                    {category.icon}
+                    <CategoryIcon name={category.icon} className="w-6 h-6" color={category.color} />
                   </div>
                   <span className="text-xs text-center leading-tight">
                     {category.name}
