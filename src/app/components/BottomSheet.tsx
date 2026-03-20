@@ -45,7 +45,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 animate-fade-in"
         onClick={onClose}
       />
 
@@ -85,14 +85,33 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
         @keyframes slide-up {
           from {
             transform: translateY(100%);
+            opacity: 0;
+          }
+          60% {
+            transform: translateY(2%);
+            opacity: 1;
           }
           to {
             transform: translateY(0);
+            opacity: 1;
+          }
+        }
+
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
           }
         }
 
         .animate-slide-up {
-          animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          animation: slide-up 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out;
         }
       `}</style>
     </>
