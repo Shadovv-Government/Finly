@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { X, Calendar, MessageSquare, Mic } from 'lucide-react';
 import { useNavigate } from 'react-router';
-import * as Icons from 'lucide-react';
 import { toast } from 'sonner';
 import { useCategories } from '../hooks/useCategories';
 import { useTransactions } from '../hooks/useTransactions';
@@ -119,26 +118,22 @@ export const AddTransaction = () => {
           <h3 className="text-sm font-medium mb-3">Категория</h3>
           <div className="grid grid-cols-4 gap-3">
             {filteredCategories.map(category => {
-              const IconComponent = Icons[category.icon as keyof typeof Icons] as React.ElementType;
               const isSelected = selectedCategory === category.id;
               return (
                 <button
                   key={category.id}
                   onClick={() => setSelectedCategory(category.id)}
                   className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all ${
-                    isSelected 
-                      ? 'ring-2 ring-violet-600' 
+                    isSelected
+                      ? 'ring-2 ring-violet-600'
                       : 'bg-card border border-border'
                   }`}
                 >
-                  <div 
-                    className="w-12 h-12 rounded-xl flex items-center justify-center"
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
                     style={{ backgroundColor: category.color + '20' }}
                   >
-                    <IconComponent 
-                      className="w-6 h-6" 
-                      style={{ color: category.color }}
-                    />
+                    {category.icon}
                   </div>
                   <span className="text-xs text-center leading-tight">
                     {category.name}
