@@ -1,7 +1,7 @@
 {
-  "name": "Finly - Personal Finance Manager",
+  "name": "Finly — Управление личными финансами",
   "short_name": "Finly",
-  "description": "Smart personal finance management app with AI insights",
+  "description": "Учёт доходов и расходов с офлайн-поддержкой",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -9,24 +9,28 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/pwa-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/pwa-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ],
-  "categories": ["finance", "productivity"],
-  "screenshots": [
+      "purpose": "any"
+    },
     {
-      "src": "/screenshot-1.png",
-      "sizes": "375x812",
-      "type": "image/png"
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
