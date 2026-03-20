@@ -1,4 +1,4 @@
-import { Bell } from 'lucide-react';
+import { Bell, Camera } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
@@ -8,12 +8,21 @@ import { Target, Folder, Sparkles, DollarSign } from 'lucide-react';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { useTransactions } from '../hooks/useTransactions';
 import { useCategories } from '../hooks/useCategories';
+import { useAuth } from '../contexts/AuthContext';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog';
 
 export const Dashboard = () => {
   const [period, setPeriod] = useState<'day' | 'week' | 'month' | 'custom'>('month');
   const { currentBalance, expensesByCategory: analyticsExpenses } = useAnalytics();
   const { transactions } = useTransactions();
   const { categories } = useCategories();
+  const { user, updateProfile } = useAuth();
+  const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
 
   // Calculate totals from analytics
   const income = currentBalance > 0 ? currentBalance : 0;
@@ -36,6 +45,26 @@ export const Dashboard = () => {
     { value: 'custom', label: 'Период' },
   ] as const;
 
+  const avatarColors = [
+    'from-amber-400 to-pink-500',
+    'from-violet-500 to-purple-600',
+    'from-blue-400 to-cyan-500',
+    'from-green-400 to-emerald-500',
+    'from-orange-400 to-red-500',
+    'from-pink-400 to-rose-500',
+  ];
+
+  const getInitial = (name: string) => name.charAt(0).toUpperCase();
+
+  const handleAvatarClick = () => {
+    setIsAvatarDialogOpen(true);
+  };
+
+  const handleAvatarSelect = async (color: string) => {
+    await updateProfile({ avatarColor: color });
+    setIsAvatarDialogOpen(false);
+  };
+
   return (
     <div className="pb-20 bg-background min-h-screen">
       {/* Header */}
@@ -43,16 +72,20 @@ export const Dashboard = () => {
         <div className="flex items-center justify-between mb-6">
           <div>
             <p className="text-sm opacity-90">Привет,</p>
-            <h1 className="text-xl font-bold">Александр</h1>
+            <h1 className="text-xl font-bold">{user?.name || 'Пользователь'}</h1>
           </div>
           <div className="flex items-center gap-3">
             <button className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center relative">
               <Bell className="w-5 h-5" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
             </button>
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-pink-500 flex items-center justify-center font-bold">
-              А
-            </div>
+            <button
+              onClick={handleAvatarClick}
+              className={`w-10 h-10 rounded-full bg-gradient-to-br ${user?.avatarColor || 'from-amber-400 to-pink-500'} flex items-center justify-center font-bold relative group`}
+            >
+              {getInitial(user?.name || 'U')}
+              <Camera className="w-4 h-4 absolute opacity-0 group-hover:opacity-100 transition-opacity" />
+            </button>
           </div>
         </div>
 
@@ -229,12 +262,34 @@ export const Dashboard = () => {
       </div>
 
       {/* FAB Button */}
-      <Link 
+      <Link
         to="/add"
         className="fixed bottom-20 right-4 w-14 h-14 bg-gradient-to-br from-violet-600 to-indigo-700 text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow z-40"
       >
         <span className="text-3xl leading-none mb-1">+</span>
       </Link>
+
+      {/* Avatar Selection Dialog */}
+      <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Выберите аватар</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-3 gap-4 py-4">
+            {avatarColors.map((color) => (
+              <button
+                key={color}
+                onClick={() => handleAvatarSelect(color)}
+                className={`w-16 h-16 rounded-full bg-gradient-to-br ${color} flex items-center justify-center font-bold text-white text-xl hover:scale-110 transition-transform ${
+                  user?.avatarColor === color ? 'ring-4 ring-violet-600' : ''
+                }`}
+              >
+                {getInitial(user?.name || 'U')}
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

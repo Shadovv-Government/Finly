@@ -76,4 +76,5 @@ export interface User {
   name: string;
   createdAt: number; // timestamp
   deviceId?: string; // идентификатор устройства
+  avatarColor?: string; // цвет аватара (градиент)
 }
