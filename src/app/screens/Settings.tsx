@@ -218,21 +218,16 @@ export const Settings = () => {
             <span className="font-medium">Component Library</span>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </Link>
-          
-          <button className="w-full flex items-center justify-between p-4 border-b border-border">
-            <span className="font-medium">О приложении</span>
-            <span className="text-sm text-muted-foreground">v1.0.0</span>
-          </button>
-          
-          <button className="w-full flex items-center justify-between p-4">
+
+          <Link to="/privacy" className="w-full flex items-center justify-between p-4 border-b border-border">
             <span className="font-medium">Политика конфиденциальности</span>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
-          </button>
-          
-          <button className="w-full flex items-center justify-between p-4">
+          </Link>
+
+          <Link to="/terms" className="w-full flex items-center justify-between p-4">
             <span className="font-medium">Условия использования</span>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
-          </button>
+          </Link>
         </div>
       </div>
 

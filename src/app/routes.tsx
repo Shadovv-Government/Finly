@@ -11,6 +11,8 @@ import { AIAssistant } from './screens/AIAssistant';
 import { Onboarding } from './screens/Onboarding';
 import { ComponentShowcase } from './screens/ComponentShowcase';
 import { Registration } from './screens/Registration';
+import { PrivacyPolicy } from './screens/PrivacyPolicy';
+import { TermsOfService } from './screens/TermsOfService';
 import { useAuth } from './contexts/AuthContext';
 
 // Protected route wrapper
@@ -30,6 +32,14 @@ export const router = createBrowserRouter([
   {
     path: '/register',
     Component: Registration,
+  },
+  {
+    path: '/privacy',
+    Component: PrivacyPolicy,
+  },
+  {
+    path: '/terms',
+    Component: TermsOfService,
   },
   {
     path: '/',
