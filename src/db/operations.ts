@@ -11,7 +11,9 @@ import {
   AIPattern,
   TransactionType,
   PeriodType,
+  User,
 } from './types';
+import { v4 as uuidv4 } from 'uuid';
 
 // ==================== Transactions ====================
 
@@ -229,4 +231,35 @@ export async function deleteAIPattern(id: number): Promise<void> {
 
 export async function getAIPatterns(): Promise<AIPattern[]> {
   return db.aiPatterns.toArray();
+}
+
+// ==================== Users ====================
+
+export async function createUser(name: string, deviceId?: string): Promise<string> {
+  const id = uuidv4();
+  await db.users.add({
+    id,
+    name,
+    createdAt: Date.now(),
+    deviceId,
+  });
+  return id;
+}
+
+export async function getCurrentUser(): Promise<User | undefined> {
+  const users = await db.users.toArray();
+  return users.length > 0 ? users[0] : undefined;
+}
+
+export async function updateUser(id: string, updates: Partial<User>): Promise<void> {
+  await db.users.update(id, updates);
+}
+
+export async function deleteUser(id: string): Promise<void> {
+  await db.users.delete(id);
+}
+
+export async function hasUser(): Promise<boolean> {
+  const users = await db.users.toArray();
+  return users.length > 0;
 }

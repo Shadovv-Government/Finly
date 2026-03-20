@@ -1,8 +1,8 @@
 // src/db/db.ts
 import Dexie, { Table } from 'dexie';
-import { 
-  Transaction, Category, Budget, Goal, 
-  RecurringTemplate, AppSettings, AIPattern 
+import {
+  Transaction, Category, Budget, Goal,
+  RecurringTemplate, AppSettings, AIPattern, User
 } from './types';
 
 class FinlyDatabase extends Dexie {
@@ -14,32 +14,38 @@ class FinlyDatabase extends Dexie {
   recurringTemplates!: Table<RecurringTemplate, number>;
   settings!: Table<AppSettings, string>;
   aiPatterns!: Table<AIPattern, number>;
+  users!: Table<User, string>;
 
   constructor() {
     super('FinlyDB');
-    
+
     // Версионирование схемы
     this.version(1).stores({
       // Транзакции: индексы для фильтрации по дате, категории и типу
-      transactions: '++id, date, categoryId, type, createdAt', 
-      
+      transactions: '++id, date, categoryId, type, createdAt',
+
       // Категории: поиск по типу (доход/расход)
-      categories: 'id, type, isSystem', 
-      
+      categories: 'id, type, isSystem',
+
       // Бюджеты: поиск по категории и периоду
-      budgets: '++id, categoryId, period, startDate', 
-      
+      budgets: '++id, categoryId, period, startDate',
+
       // Цели: фильтрация активных
-      goals: '++id, isActive, deadline', 
-      
+      goals: '++id, isActive, deadline',
+
       // Шаблоны: поиск по дате следующего платежа для автодобавления
-      recurringTemplates: '++id, nextDate, isActive', 
-      
+      recurringTemplates: '++id, nextDate, isActive',
+
       // Настройки: ключ-значение
-      settings: 'key', 
-      
+      settings: 'key',
+
       // AI паттерны: поиск по слову
-      aiPatterns: '++id, pattern, categoryId', 
+      aiPatterns: '++id, pattern, categoryId',
+    });
+
+    this.version(2).stores({
+      // Пользователи
+      users: 'id, createdAt',
     });
   }
 }

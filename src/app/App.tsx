@@ -1,22 +1,38 @@
-import { useEffect } from 'react';
-import { RouterProvider } from 'react-router';
+import { RouterProvider } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Toaster } from './components/ui/sonner';
 import { router } from './routes';
 
-export default function App() {
-  useEffect(() => {
-    // Check if onboarding is completed
-    const hasCompletedOnboarding = localStorage.getItem('finly-onboarding-completed');
-    if (!hasCompletedOnboarding && window.location.pathname !== '/onboarding') {
-      window.location.href = '/onboarding';
-    }
-  }, []);
+function AuthGuard({ children }: { children: React.ReactNode }) {
+  const { isLoading } = useAuth();
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-muted-foreground">Загрузка...</div>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
+
+function AppContent() {
+  return (
+    <AuthGuard>
+      <RouterProvider router={router} />
+    </AuthGuard>
+  );
+}
+
+export default function App() {
   return (
     <ThemeProvider>
-      <RouterProvider router={router} />
-      <Toaster />
+      <AuthProvider>
+        <AppContent />
+        <Toaster />
+      </AuthProvider>
     </ThemeProvider>
   );
 }

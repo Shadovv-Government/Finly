@@ -1,16 +1,63 @@
-import { Sun, Moon, Monitor, ChevronRight, Download, Upload, Bell, Repeat, LogOut } from 'lucide-react';
+import { Sun, Moon, Monitor, ChevronRight, Download, Upload, Bell, Repeat, LogOut, Pencil } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 import { Switch } from '../components/ui/switch';
 import { Link } from 'react-router';
+import { useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 
 export const Settings = () => {
   const { theme, setTheme } = useTheme();
+  const { user, updateProfile, logout } = useAuth();
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleEditName = () => {
+    if (user) {
+      setEditName(user.name);
+      setIsEditDialogOpen(true);
+    }
+  };
+
+  const handleSaveName = async () => {
+    if (editName.trim().length >= 2) {
+      await updateProfile({ name: editName.trim() });
+      setIsEditDialogOpen(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    if (window.confirm('Вы уверены, что хотите выйти? Все данные останутся на этом устройстве.')) {
+      setIsLoggingOut(true);
+      try {
+        await logout();
+      } catch (error) {
+        console.error('Logout error:', error);
+      } finally {
+        setIsLoggingOut(false);
+      }
+    }
+  };
 
   const themeOptions = [
     { value: 'light', label: 'Светлая', icon: Sun },
     { value: 'dark', label: 'Темная', icon: Moon },
     { value: 'system', label: 'Системная', icon: Monitor },
   ] as const;
+
+  const getInitial = (name: string) => {
+    return name.charAt(0).toUpperCase();
+  };
 
   return (
     <div className="pb-20 bg-background min-h-screen">
@@ -24,14 +71,20 @@ export const Settings = () => {
         <div className="bg-card rounded-2xl p-4 border border-border">
           <div className="flex items-center gap-4 mb-4">
             <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-pink-500 flex items-center justify-center text-white text-2xl font-bold">
-              А
+              {user ? getInitial(user.name) : 'U'}
             </div>
             <div className="flex-1">
-              <h2 className="font-bold text-lg">Александр Иванов</h2>
-              <p className="text-sm text-muted-foreground">alex@example.com</p>
+              <h2 className="font-bold text-lg">{user?.name || 'Гость'}</h2>
+              <p className="text-sm text-muted-foreground">Локальный аккаунт</p>
             </div>
+            <button
+              onClick={handleEditName}
+              className="p-2 rounded-lg hover:bg-muted transition-colors"
+            >
+              <Pencil className="w-5 h-5 text-muted-foreground" />
+            </button>
           </div>
-          
+
           <div className="pt-4 border-t border-border">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Валюта</span>
@@ -163,11 +216,43 @@ export const Settings = () => {
 
       {/* Logout */}
       <div className="px-4 py-4">
-        <button className="w-full flex items-center justify-center gap-2 p-4 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-500 rounded-2xl font-medium">
+        <button
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className="w-full flex items-center justify-center gap-2 p-4 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-500 rounded-2xl font-medium disabled:opacity-50"
+        >
           <LogOut className="w-5 h-5" />
-          Выйти из аккаунта
+          {isLoggingOut ? 'Выход...' : 'Выйти из аккаунта'}
         </button>
       </div>
+
+      {/* Edit Name Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Редактировать имя</DialogTitle>
+            <DialogDescription>
+              Введите новое имя для отображения в приложении
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              placeholder="Ваше имя"
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Отмена
+            </Button>
+            <Button onClick={handleSaveName} disabled={editName.trim().length < 2}>
+              Сохранить
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

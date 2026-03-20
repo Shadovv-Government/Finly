@@ -70,3 +70,10 @@ export interface AIPattern {
   confidence: number; // уверенность модели (0-1)
   usageCount: number; // сколько раз сработало
 }
+
+export interface User {
+  id: string; // primary key, uuid
+  name: string;
+  createdAt: number; // timestamp
+  deviceId?: string; // идентификатор устройства
+}
