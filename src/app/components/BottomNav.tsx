@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router';
-import { Home, History, PlusCircle, BarChart3, Settings } from 'lucide-react';
+import { Home, History, BarChart3, Settings } from 'lucide-react';
 
 export const BottomNav = () => {
   const location = useLocation();
@@ -7,7 +7,6 @@ export const BottomNav = () => {
   const navItems = [
     { path: '/', icon: Home, label: 'Главная' },
     { path: '/history', icon: History, label: 'История' },
-    { path: '/add', icon: PlusCircle, label: 'Добавить' },
     { path: '/analytics', icon: BarChart3, label: 'Аналитика' },
     { path: '/settings', icon: Settings, label: 'Настройки' },
   ];
