@@ -13,16 +13,46 @@ export const defaultCategories: Category[] = [
   { id: 'inc_gift', name: 'Подарок', type: 'income', icon: 'Gift', color: '#9C27B0', isSystem: true },
 ];
 
+// Маппинг старых эмодзи на новые иконки
+const emojiToIconMap: Record<string, string> = {
+  '🍔': 'Utensils',
+  '🚗': 'Car',
+  '🏠': 'Home',
+  '🎉': 'PartyPopper',
+  '💰': 'Wallet',
+  '🎁': 'Gift',
+};
+
 export async function seedDatabase() {
   const count = await db.categories.count();
+  
   if (count === 0) {
+    // Первая инициализация БД
     await db.categories.bulkAdd(defaultCategories);
-    
+
     // Базовые настройки
     await db.settings.bulkAdd([
       { key: 'theme', value: 'light' },
       { key: 'baseCurrency', value: 'RUB' },
       { key: 'onboardingComplete', value: false },
     ]);
+  } else {
+    // Миграция: обновить старые эмодзи на новые иконки
+    const categories = await db.categories.toArray();
+    const updates: Array<{ id: string; icon: string }> = [];
+    
+    categories.forEach(category => {
+      const newIcon = emojiToIconMap[category.icon];
+      if (newIcon && category.icon !== newIcon) {
+        updates.push({ id: category.id, icon: newIcon });
+      }
+    });
+    
+    if (updates.length > 0) {
+      await Promise.all(
+        updates.map(update => db.categories.update(update.id, { icon: update.icon }))
+      );
+      console.log(`Migrated ${updates.length} categories from emoji to SVG icons`);
+    }
   }
 }
