@@ -1,7 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { Layout } from './Layout';
 import { Dashboard } from './screens/Dashboard';
-import { AddTransaction } from './screens/AddTransaction';
 import { TransactionHistory } from './screens/TransactionHistory';
 import { Analytics } from './screens/Analytics';
 import { Settings } from './screens/Settings';
@@ -41,7 +40,6 @@ export const router = createBrowserRouter([
     ),
     children: [
       { index: true, Component: Dashboard },
-      { path: 'add', Component: AddTransaction },
       { path: 'history', Component: TransactionHistory },
       { path: 'analytics', Component: Analytics },
       { path: 'settings', Component: Settings },

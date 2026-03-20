@@ -1,4 +1,4 @@
-import { Bell, Camera } from 'lucide-react';
+import { Bell, Camera, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
@@ -15,6 +15,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../components/ui/dialog';
+import { BottomSheet } from '../components/BottomSheet';
+import { AddTransactionForm } from '../components/AddTransactionForm';
 
 export const Dashboard = () => {
   const [period, setPeriod] = useState<'day' | 'week' | 'month' | 'custom'>('month');
@@ -23,6 +25,7 @@ export const Dashboard = () => {
   const { categories } = useCategories();
   const { user, updateProfile } = useAuth();
   const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
+  const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
 
   // Calculate totals from analytics
   const income = currentBalance > 0 ? currentBalance : 0;
@@ -262,12 +265,21 @@ export const Dashboard = () => {
       </div>
 
       {/* FAB Button */}
-      <Link
-        to="/add"
+      <button
+        onClick={() => setIsAddSheetOpen(true)}
         className="fixed bottom-20 right-4 w-14 h-14 bg-gradient-to-br from-violet-600 to-indigo-700 text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow z-40"
       >
-        <span className="text-3xl leading-none mb-1">+</span>
-      </Link>
+        <Plus className="w-6 h-6" />
+      </button>
+
+      {/* Add Transaction Bottom Sheet */}
+      <BottomSheet
+        isOpen={isAddSheetOpen}
+        onClose={() => setIsAddSheetOpen(false)}
+        title="Новая операция"
+      >
+        <AddTransactionForm onClose={() => setIsAddSheetOpen(false)} />
+      </BottomSheet>
 
       {/* Avatar Selection Dialog */}
       <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>

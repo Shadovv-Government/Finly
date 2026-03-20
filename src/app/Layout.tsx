@@ -3,7 +3,7 @@ import { BottomNav } from './components/BottomNav';
 
 export const Layout = () => {
   const location = useLocation();
-  const hideNavOnPaths = ['/add', '/onboarding'];
+  const hideNavOnPaths = ['/onboarding'];
   const showNav = !hideNavOnPaths.includes(location.pathname);
 
   return (
