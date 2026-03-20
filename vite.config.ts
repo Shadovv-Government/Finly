@@ -1,11 +1,13 @@
-// vite.config.ts
 import { defineConfig } from 'vite'
+import path from 'path'
+import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
   plugins: [
     react(),
+    tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
@@ -13,7 +15,7 @@ export default defineConfig({
         name: 'Finly — Управление личными финансами',
         short_name: 'Finly',
         description: 'Учёт доходов и расходов с офлайн-поддержкой',
-        theme_color: '#1976d2',
+        theme_color: '#7c3aed',
         background_color: '#ffffff',
         display: 'standalone',
         scope: '/',
@@ -47,7 +49,6 @@ export default defineConfig({
         ]
       },
       workbox: {
-        // Стратегия кэширования: статику — из кэша, остальное — из сети
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -64,17 +65,19 @@ export default defineConfig({
             }
           }
         ],
-        // Игнорируем поиск при офлайн-навигации
         navigateFallback: undefined
       },
-      // Для отладки: показывать уведомления об обновлении
       devOptions: {
         enabled: true,
         type: 'module'
       }
     })
   ],
-  // Оптимизация для PWA
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
   build: {
     target: 'esnext',
     minify: 'terser'
