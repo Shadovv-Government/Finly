@@ -19,6 +19,7 @@ export const Settings = () => {
   const { theme, setTheme } = useTheme();
   const { user, updateProfile, logout } = useAuth();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
   const [editName, setEditName] = useState('');
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -59,6 +60,24 @@ export const Settings = () => {
     return name.charAt(0).toUpperCase();
   };
 
+  const avatarColors = [
+    'from-amber-400 to-pink-500',
+    'from-violet-500 to-purple-600',
+    'from-blue-400 to-cyan-500',
+    'from-green-400 to-emerald-500',
+    'from-orange-400 to-red-500',
+    'from-pink-400 to-rose-500',
+  ];
+
+  const handleAvatarClick = () => {
+    setIsAvatarDialogOpen(true);
+  };
+
+  const handleAvatarSelect = async (color: string) => {
+    await updateProfile({ avatarColor: color });
+    setIsAvatarDialogOpen(false);
+  };
+
   return (
     <div className="pb-20 bg-background min-h-screen">
       {/* Header */}
@@ -70,9 +89,12 @@ export const Settings = () => {
       <div className="px-4 py-4">
         <div className="bg-card rounded-2xl p-4 border border-border">
           <div className="flex items-center gap-4 mb-4">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-pink-500 flex items-center justify-center text-white text-2xl font-bold">
+            <button
+              onClick={handleAvatarClick}
+              className={`w-16 h-16 rounded-full bg-gradient-to-br ${user?.avatarColor || 'from-amber-400 to-pink-500'} flex items-center justify-center text-white text-2xl font-bold hover:opacity-90 transition-opacity`}
+            >
               {user ? getInitial(user.name) : 'U'}
-            </div>
+            </button>
             <div className="flex-1">
               <h2 className="font-bold text-lg">{user?.name || 'Гость'}</h2>
               <p className="text-sm text-muted-foreground">Локальный аккаунт</p>
@@ -251,6 +273,28 @@ export const Settings = () => {
               Сохранить
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Avatar Selection Dialog */}
+      <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Выберите аватар</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-3 gap-4 py-4">
+            {avatarColors.map((color) => (
+              <button
+                key={color}
+                onClick={() => handleAvatarSelect(color)}
+                className={`w-16 h-16 rounded-full bg-gradient-to-br ${color} flex items-center justify-center font-bold text-white text-xl hover:scale-110 transition-transform ${
+                  user?.avatarColor === color ? 'ring-4 ring-violet-600' : ''
+                }`}
+              >
+                {getInitial(user?.name || 'U')}
+              </button>
+            ))}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
