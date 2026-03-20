@@ -14,37 +14,37 @@ export const CategoryBadge: React.FC<CategoryBadgeProps> = ({
 }) => {
   const { categories } = useCategories();
   const category = categories.find(c => c.id === categoryId);
-  
+
+  const iconSizes = {
+    sm: 'w-4 h-4',
+    md: 'w-5 h-5',
+    lg: 'w-6 h-6'
+  };
+
+  const containerSizes = {
+    sm: 'w-8 h-8',
+    md: 'w-10 h-10',
+    lg: 'w-12 h-12'
+  };
+
   if (!category) {
-    // Default fallback icon
-    const sizeClasses = {
-      sm: 'w-8 h-8',
-      md: 'w-10 h-10',
-      lg: 'w-12 h-12'
-    };
     return (
-      <div className={`${sizeClasses[size]} rounded-xl flex items-center justify-center bg-gray-100 dark:bg-gray-800`}>
-        <Icons.HelpCircle className="w-5 h-5 text-gray-400" />
+      <div className={`${containerSizes[size]} rounded-xl flex items-center justify-center bg-gray-100 dark:bg-gray-800`}>
+        <Icons.HelpCircle className={`${iconSizes[size]} text-gray-400`} />
       </div>
     );
   }
 
   const IconComponent = Icons[category.icon as keyof typeof Icons] as React.ElementType || Icons.HelpCircle;
 
-  const sizeClasses = {
-    sm: 'w-8 h-8',
-    md: 'w-10 h-10',
-    lg: 'w-12 h-12'
-  };
-
   return (
     <div className="flex items-center gap-2">
       <div
-        className={`${sizeClasses[size]} rounded-xl flex items-center justify-center`}
+        className={`${containerSizes[size]} rounded-xl flex items-center justify-center`}
         style={{ backgroundColor: category.color + '20' }}
       >
         <IconComponent
-          className={`${sizeClasses[size]} text-${size === 'sm' ? '4' : size === 'md' ? '5' : '6'}`}
+          className={iconSizes[size]}
           style={{ color: category.color }}
         />
       </div>
