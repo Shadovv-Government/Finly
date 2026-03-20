@@ -1,22 +1,13 @@
 import { useState } from 'react';
-import { X, Calendar, MessageSquare, Mic, Utensils, Car, Home, PartyPopper, Wallet, Gift } from 'lucide-react';
+import { X, Calendar, MessageSquare, Mic } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { useCategories } from '../hooks/useCategories';
 import { useTransactions } from '../hooks/useTransactions';
 
-const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  Utensils,
-  Car,
-  Home,
-  PartyPopper,
-  Wallet,
-  Gift,
-};
-
 function CategoryIcon({ name, className, color }: { name: string; className?: string; color?: string }) {
-  const Icon = iconMap[name] || Wallet;
-  const IconComponent = Icon as any;
+  const IconComponent = (LucideIcons as any)[name] || LucideIcons.Wallet;
   return <IconComponent className={className} style={{ color }} />;
 }
 
