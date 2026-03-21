@@ -41,6 +41,7 @@ export async function getTransactionsByPeriod(start: number, end: number): Promi
   return db.transactions
     .where('date')
     .between(start, end)
+    .reverse()
     .sortBy('date');
 }
 

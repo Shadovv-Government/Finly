@@ -11,7 +11,40 @@ import {
   BalanceSummary,
 } from '../../db/analytics';
 
-export function useAnalytics() {
+export type PeriodType = 'day' | 'week' | 'month' | 'custom';
+
+export interface PeriodRange {
+  start: number;
+  end: number;
+}
+
+export function getPeriodRange(period: PeriodType): PeriodRange {
+  const now = Date.now();
+  const dayMs = 24 * 60 * 60 * 1000;
+
+  switch (period) {
+    case 'day':
+      return { start: now - dayMs, end: now };
+    case 'week':
+      return { start: now - (7 * dayMs), end: now };
+    case 'month':
+      return { start: now - (30 * dayMs), end: now };
+    case 'custom':
+    default:
+      return { start: now - (30 * dayMs), end: now };
+  }
+}
+
+export function getPeriodDays(period: PeriodType): number {
+  switch (period) {
+    case 'day': return 1;
+    case 'week': return 7;
+    case 'month': return 30;
+    case 'custom': default: return 30;
+  }
+}
+
+export function useAnalytics(period: PeriodType = 'month') {
   const [balance, setBalance] = useState<BalanceSummary | null>(null);
   const [expensesByCategory, setExpensesByCategory] = useState<CategoryAnalytics[]>([]);
   const [incomeByCategory, setIncomeByCategory] = useState<CategoryAnalytics[]>([]);
@@ -25,9 +58,7 @@ export function useAnalytics() {
   const loadAnalytics = async () => {
     try {
       setLoading(true);
-      const now = Date.now();
-      const monthMs = 30 * 24 * 60 * 60 * 1000;
-      const start = now - monthMs;
+      const { start, end } = getPeriodRange(period);
 
       const [
         balanceData,
@@ -37,10 +68,10 @@ export function useAnalytics() {
         currentBalanceData,
         balanceWithSavingsData,
       ] = await Promise.all([
-        getBalanceByPeriod(start, now),
-        getExpensesByCategory(start, now),
-        getIncomeByCategory(start, now),
-        getSpendingTrend(30),
+        getBalanceByPeriod(start, end),
+        getExpensesByCategory(start, end),
+        getIncomeByCategory(start, end),
+        getSpendingTrend(period === 'day' ? 7 : 30),
         getCurrentBalance(),
         getBalanceWithSavings(),
       ]);
@@ -62,7 +93,7 @@ export function useAnalytics() {
 
   useEffect(() => {
     loadAnalytics();
-  }, []);
+  }, [period]);
 
   return {
     balance,

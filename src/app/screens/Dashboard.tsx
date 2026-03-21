@@ -5,7 +5,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { CategoryBadge } from '../components/CategoryBadge';
 import { AmountDisplay } from '../components/AmountDisplay';
 import { Target, Folder, Sparkles, DollarSign } from 'lucide-react';
-import { useAnalytics } from '../hooks/useAnalytics';
+import { useAnalytics, getPeriodRange, PeriodType } from '../hooks/useAnalytics';
 import { useTransactions } from '../hooks/useTransactions';
 import { useCategories } from '../hooks/useCategories';
 import { useAuth } from '../contexts/AuthContext';
@@ -19,9 +19,10 @@ import { BottomSheet } from '../components/BottomSheet';
 import { AddTransactionForm } from '../components/AddTransactionForm';
 
 export const Dashboard = () => {
-  const [period, setPeriod] = useState<'day' | 'week' | 'month' | 'custom'>('month');
-  const { currentBalance, expensesByCategory: analyticsExpenses, savingsAmount, freeBalance } = useAnalytics();
-  const { transactions } = useTransactions();
+  const [period, setPeriod] = useState<PeriodType>('month');
+  const periodRange = getPeriodRange(period);
+  const { currentBalance, expensesByCategory: analyticsExpenses, savingsAmount, freeBalance } = useAnalytics(period);
+  const { transactions } = useTransactions({ period, startDate: periodRange.start, endDate: periodRange.end });
   const { categories } = useCategories();
   const { user, updateProfile } = useAuth();
   const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
@@ -41,13 +42,6 @@ export const Dashboard = () => {
   }));
 
   const recentTransactions = transactions.slice(0, 5);
-
-  const periods = [
-    { value: 'day', label: 'День' },
-    { value: 'week', label: 'Неделя' },
-    { value: 'month', label: 'Месяц' },
-    { value: 'custom', label: 'Период' },
-  ] as const;
 
   const avatarColors = [
     'from-amber-400 to-pink-500',
@@ -125,13 +119,18 @@ export const Dashboard = () => {
 
         {/* Period Switcher */}
         <div className="flex gap-2">
-          {periods.map(p => (
+          {[
+            { value: 'day' as PeriodType, label: 'День' },
+            { value: 'week' as PeriodType, label: 'Неделя' },
+            { value: 'month' as PeriodType, label: 'Месяц' },
+            { value: 'custom' as PeriodType, label: 'Период' },
+          ].map(p => (
             <button
               key={p.value}
               onClick={() => setPeriod(p.value)}
               className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all ${
-                period === p.value 
-                  ? 'bg-white text-violet-700' 
+                period === p.value
+                  ? 'bg-white text-violet-700'
                   : 'bg-white/20 text-white hover:bg-white/30'
               }`}
             >
