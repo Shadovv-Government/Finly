@@ -21,6 +21,7 @@ const emojiToIconMap: Record<string, string> = {
   '🎉': 'PartyPopper',
   '💰': 'Wallet',
   '🎁': 'Gift',
+  '🎯': 'Target',
 };
 
 export async function seedDatabase() {
