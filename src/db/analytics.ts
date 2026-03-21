@@ -78,7 +78,7 @@ export async function getBalanceByPeriod(start: number, end: number): Promise<Ba
 
 export async function getCurrentBalance(): Promise<number> {
   const transactions = await db.transactions.toArray();
-  
+
   const income = transactions
     .filter(t => t.type === 'income')
     .reduce((sum, t) => sum + t.amount * t.rate, 0);
@@ -88,6 +88,48 @@ export async function getCurrentBalance(): Promise<number> {
     .reduce((sum, t) => sum + t.amount * t.rate, 0);
 
   return income - expenses;
+}
+
+/**
+ * Возвращает общую сумму накоплений по всем активным целям
+ */
+export async function getTotalSavings(): Promise<number> {
+  const goals = await db.goals.filter(g => g.isActive).toArray();
+  return goals.reduce((sum, g) => sum + g.currentAmount, 0);
+}
+
+/**
+ * Возвращает сводку по балансу с учётом накоплений
+ */
+export async function getBalanceWithSavings(): Promise<{
+  totalBalance: number;      // общий баланс (доходы - расходы)
+  freeBalance: number;       // свободные средства (без учёта накоплений)
+  savingsAmount: number;     // сумма в накоплениях
+  income: number;
+  expenses: number;
+}> {
+  const transactions = await db.transactions.toArray();
+  const goals = await db.goals.filter(g => g.isActive).toArray();
+
+  const income = transactions
+    .filter(t => t.type === 'income')
+    .reduce((sum, t) => sum + t.amount * t.rate, 0);
+
+  const expenses = transactions
+    .filter(t => t.type === 'expense')
+    .reduce((sum, t) => sum + t.amount * t.rate, 0);
+
+  const savingsAmount = goals.reduce((sum, g) => sum + g.currentAmount, 0);
+  const totalBalance = income - expenses;
+  const freeBalance = totalBalance - savingsAmount;
+
+  return {
+    totalBalance,
+    freeBalance,
+    savingsAmount,
+    income,
+    expenses,
+  };
 }
 
 // ==================== Expenses by Category ====================

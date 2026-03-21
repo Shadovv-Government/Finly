@@ -20,7 +20,7 @@ import { AddTransactionForm } from '../components/AddTransactionForm';
 
 export const Dashboard = () => {
   const [period, setPeriod] = useState<'day' | 'week' | 'month' | 'custom'>('month');
-  const { currentBalance, expensesByCategory: analyticsExpenses } = useAnalytics();
+  const { currentBalance, expensesByCategory: analyticsExpenses, savingsAmount, freeBalance } = useAnalytics();
   const { transactions } = useTransactions();
   const { categories } = useCategories();
   const { user, updateProfile } = useAuth();
@@ -31,6 +31,7 @@ export const Dashboard = () => {
   const income = currentBalance > 0 ? currentBalance : 0;
   const expense = analyticsExpenses.reduce((sum, c) => sum + c.amount, 0);
   const balance = currentBalance;
+  const hasSavings = savingsAmount > 0;
 
   // Transform analytics data for pie chart
   const expensesByCategory = analyticsExpenses.map(c => ({
@@ -96,6 +97,20 @@ export const Dashboard = () => {
         <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 mb-4">
           <p className="text-xs opacity-80 mb-1">Общий баланс</p>
           <p className="text-3xl font-bold mb-3">{balance.toLocaleString('ru-RU')} ₽</p>
+          
+          {hasSavings && (
+            <div className="mb-3 p-3 bg-white/10 rounded-xl">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs opacity-90">Свободно</p>
+                <p className="text-sm font-semibold">{freeBalance.toLocaleString('ru-RU')} ₽</p>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-xs opacity-90">В накоплениях</p>
+                <p className="text-sm font-semibold">{savingsAmount.toLocaleString('ru-RU')} ₽</p>
+              </div>
+            </div>
+          )}
+          
           <div className="flex gap-4">
             <div className="flex-1">
               <p className="text-xs opacity-80">Доходы</p>

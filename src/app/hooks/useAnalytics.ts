@@ -5,6 +5,7 @@ import {
   getIncomeByCategory,
   getSpendingTrend,
   getCurrentBalance,
+  getBalanceWithSavings,
   CategoryAnalytics,
   SpendingTrendPoint,
   BalanceSummary,
@@ -16,6 +17,8 @@ export function useAnalytics() {
   const [incomeByCategory, setIncomeByCategory] = useState<CategoryAnalytics[]>([]);
   const [spendingTrend, setSpendingTrend] = useState<SpendingTrendPoint[]>([]);
   const [currentBalance, setCurrentBalance] = useState<number>(0);
+  const [savingsAmount, setSavingsAmount] = useState<number>(0);
+  const [freeBalance, setFreeBalance] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,12 +35,14 @@ export function useAnalytics() {
         incomeData,
         trendData,
         currentBalanceData,
+        balanceWithSavingsData,
       ] = await Promise.all([
         getBalanceByPeriod(start, now),
         getExpensesByCategory(start, now),
         getIncomeByCategory(start, now),
         getSpendingTrend(30),
         getCurrentBalance(),
+        getBalanceWithSavings(),
       ]);
 
       setBalance(balanceData);
@@ -45,6 +50,8 @@ export function useAnalytics() {
       setIncomeByCategory(incomeData);
       setSpendingTrend(trendData);
       setCurrentBalance(currentBalanceData);
+      setSavingsAmount(balanceWithSavingsData.savingsAmount);
+      setFreeBalance(balanceWithSavingsData.freeBalance);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load analytics');
@@ -63,6 +70,8 @@ export function useAnalytics() {
     incomeByCategory,
     spendingTrend,
     currentBalance,
+    savingsAmount,
+    freeBalance,
     loading,
     error,
     refresh: loadAnalytics,
