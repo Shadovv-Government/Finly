@@ -137,7 +137,7 @@ export const ContributeBottomSheet: React.FC<ContributeBottomSheetProps> = ({
         </div>
 
         {/* Кнопка пополнения */}
-        <div className="px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+        <div className="px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom)+4rem)]">
           <button
             onClick={handleSubmit}
             disabled={isSubmitting || !amount}

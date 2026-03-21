@@ -207,7 +207,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({
         </div>
 
         {/* Кнопка сохранения */}
-        <div className="px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+        <div className="px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom)+4rem)]">
           <button
             onClick={handleSubmit}
             disabled={isSubmitting}
