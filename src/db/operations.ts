@@ -182,7 +182,7 @@ export async function createGoalContribution(
   if (!targetCategoryId) {
     const categories = await getCategories();
     let goalsCategory = categories.find(c => c.name === 'Цели' && c.type === 'expense');
-    
+
     if (!goalsCategory) {
       // Создаем категорию "Цели" если её нет
       const newCategory = {
@@ -190,12 +190,16 @@ export async function createGoalContribution(
         name: 'Цели',
         type: 'expense' as const,
         icon: 'Target',
-        color: '#8B5CF6',
+        color: goal.color,
         isSystem: false,
       };
       await addCategory(newCategory);
       targetCategoryId = newCategory.id;
     } else {
+      // Обновляем цвет категории на цвет цели
+      if (goalsCategory.color !== goal.color) {
+        await updateCategory(goalsCategory.id, { color: goal.color });
+      }
       targetCategoryId = goalsCategory.id;
     }
   }
