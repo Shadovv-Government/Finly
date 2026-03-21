@@ -27,6 +27,25 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
 
   const filteredCategories = categories.filter(c => c.type === type);
 
+  // Format amount with thousand separators
+  const formatAmount = (value: string) => {
+    if (!value) return '';
+    const parts = value.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    return parts.join('.');
+  };
+
+  // Remove formatting for storage
+  const parseAmount = (value: string) => value.replace(/\s/g, '');
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const parsed = parseAmount(value);
+    if (/^\d*\.?\d*$/.test(parsed)) {
+      setAmount(parsed);
+    }
+  };
+
   // Обработка быстрого ввода
   const handleQuickInputProcess = async () => {
     if (!quickInput.trim()) return;
@@ -153,8 +172,8 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
           type="tel"
           inputMode="decimal"
           placeholder="0"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+          value={formatAmount(amount)}
+          onChange={handleAmountChange}
           className="w-full text-4xl font-bold text-center bg-transparent outline-none"
           autoFocus
         />
@@ -211,7 +230,7 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
       </div>
 
       {/* Save Button */}
-      <div className="px-4 py-4">
+      <div className="px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <button
           onClick={handleSave}
           className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-xl font-semibold"

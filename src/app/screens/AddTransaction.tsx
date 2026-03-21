@@ -27,6 +27,25 @@ export const AddTransaction = () => {
     c.type === type
   );
 
+  // Format amount with thousand separators
+  const formatAmount = (value: string) => {
+    if (!value) return '';
+    const parts = value.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    return parts.join('.');
+  };
+
+  // Remove formatting for storage
+  const parseAmount = (value: string) => value.replace(/\s/g, '');
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const parsed = parseAmount(value);
+    if (/^\d*\.?\d*$/.test(parsed)) {
+      setAmount(parsed);
+    }
+  };
+
   // Обработка быстрого ввода
   const handleQuickInputProcess = async () => {
     if (!quickInput.trim()) return;
@@ -93,11 +112,11 @@ export const AddTransaction = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col pb-20">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <div className="px-4 py-4 flex items-center justify-between border-b border-border bg-card">
         <h1 className="text-lg font-bold">Новая операция</h1>
-        <button 
+        <button
           onClick={() => navigate('/')}
           className="w-8 h-8 rounded-full bg-muted flex items-center justify-center"
         >
@@ -165,8 +184,8 @@ export const AddTransaction = () => {
             type="tel"
             inputMode="decimal"
             placeholder="0"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            value={formatAmount(amount)}
+            onChange={handleAmountChange}
             className="w-full text-4xl font-bold text-center bg-transparent outline-none"
             autoFocus
           />
@@ -224,7 +243,7 @@ export const AddTransaction = () => {
       </div>
 
       {/* Save Button */}
-      <div className="px-4 py-4 bg-card border-t border-border">
+      <div className="px-4 py-4 bg-card border-t border-border pb-[max(1rem,env(safe-area-inset-bottom))]">
         <button
           onClick={handleSave}
           className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-xl font-semibold"
