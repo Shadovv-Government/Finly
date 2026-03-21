@@ -103,7 +103,7 @@ export const TransactionHistory = () => {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{category?.name || 'Без категории'}</p>
                         <p className="text-sm text-muted-foreground truncate">
-                          {transaction.comment || ''}
+                          {transaction.comment || time}
                         </p>
                       </div>
                       <div className="text-right">

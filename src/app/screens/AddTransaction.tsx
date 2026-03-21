@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { X, Calendar, MessageSquare, Mic } from 'lucide-react';
+import { X, Calendar, MessageSquare, Mic, Sparkles } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { useCategories } from '../hooks/useCategories';
 import { useTransactions } from '../hooks/useTransactions';
+import { parseNaturalLanguage, findBestMatch } from '../../db/ai';
 
 function CategoryIcon({ name, className, color }: { name: string; className?: string; color?: string }) {
   const IconComponent = (LucideIcons as any)[name] || LucideIcons.Wallet;
@@ -20,10 +21,54 @@ export const AddTransaction = () => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [comment, setComment] = useState('');
   const [quickInput, setQuickInput] = useState('');
+  const [isProcessingQuickInput, setIsProcessingQuickInput] = useState(false);
 
   const filteredCategories = categories.filter(c =>
     c.type === type
   );
+
+  // Обработка быстрого ввода
+  const handleQuickInputProcess = async () => {
+    if (!quickInput.trim()) return;
+    
+    setIsProcessingQuickInput(true);
+    try {
+      const parsed = parseNaturalLanguage(quickInput);
+      if (parsed) {
+        // Установить сумму
+        if (parsed.amount > 0) {
+          setAmount(parsed.amount.toString());
+        }
+        // Установить тип операции
+        setType(parsed.type);
+        // Установить комментарий
+        if (parsed.comment) {
+          setComment(parsed.comment);
+          // Попробовать найти категорию по комментарию
+          const match = await findBestMatch(parsed.comment);
+          if (match && match.category.type === parsed.type) {
+            setSelectedCategory(match.category.id);
+            toast.success(`Категория определена: ${match.category.name}`);
+          }
+        }
+        toast.success('Данные распознаны');
+      } else {
+        toast.error('Не удалось распознать. Укажите сумму, например: "кофе 450 рублей"');
+      }
+    } catch (error) {
+      toast.error('Ошибка при обработке');
+    } finally {
+      setIsProcessingQuickInput(false);
+    }
+  };
+
+  // Обработка Enter в поле быстрого ввода
+  const handleQuickInputKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleQuickInputProcess();
+    }
+  };
 
   const handleNumberClick = (num: string) => {
     if (num === '.' && amount.includes('.')) return;
@@ -78,11 +123,22 @@ export const AddTransaction = () => {
               placeholder="кофе 450 рублей в Старбаксе"
               value={quickInput}
               onChange={(e) => setQuickInput(e.target.value)}
-              className="w-full px-4 py-3 pr-12 bg-muted rounded-xl outline-none focus:ring-2 focus:ring-violet-600"
+              onKeyDown={handleQuickInputKeyDown}
+              className="w-full px-4 py-3 pr-24 bg-muted rounded-xl outline-none focus:ring-2 focus:ring-violet-600"
             />
-            <button className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-              <Mic className="w-5 h-5" />
-            </button>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+              <button 
+                onClick={handleQuickInputProcess}
+                disabled={isProcessingQuickInput || !quickInput.trim()}
+                className="text-violet-600 hover:text-violet-700 disabled:text-muted-foreground transition-colors"
+                title="Распознать"
+              >
+                <Sparkles className="w-5 h-5" />
+              </button>
+              <button className="text-muted-foreground">
+                <Mic className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
 
