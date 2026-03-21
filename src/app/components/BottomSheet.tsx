@@ -112,7 +112,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
       {/* Bottom Sheet */}
       <div
         ref={sheetRef}
-        className={`fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl z-50 
+        className={`fixed bottom-0 left-0 right-0 bg-card rounded-t-[2rem] z-50
                    max-h-[90vh] overflow-hidden flex flex-col safe-area-inset-bottom
                    ${closing ? 'animate-slide-down' : 'animate-slide-up'}`}
         onClick={(e) => e.stopPropagation()}
