@@ -230,7 +230,7 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
       </div>
 
       {/* Save Button */}
-      <div className="px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+      <div className="px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom)+4rem)]">
         <button
           onClick={handleSave}
           className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-xl font-semibold"
