@@ -101,10 +101,12 @@ export const TransactionHistory = () => {
                     >
                       <CategoryBadge categoryId={transaction.categoryId} size="md" />
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{category?.name || 'Без категории'}</p>
-                        <p className="text-sm text-muted-foreground truncate">
-                          {transaction.comment || time}
+                        <p className="font-medium truncate">
+                          {transaction.comment || category?.name || 'Без категории'}
                         </p>
+                        {!transaction.comment && (
+                          <p className="text-sm text-muted-foreground truncate">{time}</p>
+                        )}
                       </div>
                       <div className="text-right">
                         <AmountDisplay
