@@ -1,5 +1,7 @@
 // Сервис для управления Push-уведомлениями
 
+import { getIconForType } from './notificationIcons';
+
 export interface NotificationOptions {
   title: string;
   body: string;
@@ -70,12 +72,6 @@ export function sendTransactionNotification(
   amount: number,
   description: string
 ): void {
-  const icons = {
-    income: '💰',
-    expense: '💳',
-    goal: '🎯',
-  };
-
   const titles = {
     income: 'Доход',
     expense: 'Расход',
@@ -83,8 +79,9 @@ export function sendTransactionNotification(
   };
 
   sendNotification({
-    title: `${icons[type]} ${titles[type]}`,
+    title: titles[type],
     body: `${description} — ${amount.toLocaleString('ru-RU')} ₽`,
+    icon: getIconForType(type),
     tag: `transaction-${Date.now()}`,
   });
 }
@@ -92,8 +89,9 @@ export function sendTransactionNotification(
 // Отправка уведомления о достижении цели
 export function sendGoalAchievedNotification(goalName: string): void {
   sendNotification({
-    title: '🎉 Цель достигнута!',
+    title: 'Цель достигнута!',
     body: `Поздравляем! Вы накопили на "${goalName}"`,
+    icon: getIconForType('success'),
     tag: 'goal-achieved',
     requireInteraction: true,
   });
@@ -106,8 +104,9 @@ export function sendBudgetOverrunNotification(
   limit: number
 ): void {
   sendNotification({
-    title: '⚠️ Перерасход бюджета',
+    title: 'Перерасход бюджета',
     body: `По категории "${categoryName}" потрачено ${spent.toLocaleString('ru-RU')} ₽ из ${limit.toLocaleString('ru-RU')} ₽`,
+    icon: getIconForType('warning'),
     tag: 'budget-overrun',
     requireInteraction: true,
   });
@@ -119,8 +118,9 @@ export function sendGoalReminderNotification(
   monthlyAmount: number
 ): void {
   sendNotification({
-    title: '📌 Напоминание о цели',
+    title: 'Напоминание о цели',
     body: `Для цели "${goalName}" нужно откладывать ${monthlyAmount.toLocaleString('ru-RU')} ₽/мес`,
+    icon: getIconForType('goal'),
     tag: 'goal-reminder',
   });
 }
