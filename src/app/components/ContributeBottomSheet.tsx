@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { BottomSheet } from './BottomSheet';
+import { getCurrentBalance } from '../../db/analytics';
 
 interface ContributeBottomSheetProps {
   isOpen: boolean;
@@ -8,6 +9,7 @@ interface ContributeBottomSheetProps {
   onSubmit: (amount: number) => Promise<void>;
   currentAmount: number;
   targetAmount: number;
+  userBalance?: number;
 }
 
 export const ContributeBottomSheet: React.FC<ContributeBottomSheetProps> = ({
@@ -16,9 +18,20 @@ export const ContributeBottomSheet: React.FC<ContributeBottomSheetProps> = ({
   onSubmit,
   currentAmount,
   targetAmount,
+  userBalance,
 }) => {
   const [amount, setAmount] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [balance, setBalance] = useState<number>(userBalance ?? 0);
+
+  // Загружаем баланс при открытии
+  useEffect(() => {
+    if (isOpen) {
+      getCurrentBalance().then(setBalance);
+    }
+  }, [isOpen]);
+
+  const effectiveBalance = userBalance ?? balance;
 
   const formatAmount = (value: string) => {
     if (!value) return '';
@@ -43,6 +56,11 @@ export const ContributeBottomSheet: React.FC<ContributeBottomSheetProps> = ({
     const numAmount = parseFloat(amount);
     if (!amount || numAmount <= 0) {
       toast.error('Введите сумму больше 0');
+      return;
+    }
+
+    if (numAmount > effectiveBalance) {
+      toast.error(`Недостаточно средств. Доступно: ${effectiveBalance.toLocaleString('ru-RU')} ₽`);
       return;
     }
 
@@ -79,6 +97,12 @@ export const ContributeBottomSheet: React.FC<ContributeBottomSheetProps> = ({
           <div className="text-sm text-muted-foreground mt-2">
             Осталось: <span className="font-semibold">{remaining.toLocaleString('ru-RU')} ₽</span>
           </div>
+        </div>
+
+        {/* Баланс пользователя */}
+        <div className="px-4 py-3 m-4 rounded-xl border border-border">
+          <div className="text-sm text-muted-foreground mb-1">Доступно для пополнения</div>
+          <div className="text-xl font-bold">{effectiveBalance.toLocaleString('ru-RU')} ₽</div>
         </div>
 
         {/* Ввод суммы */}

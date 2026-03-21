@@ -5,14 +5,17 @@ import { GoalForm } from '../components/GoalForm';
 import { ContributeBottomSheet } from '../components/ContributeBottomSheet';
 import { Goal } from '../../db/types';
 import { toast } from 'sonner';
+import { createGoalContribution } from '../../db/operations';
+import { getCurrentBalance } from '../../db/analytics';
 
 export const Goals = () => {
-  const { goals, createGoal, editGoal, removeGoal, addContribution } = useGoals();
-  
+  const { goals, createGoal, editGoal, removeGoal } = useGoals();
+
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
   const [isContributeOpen, setIsContributeOpen] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
+  const [userBalance, setUserBalance] = useState<number>(0);
 
   const handleCreateGoal = async (goal: Omit<Goal, 'id'>) => {
     await createGoal(goal);
@@ -29,7 +32,11 @@ export const Goals = () => {
 
   const handleContribute = async (amount: number) => {
     if (selectedGoal) {
-      await addContribution(selectedGoal.id!, amount);
+      // Создаем транзакцию расхода и обновляем прогресс цели
+      await createGoalContribution(selectedGoal.id!, amount);
+      // Обновляем баланс после пополнения
+      const newBalance = await getCurrentBalance();
+      setUserBalance(newBalance);
       setSelectedGoal(null);
     }
   };
@@ -46,8 +53,10 @@ export const Goals = () => {
     setIsEditFormOpen(true);
   };
 
-  const openContribute = (goal: Goal) => {
+  const openContribute = async (goal: Goal) => {
     setSelectedGoal(goal);
+    const balance = await getCurrentBalance();
+    setUserBalance(balance);
     setIsContributeOpen(true);
   };
 
@@ -240,6 +249,7 @@ export const Goals = () => {
         onSubmit={handleContribute}
         currentAmount={selectedGoal?.currentAmount || 0}
         targetAmount={selectedGoal?.targetAmount || 0}
+        userBalance={userBalance}
       />
     </div>
   );

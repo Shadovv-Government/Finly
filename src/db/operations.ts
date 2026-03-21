@@ -161,6 +161,60 @@ export async function contributeToGoal(id: number, amount: number): Promise<void
   }
 }
 
+/**
+ * Создает транзакцию расхода для пополнения цели и обновляет прогресс цели
+ * @param goalId - ID цели
+ * @param amount - Сумма пополнения
+ * @param categoryId - ID категории расхода (по умолчанию категория "Цели")
+ */
+export async function createGoalContribution(
+  goalId: number,
+  amount: number,
+  categoryId?: string
+): Promise<void> {
+  const goal = await getGoal(goalId);
+  if (!goal) {
+    throw new Error('Цель не найдена');
+  }
+
+  // Находим или создаем категорию "Цели" если не передана
+  let targetCategoryId = categoryId;
+  if (!targetCategoryId) {
+    const categories = await getCategories();
+    let goalsCategory = categories.find(c => c.name === 'Цели' && c.type === 'expense');
+    
+    if (!goalsCategory) {
+      // Создаем категорию "Цели" если её нет
+      const newCategory = {
+        id: uuidv4(),
+        name: 'Цели',
+        type: 'expense' as const,
+        icon: '🎯',
+        color: '#8B5CF6',
+        isSystem: false,
+      };
+      await addCategory(newCategory);
+      targetCategoryId = newCategory.id;
+    } else {
+      targetCategoryId = goalsCategory.id;
+    }
+  }
+
+  // Создаем транзакцию расхода
+  await addTransaction({
+    amount,
+    type: 'expense',
+    categoryId: targetCategoryId,
+    date: Date.now(),
+    comment: `Пополнение цели "${goal.name}"`,
+    currency: 'RUB',
+    rate: 1,
+  });
+
+  // Обновляем прогресс цели
+  await updateGoalProgress(goalId, goal.currentAmount + amount);
+}
+
 // ==================== Recurring Templates ====================
 
 export async function addRecurringTemplate(template: Omit<RecurringTemplate, 'id'>): Promise<number> {
