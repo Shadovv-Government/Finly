@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Target } from 'lucide-react';
-import * as LucideIcons from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { Goal } from '../../db/types';
 import { BottomSheet } from './BottomSheet';
@@ -23,27 +22,6 @@ const PRESET_COLORS = [
   '#795548', // brown
 ];
 
-const POPULAR_ICONS = [
-  'Target',
-  'Home',
-  'Car',
-  'Plane',
-  'GraduationCap',
-  'Heart',
-  'Gift',
-  'Trophy',
-  'Wallet',
-  'ShoppingBag',
-  'Gamepad2',
-  'Camera',
-  'Music',
-];
-
-function IconPreview({ name, className, color }: { name: string; className?: string; color?: string }) {
-  const IconComponent = (LucideIcons as any)[name] || Target;
-  return <IconComponent className={className} style={{ color }} />;
-}
-
 export const GoalForm: React.FC<GoalFormProps> = ({
   isOpen,
   onClose,
@@ -55,7 +33,6 @@ export const GoalForm: React.FC<GoalFormProps> = ({
   const [currentAmount, setCurrentAmount] = useState('0');
   const [deadline, setDeadline] = useState('');
   const [selectedColor, setSelectedColor] = useState(PRESET_COLORS[0]);
-  const [selectedIcon, setSelectedIcon] = useState('Target');
   const [isActive, setIsActive] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -67,7 +44,6 @@ export const GoalForm: React.FC<GoalFormProps> = ({
       setCurrentAmount(initialData.currentAmount.toString());
       setDeadline(initialData.deadline ? new Date(initialData.deadline).toISOString().split('T')[0] : '');
       setSelectedColor(initialData.color);
-      setSelectedIcon(initialData.icon);
       setIsActive(initialData.isActive);
     } else {
       // Сброс для новой цели
@@ -76,7 +52,6 @@ export const GoalForm: React.FC<GoalFormProps> = ({
       setCurrentAmount('0');
       setDeadline('');
       setSelectedColor(PRESET_COLORS[0]);
-      setSelectedIcon('Target');
       setIsActive(true);
     }
   }, [initialData, isOpen]);
@@ -126,7 +101,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({
         targetAmount: target,
         currentAmount: current,
         deadline: deadline ? new Date(deadline).getTime() : undefined,
-        icon: selectedIcon,
+        icon: 'Target',
         color: selectedColor,
         isActive,
       });
@@ -212,26 +187,6 @@ export const GoalForm: React.FC<GoalFormProps> = ({
                 }`}
                 style={{ backgroundColor: color }}
               />
-            ))}
-          </div>
-        </div>
-
-        {/* Выбор иконки */}
-        <div className="px-4 py-4">
-          <label className="text-sm font-medium mb-3 block">Иконка</label>
-          <div className="grid grid-cols-5 gap-3">
-            {POPULAR_ICONS.map((icon) => (
-              <button
-                key={icon}
-                onClick={() => setSelectedIcon(icon)}
-                className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${
-                  selectedIcon === icon
-                    ? 'ring-2 ring-violet-600 bg-muted'
-                    : 'bg-muted border border-border'
-                }`}
-              >
-                <IconPreview name={icon} className="w-6 h-6" color={selectedColor} />
-              </button>
             ))}
           </div>
         </div>

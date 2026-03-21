@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Plus, Target, TrendingUp, Pencil, Trash2, PiggyBank, PartyPopper, Trophy } from 'lucide-react';
+import * as Icons from 'lucide-react';
 import { useGoals } from '../hooks/useGoals';
 import { GoalForm } from '../components/GoalForm';
 import { ContributeBottomSheet } from '../components/ContributeBottomSheet';
@@ -86,7 +87,10 @@ export const Goals = () => {
                     className="w-12 h-12 rounded-xl flex items-center justify-center"
                     style={{ backgroundColor: goal.color + '20' }}
                   >
-                    <Target className="w-6 h-6" style={{ color: goal.color }} />
+                    {(() => {
+                      const IconComponent = (Icons[goal.icon as keyof typeof Icons] as React.ElementType) || Target;
+                      return <IconComponent className="w-6 h-6" style={{ color: goal.color }} />;
+                    })()}
                   </div>
                   <div>
                     <h3 className="font-bold">{goal.name}</h3>
