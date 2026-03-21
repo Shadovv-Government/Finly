@@ -35,7 +35,7 @@ export const CategoryBadge: React.FC<CategoryBadgeProps> = ({
     );
   }
 
-  const IconComponent = Icons[category.icon as keyof typeof Icons] as React.ElementType || Icons.HelpCircle;
+  const IconComponent = (Icons[category.icon as keyof typeof Icons] as React.ElementType) || Icons.Wallet;
 
   return (
     <div className="flex items-center gap-2">

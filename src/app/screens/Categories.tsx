@@ -33,7 +33,7 @@ export const Categories = () => {
           {categories
             .filter(c => c.type === 'expense')
             .map(category => {
-              const IconComponent = Icons[category.icon as keyof typeof Icons] as React.ElementType;
+              const IconComponent = (Icons[category.icon as keyof typeof Icons] as React.ElementType) || Icons.Wallet;
               return (
                 <div
                   key={category.id}
@@ -84,7 +84,7 @@ export const Categories = () => {
           {categories
             .filter(c => c.type === 'income')
             .map(category => {
-              const IconComponent = Icons[category.icon as keyof typeof Icons] as React.ElementType;
+              const IconComponent = (Icons[category.icon as keyof typeof Icons] as React.ElementType) || Icons.Wallet;
               return (
                 <div
                   key={category.id}
