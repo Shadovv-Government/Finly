@@ -4,6 +4,7 @@ import * as LucideIcons from 'lucide-react';
 import { toast } from 'sonner';
 import { useCategories } from '../hooks/useCategories';
 import { useTransactions } from '../hooks/useTransactions';
+import { useNotifications } from '../hooks/useNotifications';
 import { parseNaturalLanguage, findBestMatch } from '../../db/ai';
 
 function CategoryIcon({ name, className, color }: { name: string; className?: string; color?: string }) {
@@ -18,6 +19,7 @@ interface AddTransactionFormProps {
 export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose }) => {
   const { categories } = useCategories();
   const { add } = useTransactions();
+  const { notifyTransaction } = useNotifications();
   const [type, setType] = useState<'income' | 'expense'>('expense');
   const [amount, setAmount] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -96,6 +98,7 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
       return;
     }
     try {
+      const category = categories.find(c => c.id === selectedCategory);
       await add({
         amount: parseFloat(amount),
         type,
@@ -105,6 +108,10 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
         currency: 'RUB',
         rate: 1,
       });
+      
+      // Отправляем push-уведомление
+      notifyTransaction(type, parseFloat(amount), category?.name || 'Без категории');
+      
       toast.success('Транзакция добавлена');
       onClose();
     } catch (error) {

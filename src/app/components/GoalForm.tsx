@@ -3,6 +3,7 @@ import { Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { Goal } from '../../db/types';
 import { BottomSheet } from './BottomSheet';
+import { useNotifications } from '../hooks/useNotifications';
 
 interface GoalFormProps {
   isOpen: boolean;
@@ -28,6 +29,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({
   onSubmit,
   initialData,
 }) => {
+  const { notify } = useNotifications();
   const [name, setName] = useState('');
   const [targetAmount, setTargetAmount] = useState('');
   const [currentAmount, setCurrentAmount] = useState('0');
@@ -105,6 +107,10 @@ export const GoalForm: React.FC<GoalFormProps> = ({
         color: selectedColor,
         isActive,
       });
+      
+      // Отправляем push-уведомление
+      notify('Цель создана', initialData ? 'Цель обновлена' : `Цель "${name.trim()}" создана`, '/pwa-192x192.svg');
+      
       toast.success(initialData ? 'Цель обновлена' : 'Цель создана');
       onClose();
     } catch (error) {

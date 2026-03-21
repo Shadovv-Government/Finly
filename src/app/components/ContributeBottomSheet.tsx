@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { BottomSheet } from './BottomSheet';
 import { getCurrentBalance } from '../../db/analytics';
+import { useNotifications } from '../hooks/useNotifications';
 
 interface ContributeBottomSheetProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ export const ContributeBottomSheet: React.FC<ContributeBottomSheetProps> = ({
   targetAmount,
   userBalance,
 }) => {
+  const { notifyTransaction } = useNotifications();
   const [amount, setAmount] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [balance, setBalance] = useState<number>(userBalance ?? 0);
@@ -71,6 +73,10 @@ export const ContributeBottomSheet: React.FC<ContributeBottomSheetProps> = ({
     setIsSubmitting(true);
     try {
       await onSubmit(numAmount);
+      
+      // Отправляем push-уведомление о пополнении цели
+      notifyTransaction('goal', numAmount, 'Пополнение цели');
+      
       toast.success('Цель пополнена!');
       setAmount('');
       onClose();

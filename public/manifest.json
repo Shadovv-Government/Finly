@@ -32,5 +32,23 @@
       "type": "image/svg+xml",
       "purpose": "maskable"
     }
+  ],
+  "screenshots": [],
+  "categories": ["finance", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Добавить расход",
+      "short_name": "Расход",
+      "description": "Добавить новую транзакцию расхода",
+      "url": "/add?type=expense",
+      "icons": [{ "src": "/pwa-192x192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Добавить доход",
+      "short_name": "Доход",
+      "description": "Добавить новую транзакцию дохода",
+      "url": "/add?type=income",
+      "icons": [{ "src": "/pwa-192x192.svg", "sizes": "192x192" }]
+    }
   ]
 }
