@@ -70,15 +70,6 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
     }
   };
 
-  const handleNumberClick = (num: string) => {
-    if (num === '.' && amount.includes('.')) return;
-    setAmount(prev => prev + num);
-  };
-
-  const handleDelete = () => {
-    setAmount(prev => prev.slice(0, -1));
-  };
-
   const handleSave = async () => {
     if (!amount || !selectedCategory) {
       toast.error('Заполните сумму и категорию');
@@ -156,11 +147,18 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
         </div>
       </div>
 
-      {/* Amount Display */}
-      <div className="px-4 py-6 text-center">
-        <p className="text-4xl font-bold">
-          {amount || '0'} ₽
-        </p>
+      {/* Amount Input */}
+      <div className="px-4 py-6">
+        <input
+          type="tel"
+          inputMode="decimal"
+          placeholder="0"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          className="w-full text-4xl font-bold text-center bg-transparent outline-none"
+          autoFocus
+        />
+        <p className="text-center text-muted-foreground mt-2">₽</p>
       </div>
 
       {/* Category Grid */}
@@ -212,19 +210,8 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
         </div>
       </div>
 
-      {/* Number Pad */}
+      {/* Save Button */}
       <div className="px-4 py-4">
-        <div className="grid grid-cols-3 gap-2 mb-3">
-          {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', '←'].map(key => (
-            <button
-              key={key}
-              onClick={() => key === '←' ? handleDelete() : handleNumberClick(key)}
-              className="h-14 rounded-xl bg-muted hover:bg-accent font-semibold text-lg"
-            >
-              {key === '←' ? '⌫' : key}
-            </button>
-          ))}
-        </div>
         <button
           onClick={handleSave}
           className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-xl font-semibold"
