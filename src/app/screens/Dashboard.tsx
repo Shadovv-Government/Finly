@@ -319,7 +319,7 @@ export const Dashboard = () => {
 
       {/* Avatar Selection Dialog */}
       <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
-        <DialogContent>
+        <DialogContent className="rounded-2xl">
           <DialogHeader>
             <DialogTitle>Выберите аватар</DialogTitle>
           </DialogHeader>
@@ -341,7 +341,7 @@ export const Dashboard = () => {
 
       {/* Custom Period Dialog */}
       <Dialog open={isCustomPeriodOpen} onOpenChange={setIsCustomPeriodOpen}>
-        <DialogContent>
+        <DialogContent className="rounded-2xl">
           <DialogHeader>
             <DialogTitle>Выберите период</DialogTitle>
           </DialogHeader>
