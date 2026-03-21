@@ -1,4 +1,4 @@
-import { Plus, AlertCircle } from 'lucide-react';
+import { Plus, AlertCircle, Lightbulb } from 'lucide-react';
 import { CategoryBadge } from '../components/CategoryBadge';
 import { useBudgets } from '../hooks/useBudgets';
 import { useCategories } from '../hooks/useCategories';
@@ -82,8 +82,9 @@ export const Budgets = () => {
       {/* Info Card */}
       <div className="px-4 pb-4">
         <div className="bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-950/30 dark:to-indigo-950/30 rounded-2xl p-4 border border-violet-200 dark:border-violet-800">
-          <h3 className="font-bold text-violet-900 dark:text-violet-100 mb-2">
-            💡 Совет
+          <h3 className="font-bold text-violet-900 dark:text-violet-100 mb-2 flex items-center gap-2">
+            <Lightbulb className="w-5 h-5" />
+            Совет
           </h3>
           <p className="text-sm text-violet-800 dark:text-violet-200">
             Установите бюджеты для контроля расходов. Вы получите уведомление при достижении 80% лимита.

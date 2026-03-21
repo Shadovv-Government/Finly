@@ -189,7 +189,7 @@ export async function createGoalContribution(
         id: uuidv4(),
         name: 'Цели',
         type: 'expense' as const,
-        icon: '🎯',
+        icon: 'Target',
         color: '#8B5CF6',
         isSystem: false,
       };

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Target, TrendingUp, Pencil, Trash2, PiggyBank } from 'lucide-react';
+import { Plus, Target, TrendingUp, Pencil, Trash2, PiggyBank, PartyPopper } from 'lucide-react';
 import { useGoals } from '../hooks/useGoals';
 import { GoalForm } from '../components/GoalForm';
 import { ContributeBottomSheet } from '../components/ContributeBottomSheet';
@@ -141,9 +141,12 @@ export const Goals = () => {
                 {percentage >= 100 && (
                   <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-950/30 rounded-xl border border-green-200 dark:border-green-800">
                     <PiggyBank className="w-4 h-4 text-green-600" />
-                    <p className="text-sm text-green-800 dark:text-green-200 font-semibold">
-                      🎉 Цель достигнута!
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <PartyPopper className="w-4 h-4 text-green-600" />
+                      <p className="text-sm text-green-800 dark:text-green-200 font-semibold">
+                        Цель достигнута!
+                      </p>
+                    </div>
                   </div>
                 )}
 

@@ -271,14 +271,14 @@ export async function generateSuggestions(): Promise<AISuggestion[]> {
     if (budget.isOverBudget) {
       suggestions.push({
         type: 'overspending',
-        message: `⚠️ Перерасход по категории "${budget.categoryName}": ${budget.spent} ₽ из ${budget.limit} ₽`,
+        message: `Перерасход по категории "${budget.categoryName}": ${budget.spent} ₽ из ${budget.limit} ₽`,
         priority: 1,
         data: budget,
       });
     } else if (budget.percent > 80) {
       suggestions.push({
         type: 'overspending',
-        message: `❗ Скоро перерасход по "${budget.categoryName}": ${Math.round(budget.percent)}% бюджета`,
+        message: `Скоро перерасход по "${budget.categoryName}": ${Math.round(budget.percent)}% бюджета`,
         priority: 2,
         data: budget,
       });
@@ -290,7 +290,7 @@ export async function generateSuggestions(): Promise<AISuggestion[]> {
     if (goal.isActive && goal.monthlyNeeded && goal.monthlyNeeded > 0) {
       suggestions.push({
         type: 'goal',
-        message: `🎯 Для цели "${goal.name}" нужно откладывать ${Math.round(goal.monthlyNeeded)} ₽/мес`,
+        message: `Для цели "${goal.name}" нужно откладывать ${Math.round(goal.monthlyNeeded)} ₽/мес`,
         priority: 3,
         data: goal,
       });
