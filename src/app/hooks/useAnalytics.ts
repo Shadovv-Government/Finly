@@ -44,7 +44,14 @@ export function getPeriodDays(period: PeriodType): number {
   }
 }
 
-export function useAnalytics(period: PeriodType = 'month') {
+export interface UseAnalyticsOptions {
+  period?: PeriodType;
+  startDate?: number;
+  endDate?: number;
+}
+
+export function useAnalytics(options: UseAnalyticsOptions = {}) {
+  const { period = 'month', startDate, endDate } = options;
   const [balance, setBalance] = useState<BalanceSummary | null>(null);
   const [expensesByCategory, setExpensesByCategory] = useState<CategoryAnalytics[]>([]);
   const [incomeByCategory, setIncomeByCategory] = useState<CategoryAnalytics[]>([]);
@@ -58,7 +65,9 @@ export function useAnalytics(period: PeriodType = 'month') {
   const loadAnalytics = async () => {
     try {
       setLoading(true);
-      const { start, end } = getPeriodRange(period);
+      const range = startDate && endDate 
+        ? { start: startDate, end: endDate }
+        : getPeriodRange(period);
 
       const [
         balanceData,
@@ -68,9 +77,9 @@ export function useAnalytics(period: PeriodType = 'month') {
         currentBalanceData,
         balanceWithSavingsData,
       ] = await Promise.all([
-        getBalanceByPeriod(start, end),
-        getExpensesByCategory(start, end),
-        getIncomeByCategory(start, end),
+        getBalanceByPeriod(range.start, range.end),
+        getExpensesByCategory(range.start, range.end),
+        getIncomeByCategory(range.start, range.end),
         getSpendingTrend(period === 'day' ? 7 : 30),
         getCurrentBalance(),
         getBalanceWithSavings(),
@@ -93,7 +102,7 @@ export function useAnalytics(period: PeriodType = 'month') {
 
   useEffect(() => {
     loadAnalytics();
-  }, [period]);
+  }, [period, startDate, endDate]);
 
   return {
     balance,

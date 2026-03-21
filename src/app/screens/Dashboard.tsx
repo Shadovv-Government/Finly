@@ -1,4 +1,4 @@
-import { Bell, Camera, Plus } from 'lucide-react';
+import { Bell, Camera, Plus, Calendar } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
@@ -20,8 +20,15 @@ import { AddTransactionForm } from '../components/AddTransactionForm';
 
 export const Dashboard = () => {
   const [period, setPeriod] = useState<PeriodType>('month');
-  const periodRange = getPeriodRange(period);
-  const { currentBalance, expensesByCategory: analyticsExpenses, savingsAmount, freeBalance } = useAnalytics(period);
+  const [customStartDate, setCustomStartDate] = useState<Date>(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
+  const [customEndDate, setCustomEndDate] = useState<Date>(new Date());
+  const [isCustomPeriodOpen, setIsCustomPeriodOpen] = useState(false);
+  
+  const periodRange = period === 'custom' 
+    ? { start: customStartDate.getTime(), end: customEndDate.getTime() }
+    : getPeriodRange(period);
+    
+  const { currentBalance, expensesByCategory: analyticsExpenses, savingsAmount, freeBalance } = useAnalytics({ period, startDate: periodRange.start, endDate: periodRange.end });
   const { transactions } = useTransactions({ period, startDate: periodRange.start, endDate: periodRange.end });
   const { categories } = useCategories();
   const { user, updateProfile } = useAuth();
@@ -61,6 +68,19 @@ export const Dashboard = () => {
   const handleAvatarSelect = async (color: string) => {
     await updateProfile({ avatarColor: color });
     setIsAvatarDialogOpen(false);
+  };
+
+  const handlePeriodChange = (value: PeriodType) => {
+    if (value === 'custom') {
+      setIsCustomPeriodOpen(true);
+    } else {
+      setPeriod(value);
+    }
+  };
+
+  const handleCustomPeriodApply = () => {
+    setPeriod('custom');
+    setIsCustomPeriodOpen(false);
   };
 
   return (
@@ -127,7 +147,7 @@ export const Dashboard = () => {
           ].map(p => (
             <button
               key={p.value}
-              onClick={() => setPeriod(p.value)}
+              onClick={() => handlePeriodChange(p.value)}
               className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all ${
                 period === p.value
                   ? 'bg-white text-violet-700'
@@ -315,6 +335,75 @@ export const Dashboard = () => {
                 {getInitial(user?.name || 'U')}
               </button>
             ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Custom Period Dialog */}
+      <Dialog open={isCustomPeriodOpen} onOpenChange={setIsCustomPeriodOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Выберите период</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Дата начала</label>
+              <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
+                <Calendar className="w-5 h-5 text-muted-foreground" />
+                <input
+                  type="date"
+                  value={customStartDate.toISOString().split('T')[0]}
+                  onChange={(e) => setCustomStartDate(new Date(e.target.value))}
+                  className="flex-1 bg-transparent outline-none"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Дата окончания</label>
+              <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
+                <Calendar className="w-5 h-5 text-muted-foreground" />
+                <input
+                  type="date"
+                  value={customEndDate.toISOString().split('T')[0]}
+                  onChange={(e) => setCustomEndDate(new Date(e.target.value))}
+                  className="flex-1 bg-transparent outline-none"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 pt-4">
+              <button
+                onClick={() => {
+                  setCustomStartDate(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
+                  setCustomEndDate(new Date());
+                }}
+                className="flex-1 py-2 bg-muted rounded-xl font-medium"
+              >
+                Неделя
+              </button>
+              <button
+                onClick={() => {
+                  setCustomStartDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
+                  setCustomEndDate(new Date());
+                }}
+                className="flex-1 py-2 bg-muted rounded-xl font-medium"
+              >
+                Месяц
+              </button>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setIsCustomPeriodOpen(false)}
+              className="flex-1 py-3 bg-muted rounded-xl font-medium"
+            >
+              Отмена
+            </button>
+            <button
+              onClick={handleCustomPeriodApply}
+              className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-xl font-medium"
+            >
+              Применить
+            </button>
           </div>
         </DialogContent>
       </Dialog>
