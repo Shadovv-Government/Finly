@@ -3,7 +3,6 @@ import { Calendar } from 'lucide-react';
 import { Goal } from '../../db/types';
 import { BottomSheet } from './BottomSheet';
 import { useNotifications } from '../hooks/useNotifications';
-import { getIconForType } from '../utils/notificationIcons';
 
 interface GoalFormProps {
   isOpen: boolean;
@@ -106,7 +105,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({
       });
 
       // Отправляем push-уведомление
-      notify('Цель создана', initialData ? 'Цель обновлена' : `Цель "${name.trim()}" создана`, getIconForType('success'));
+      notify('✅ Цель создана', initialData ? 'Цель обновлена' : `Цель "${name.trim()}" создана`);
 
       onClose();
     } catch (error) {
