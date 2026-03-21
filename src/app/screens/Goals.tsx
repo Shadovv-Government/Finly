@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Target, TrendingUp, Pencil, Trash2, PiggyBank, PartyPopper } from 'lucide-react';
+import { Plus, Target, TrendingUp, Pencil, Trash2, PiggyBank, PartyPopper, Trophy } from 'lucide-react';
 import { useGoals } from '../hooks/useGoals';
 import { GoalForm } from '../components/GoalForm';
 import { ContributeBottomSheet } from '../components/ContributeBottomSheet';
@@ -208,8 +208,9 @@ export const Goals = () => {
       {goals.length > 0 && (
         <div className="px-4 pb-4">
           <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 rounded-2xl p-4 border border-green-200 dark:border-green-800">
-            <h3 className="font-bold text-green-900 dark:text-green-100 mb-2">
-              📊 Ваш прогресс
+            <h3 className="font-bold text-green-900 dark:text-green-100 mb-2 flex items-center gap-2">
+              <Trophy className="w-5 h-5" />
+              Ваш прогресс
             </h3>
             <div className="space-y-1">
               <p className="text-sm text-green-800 dark:text-green-200">
