@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Calendar, MessageSquare, Mic, Sparkles } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
-import { toast } from 'sonner';
 import { useCategories } from '../hooks/useCategories';
 import { useTransactions } from '../hooks/useTransactions';
 import { useNotifications } from '../hooks/useNotifications';
@@ -52,7 +51,7 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
   // Обработка быстрого ввода
   const handleQuickInputProcess = async () => {
     if (!quickInput.trim()) return;
-    
+
     setIsProcessingQuickInput(true);
     try {
       const parsed = parseNaturalLanguage(quickInput);
@@ -70,15 +69,15 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
           const match = await findBestMatch(parsed.comment);
           if (match && match.category.type === parsed.type) {
             setSelectedCategory(match.category.id);
-            toast.success(`Категория определена: ${match.category.name}`);
+            // toast.success(`Категория определена: ${match.category.name}`);
           }
         }
-        toast.success('Данные распознаны');
+        // toast.success('Данные распознаны');
       } else {
-        toast.error('Не удалось распознать. Укажите сумму, например: "кофе 450 рублей"');
+        // toast.error('Не удалось распознать. Укажите сумму, например: "кофе 450 рублей"');
       }
     } catch (error) {
-      toast.error('Ошибка при обработке');
+      // toast.error('Ошибка при обработке');
     } finally {
       setIsProcessingQuickInput(false);
     }
@@ -94,7 +93,7 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
 
   const handleSave = async () => {
     if (!amount || !selectedCategory) {
-      toast.error('Заполните сумму и категорию');
+      // toast.error('Заполните сумму и категорию');
       return;
     }
     try {
@@ -112,10 +111,10 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
       // Отправляем push-уведомление
       notifyTransaction(type, parseFloat(amount), category?.name || 'Без категории');
       
-      toast.success('Транзакция добавлена');
+      // toast.success('Транзакция добавлена');
       onClose();
     } catch (error) {
-      toast.error('Ошибка при сохранении транзакции');
+      // toast.error('Ошибка при сохранении транзакции');
     }
   };
 

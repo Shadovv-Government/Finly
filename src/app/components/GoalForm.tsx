@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Calendar } from 'lucide-react';
-import { toast } from 'sonner';
 import { Goal } from '../../db/types';
 import { BottomSheet } from './BottomSheet';
 import { useNotifications } from '../hooks/useNotifications';
@@ -81,19 +80,16 @@ export const GoalForm: React.FC<GoalFormProps> = ({
 
   const handleSubmit = async () => {
     if (!name.trim()) {
-      toast.error('Введите название цели');
       return;
     }
 
     const target = parseFloat(targetAmount);
     if (!targetAmount || target <= 0) {
-      toast.error('Введите целевую сумму больше 0');
       return;
     }
 
     const current = parseFloat(currentAmount) || 0;
     if (current > target) {
-      toast.error('Текущая сумма не может быть больше целевой');
       return;
     }
 
@@ -108,14 +104,13 @@ export const GoalForm: React.FC<GoalFormProps> = ({
         color: selectedColor,
         isActive,
       });
-      
+
       // Отправляем push-уведомление
       notify('Цель создана', initialData ? 'Цель обновлена' : `Цель "${name.trim()}" создана`, getIconForType('success'));
-      
-      toast.success(initialData ? 'Цель обновлена' : 'Цель создана');
+
       onClose();
     } catch (error) {
-      toast.error('Ошибка при сохранении цели');
+      // toast.error('Ошибка при сохранении цели');
     } finally {
       setIsSubmitting(false);
     }

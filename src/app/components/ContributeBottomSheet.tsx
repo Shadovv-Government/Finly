@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { toast } from 'sonner';
 import { BottomSheet } from './BottomSheet';
 import { getCurrentBalance } from '../../db/analytics';
 import { useNotifications } from '../hooks/useNotifications';
@@ -57,31 +56,28 @@ export const ContributeBottomSheet: React.FC<ContributeBottomSheetProps> = ({
   const handleSubmit = async () => {
     const numAmount = parseFloat(amount);
     if (!amount || numAmount <= 0) {
-      toast.error('Введите сумму больше 0');
       return;
     }
 
     if (numAmount > effectiveBalance) {
-      toast.error(`Недостаточно средств. Доступно: ${effectiveBalance.toLocaleString('ru-RU')} ₽`);
       return;
     }
 
     if (numAmount > remaining) {
-      toast.warning(`Сумма больше необходимой. Осталось: ${remaining.toLocaleString('ru-RU')} ₽`);
+      // Превышение суммы можно обработать silently или показать push
     }
 
     setIsSubmitting(true);
     try {
       await onSubmit(numAmount);
-      
+
       // Отправляем push-уведомление о пополнении цели
       notifyTransaction('goal', numAmount, 'Пополнение цели');
-      
-      toast.success('Цель пополнена!');
+
       setAmount('');
       onClose();
     } catch (error) {
-      toast.error('Ошибка при пополнении цели');
+      // toast.error('Ошибка при пополнении цели');
     } finally {
       setIsSubmitting(false);
     }

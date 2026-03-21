@@ -5,7 +5,6 @@ import { useGoals } from '../hooks/useGoals';
 import { GoalForm } from '../components/GoalForm';
 import { ContributeBottomSheet } from '../components/ContributeBottomSheet';
 import { Goal } from '../../db/types';
-import { toast } from 'sonner';
 import { createGoalContribution } from '../../db/operations';
 import { getCurrentBalance } from '../../db/analytics';
 
@@ -45,7 +44,6 @@ export const Goals = () => {
   const handleDeleteGoal = (goal: Goal) => {
     if (window.confirm(`Вы уверены, что хотите удалить цель "${goal.name}"?`)) {
       removeGoal(goal.id!);
-      toast.success('Цель удалена');
     }
   };
 
