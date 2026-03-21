@@ -156,7 +156,7 @@ export const Goals = () => {
                   <button
                     onClick={() => openContribute(goal)}
                     disabled={!goal.isActive}
-                    className="flex-1 py-2 bg-primary text-primary-foreground rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-[2] py-2 bg-primary text-primary-foreground rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Пополнить
                   </button>
@@ -168,9 +168,10 @@ export const Goals = () => {
                   </button>
                   <button
                     onClick={() => handleDeleteGoal(goal)}
-                    className="py-2 bg-red-100 dark:bg-red-950/30 text-red-600 dark:text-red-400 rounded-xl font-medium flex items-center justify-center"
+                    className="flex-[1.5] py-2 bg-red-100 dark:bg-red-950/30 text-red-600 dark:text-red-400 rounded-xl font-medium flex items-center justify-center gap-2"
                   >
                     <Trash2 className="w-4 h-4" />
+                    Удалить
                   </button>
                 </div>
               </div>
