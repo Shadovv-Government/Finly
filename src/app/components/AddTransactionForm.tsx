@@ -24,6 +24,7 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
   const [comment, setComment] = useState('');
   const [quickInput, setQuickInput] = useState('');
   const [isProcessingQuickInput, setIsProcessingQuickInput] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   const filteredCategories = categories.filter(c => c.type === type);
 
@@ -99,7 +100,7 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
         amount: parseFloat(amount),
         type,
         categoryId: selectedCategory,
-        date: Date.now(),
+        date: selectedDate.getTime(),
         comment: comment || undefined,
         currency: 'RUB',
         rate: 1,
@@ -215,7 +216,12 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
       <div className="px-4 py-4 space-y-3">
         <div className="flex items-center gap-3 p-4 bg-card rounded-xl border border-border">
           <Calendar className="w-5 h-5 text-muted-foreground" />
-          <span>Сегодня, 20 марта</span>
+          <input
+            type="date"
+            value={selectedDate.toISOString().split('T')[0]}
+            onChange={(e) => setSelectedDate(new Date(e.target.value))}
+            className="flex-1 bg-transparent outline-none"
+          />
         </div>
         <div className="flex items-center gap-3 p-4 bg-card rounded-xl border border-border">
           <MessageSquare className="w-5 h-5 text-muted-foreground" />
