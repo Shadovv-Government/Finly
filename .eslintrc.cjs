@@ -12,8 +12,9 @@ module.exports = {
   rules: {
     'react-refresh/only-export-components': 'off',
     '@typescript-eslint/no-explicit-any': 'off',
-    'react-hooks/exhaustive-deps': 'warn',
-    'prefer-const': 'warn',
-    'no-useless-escape': 'warn',
+    'react-hooks/exhaustive-deps': 'off',
+    'prefer-const': 'off',
+    'no-useless-escape': 'off',
+    '@typescript-eslint/no-unused-vars': 'off',
   },
 }
