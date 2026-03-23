@@ -2,6 +2,7 @@
 // Аналитические запросы для графиков и дашбордов
 
 import { db } from './db';
+import { MS_PER_DAY, MS_PER_MONTH } from '../app/constants';
 
 export interface CategoryAnalytics {
   categoryId: string;
@@ -214,8 +215,7 @@ export async function getIncomeByCategory(start: number, end: number): Promise<C
 
 export async function getSpendingTrend(days: number): Promise<SpendingTrendPoint[]> {
   const now = Date.now();
-  const dayMs = 24 * 60 * 60 * 1000;
-  const start = now - (days * dayMs);
+  const start = now - (days * MS_PER_DAY);
 
   const transactions = await db.transactions
     .where('date')
@@ -224,10 +224,10 @@ export async function getSpendingTrend(days: number): Promise<SpendingTrendPoint
     .toArray();
 
   const byDay = new Map<number, number>();
-  
+
   // Initialize all days
   for (let i = 0; i < days; i++) {
-    const dayStart = now - (i * dayMs);
+    const dayStart = now - (i * MS_PER_DAY);
     const dayKey = new Date(dayStart).setHours(0, 0, 0, 0);
     if (!byDay.has(dayKey)) {
       byDay.set(dayKey, 0);
@@ -360,11 +360,11 @@ export async function getGoalsProgress(): Promise<GoalProgress[]> {
       : 0;
     
     const remaining = goal.targetAmount - goal.currentAmount;
-    
+
     let monthlyNeeded: number | undefined;
     if (goal.deadline && goal.isActive) {
       const now = Date.now();
-      const monthsLeft = Math.max(1, Math.ceil((goal.deadline - now) / (30 * 24 * 60 * 60 * 1000)));
+      const monthsLeft = Math.max(1, Math.ceil((goal.deadline - now) / MS_PER_MONTH));
       monthlyNeeded = remaining / monthsLeft;
     }
 

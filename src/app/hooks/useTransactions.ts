@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Transaction } from '../../db/types';
 import { getAllTransactions, addTransaction, updateTransaction, deleteTransaction, getTransactionsByPeriod } from '../../db/operations';
+import { AppError, DatabaseError, logError, formatErrorForUser } from '../utils/errorHandler';
 
 export interface UseTransactionsOptions {
   period?: 'day' | 'week' | 'month' | 'custom';
@@ -14,7 +15,7 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
   const [error, setError] = useState<string | null>(null);
   const { period = 'month', startDate, endDate } = options;
 
-  const loadTransactions = async () => {
+  const loadTransactions = useCallback(async () => {
     try {
       setLoading(true);
       let data: Transaction[];
@@ -28,31 +29,51 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
       setTransactions(data);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load transactions');
+      const appError = err instanceof AppError ? err : new DatabaseError('Не удалось загрузить транзакции', err as Error);
+      logError(appError, 'useTransactions.loadTransactions');
+      setError(formatErrorForUser(appError));
     } finally {
       setLoading(false);
     }
-  };
+  }, [startDate, endDate]);
 
   useEffect(() => {
     loadTransactions();
-  }, [period, startDate, endDate]);
+  }, [period, startDate, endDate, loadTransactions]);
 
-  const add = async (transaction: Omit<Transaction, 'id' | 'createdAt'>) => {
-    const id = await addTransaction(transaction);
-    await loadTransactions();
-    return id;
-  };
+  const add = useCallback(async (transaction: Omit<Transaction, 'id' | 'createdAt'>) => {
+    try {
+      const id = await addTransaction(transaction);
+      await loadTransactions();
+      return id;
+    } catch (err) {
+      const appError = err instanceof AppError ? err : new DatabaseError('Не удалось добавить транзакцию', err as Error);
+      logError(appError, 'useTransactions.add');
+      throw appError;
+    }
+  }, [loadTransactions]);
 
-  const update = async (id: number, updates: Partial<Transaction>) => {
-    await updateTransaction(id, updates);
-    await loadTransactions();
-  };
+  const update = useCallback(async (id: number, updates: Partial<Transaction>) => {
+    try {
+      await updateTransaction(id, updates);
+      await loadTransactions();
+    } catch (err) {
+      const appError = err instanceof AppError ? err : new DatabaseError('Не удалось обновить транзакцию', err as Error);
+      logError(appError, 'useTransactions.update');
+      throw appError;
+    }
+  }, [loadTransactions]);
 
-  const remove = async (id: number) => {
-    await deleteTransaction(id);
-    await loadTransactions();
-  };
+  const remove = useCallback(async (id: number) => {
+    try {
+      await deleteTransaction(id);
+      await loadTransactions();
+    } catch (err) {
+      const appError = err instanceof AppError ? err : new DatabaseError('Не удалось удалить транзакцию', err as Error);
+      logError(appError, 'useTransactions.remove');
+      throw appError;
+    }
+  }, [loadTransactions]);
 
   return { transactions, loading, error, add, update, remove, refresh: loadTransactions };
 }

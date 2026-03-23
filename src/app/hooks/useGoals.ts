@@ -7,6 +7,8 @@ import {
   deleteGoal,
   contributeToGoal,
 } from '../../db/operations';
+import { getCurrentBalance } from '../../db/analytics';
+import { AppError, DatabaseError, logError, formatErrorForUser } from '../utils/errorHandler';
 
 export function useGoals() {
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -20,7 +22,9 @@ export function useGoals() {
       setGoals(data);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load goals');
+      const appError = err instanceof AppError ? err : new DatabaseError('Не удалось загрузить цели', err as Error);
+      logError(appError, 'useGoals.loadGoals');
+      setError(formatErrorForUser(appError));
     } finally {
       setLoading(false);
     }
@@ -31,25 +35,53 @@ export function useGoals() {
   }, [loadGoals]);
 
   const createGoal = useCallback(async (goal: Omit<Goal, 'id'>) => {
-    const id = await addGoal(goal);
-    await loadGoals();
-    return id;
+    try {
+      const id = await addGoal(goal);
+      await loadGoals();
+      return id;
+    } catch (err) {
+      const appError = err instanceof AppError ? err : new DatabaseError('Не удалось создать цель', err as Error);
+      logError(appError, 'useGoals.createGoal');
+      throw appError;
+    }
   }, [loadGoals]);
 
   const editGoal = useCallback(async (id: number, updates: Partial<Goal>) => {
-    await updateGoal(id, updates);
-    await loadGoals();
+    try {
+      await updateGoal(id, updates);
+      await loadGoals();
+    } catch (err) {
+      const appError = err instanceof AppError ? err : new DatabaseError('Не удалось обновить цель', err as Error);
+      logError(appError, 'useGoals.editGoal');
+      throw appError;
+    }
   }, [loadGoals]);
 
   const removeGoal = useCallback(async (id: number) => {
-    await deleteGoal(id);
-    await loadGoals();
+    try {
+      await deleteGoal(id);
+      await loadGoals();
+    } catch (err) {
+      const appError = err instanceof AppError ? err : new DatabaseError('Не удалось удалить цель', err as Error);
+      logError(appError, 'useGoals.removeGoal');
+      throw appError;
+    }
   }, [loadGoals]);
 
   const addContribution = useCallback(async (id: number, amount: number) => {
-    await contributeToGoal(id, amount);
-    await loadGoals();
+    try {
+      await contributeToGoal(id, amount);
+      await loadGoals();
+    } catch (err) {
+      const appError = err instanceof AppError ? err : new DatabaseError('Не удалось пополнить цель', err as Error);
+      logError(appError, 'useGoals.addContribution');
+      throw appError;
+    }
   }, [loadGoals]);
+
+  const fetchBalance = useCallback(async () => {
+    return getCurrentBalance();
+  }, []);
 
   return {
     goals,
@@ -61,5 +93,6 @@ export function useGoals() {
     editGoal,
     removeGoal,
     addContribution,
+    fetchBalance,
   };
 }

@@ -34,3 +34,15 @@ Thumbs.db
 
 # Tests
 coverage
+
+# AI assistant files
+.qwen/
+.claude/
+CLAUDE.md
+QWEN.md
+
+# GitHub Actions workflows (если генерируются автоматически)
+.github/workflows/qwen-*.yml
+
+# Credentials
+gha-creds-*.json

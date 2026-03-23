@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { useCategories } from '../hooks/useCategories';
 import { useTransactions } from '../hooks/useTransactions';
 import { parseNaturalLanguage, findBestMatch } from '../../db/ai';
+import { formatAmountInput, parseAmountInput } from '../utils/formatCurrency';
 
 function CategoryIcon({ name, className, color }: { name: string; className?: string; color?: string }) {
   const IconComponent = (LucideIcons as any)[name] || LucideIcons.Wallet;
@@ -28,20 +29,9 @@ export const AddTransaction = () => {
     c.type === type
   );
 
-  // Format amount with thousand separators
-  const formatAmount = (value: string) => {
-    if (!value) return '';
-    const parts = value.split('.');
-    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-    return parts.join('.');
-  };
-
-  // Remove formatting for storage
-  const parseAmount = (value: string) => value.replace(/\s/g, '');
-
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    const parsed = parseAmount(value);
+    const parsed = parseAmountInput(value);
     if (/^\d*\.?\d*$/.test(parsed)) {
       setAmount(parsed);
     }
@@ -185,7 +175,7 @@ export const AddTransaction = () => {
             type="tel"
             inputMode="decimal"
             placeholder="0"
-            value={formatAmount(amount)}
+            value={formatAmountInput(amount)}
             onChange={handleAmountChange}
             className="w-full text-4xl font-bold text-center bg-transparent outline-none"
             autoFocus

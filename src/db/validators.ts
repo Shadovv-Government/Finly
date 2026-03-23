@@ -12,6 +12,18 @@ import {
   PeriodType,
   RecurringInterval,
 } from './types';
+import {
+  MAX_AMOUNT,
+  MIN_AMOUNT,
+  MAX_COMMENT_LENGTH,
+  MAX_NAME_LENGTH,
+  MAX_FUTURE_DATE_OFFSET,
+  MAX_PAST_DATE_OFFSET,
+  MIN_PATTERN_LENGTH,
+  MAX_PATTERN_LENGTH,
+  MIN_AI_CONFIDENCE,
+  MAX_AI_CONFIDENCE,
+} from '../app/constants';
 
 export interface ValidationResult {
   isValid: boolean;
@@ -22,10 +34,6 @@ export interface ValidationResult {
 const VALID_TRANSACTION_TYPES: TransactionType[] = ['income', 'expense'];
 const VALID_PERIOD_TYPES: PeriodType[] = ['week', 'month'];
 const VALID_INTERVALS: RecurringInterval[] = ['daily', 'weekly', 'monthly', 'yearly'];
-const MAX_AMOUNT = 1_000_000_000; // 1 млрд
-const MIN_AMOUNT = 0.01;
-const MAX_COMMENT_LENGTH = 500;
-const MAX_NAME_LENGTH = 100;
 
 // ==================== Transaction Validation ====================
 
@@ -75,9 +83,9 @@ export function validateTransaction(
       errors.push('Date is required');
     } else if (typeof data.date !== 'number') {
       errors.push('Date must be a timestamp (number)');
-    } else if (data.date > Date.now() + 86400000) {
+    } else if (data.date > Date.now() + MAX_FUTURE_DATE_OFFSET) {
       warnings.push('Date is in the future');
-    } else if (data.date < Date.now() - 315360000000) {
+    } else if (data.date < Date.now() - MAX_PAST_DATE_OFFSET) {
       // 10 years ago
       warnings.push('Date is more than 10 years ago');
     }
@@ -408,9 +416,9 @@ export function validateAIPattern(
       errors.push('Pattern is required');
     } else if (typeof data.pattern !== 'string') {
       errors.push('Pattern must be a string');
-    } else if (data.pattern.length < 2) {
-      errors.push('Pattern must be at least 2 characters');
-    } else if (data.pattern.length > 50) {
+    } else if (data.pattern.length < MIN_PATTERN_LENGTH) {
+      errors.push(`Pattern must be at least ${MIN_PATTERN_LENGTH} characters`);
+    } else if (data.pattern.length > MAX_PATTERN_LENGTH) {
       warnings.push('Pattern seems too long');
     }
   }
@@ -428,8 +436,8 @@ export function validateAIPattern(
   if (data.confidence !== undefined) {
     if (typeof data.confidence !== 'number') {
       errors.push('Confidence must be a number');
-    } else if (data.confidence < 0 || data.confidence > 1) {
-      errors.push('Confidence must be between 0 and 1');
+    } else if (data.confidence < MIN_AI_CONFIDENCE || data.confidence > MAX_AI_CONFIDENCE) {
+      errors.push(`Confidence must be between ${MIN_AI_CONFIDENCE} and ${MAX_AI_CONFIDENCE}`);
     }
   }
 

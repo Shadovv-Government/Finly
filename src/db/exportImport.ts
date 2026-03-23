@@ -11,6 +11,19 @@ import {
   AIPattern,
 } from './types';
 
+// Строго типизированные настройки
+export interface AppSettings {
+  theme: 'light' | 'dark' | 'system';
+  baseCurrency: string;
+  onboardingComplete: boolean;
+}
+
+// Тип для ключа настройки
+export type SettingKey = keyof AppSettings;
+
+// Тип для значения настройки
+export type SettingValue = AppSettings[SettingKey];
+
 export interface ExportData {
   version: string;
   exportedAt: number;
@@ -19,7 +32,7 @@ export interface ExportData {
   budgets: Budget[];
   goals: Goal[];
   recurringTemplates: RecurringTemplate[];
-  settings: Array<{ key: string; value: any }>;
+  settings: Array<{ key: string; value: SettingValue | unknown }>;
   aiPatterns: AIPattern[];
 }
 

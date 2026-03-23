@@ -1,5 +1,6 @@
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { ChevronDown } from 'lucide-react';
+import { useMemo } from 'react';
 import { useAnalytics } from '../hooks/useAnalytics';
 
 export const Analytics = () => {
@@ -9,20 +10,26 @@ export const Analytics = () => {
   const expense = balance?.expenses || 0;
   const balanceAmount = balance?.balance || 0;
 
-  // Bar chart data from spending trend
-  const weeklyData = spendingTrend.slice(0, 4).map((point, i) => ({
-    week: `Нед ${i + 1}`,
-    income: Math.round(point.amount * 0.8),
-    expense: point.amount,
-  }));
+  // Bar chart data from spending trend (мемоизация)
+  const weeklyData = useMemo(() => 
+    spendingTrend.slice(0, 4).map((point, i) => ({
+      week: `Нед ${i + 1}`,
+      income: Math.round(point.amount * 0.8),
+      expense: point.amount,
+    })),
+    [spendingTrend]
+  );
 
-  // Pie chart data
-  const pieData = expensesByCategory.map(c => ({
-    name: c.categoryName,
-    value: c.amount,
-    color: c.color,
-    percentage: expense > 0 ? (c.amount / expense) * 100 : 0,
-  })).filter(c => c.value > 0).sort((a, b) => b.value - a.value);
+  // Pie chart data (мемоизация)
+  const pieData = useMemo(() => 
+    expensesByCategory.map(c => ({
+      name: c.categoryName,
+      value: c.amount,
+      color: c.color,
+      percentage: expense > 0 ? (c.amount / expense) * 100 : 0,
+    })).filter(c => c.value > 0).sort((a, b) => b.value - a.value),
+    [expensesByCategory, expense]
+  );
 
   return (
     <div className="pb-20 bg-background min-h-screen">

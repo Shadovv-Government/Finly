@@ -10,6 +10,7 @@ import {
   SpendingTrendPoint,
   BalanceSummary,
 } from '../../db/analytics';
+import { MS_PER_DAY } from '../constants';
 
 export type PeriodType = 'day' | 'week' | 'month' | 'custom';
 
@@ -20,18 +21,17 @@ export interface PeriodRange {
 
 export function getPeriodRange(period: PeriodType): PeriodRange {
   const now = Date.now();
-  const dayMs = 24 * 60 * 60 * 1000;
 
   switch (period) {
     case 'day':
-      return { start: now - dayMs, end: now };
+      return { start: now - MS_PER_DAY, end: now };
     case 'week':
-      return { start: now - (7 * dayMs), end: now };
+      return { start: now - (7 * MS_PER_DAY), end: now };
     case 'month':
-      return { start: now - (30 * dayMs), end: now };
+      return { start: now - (30 * MS_PER_DAY), end: now };
     case 'custom':
     default:
-      return { start: now - (30 * dayMs), end: now };
+      return { start: now - (30 * MS_PER_DAY), end: now };
   }
 }
 

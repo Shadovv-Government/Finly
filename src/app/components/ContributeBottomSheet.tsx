@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { BottomSheet } from './BottomSheet';
-import { getCurrentBalance } from '../../db/analytics';
 import { useNotifications } from '../hooks/useNotifications';
+import { formatAmountInput, parseAmountInput } from '../utils/formatCurrency';
 
 interface ContributeBottomSheetProps {
   isOpen: boolean;
@@ -23,29 +23,12 @@ export const ContributeBottomSheet: React.FC<ContributeBottomSheetProps> = ({
   const { notifyTransaction } = useNotifications();
   const [amount, setAmount] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [balance, setBalance] = useState<number>(userBalance ?? 0);
 
-  // Загружаем баланс при открытии
-  useEffect(() => {
-    if (isOpen) {
-      getCurrentBalance().then(setBalance);
-    }
-  }, [isOpen]);
-
-  const effectiveBalance = userBalance ?? balance;
-
-  const formatAmount = (value: string) => {
-    if (!value) return '';
-    const parts = value.split('.');
-    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-    return parts.join('.');
-  };
-
-  const parseAmount = (value: string) => value.replace(/\s/g, '');
+  const effectiveBalance = userBalance ?? 0;
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    const parsed = parseAmount(value);
+    const parsed = parseAmountInput(value);
     if (/^\d*\.?\d*$/.test(parsed)) {
       setAmount(parsed);
     }
@@ -113,7 +96,7 @@ export const ContributeBottomSheet: React.FC<ContributeBottomSheetProps> = ({
             type="tel"
             inputMode="decimal"
             placeholder="0"
-            value={formatAmount(amount)}
+            value={formatAmountInput(amount)}
             onChange={handleAmountChange}
             className="w-full text-4xl font-bold text-center bg-transparent outline-none"
             autoFocus

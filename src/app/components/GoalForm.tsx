@@ -3,6 +3,7 @@ import { Calendar } from 'lucide-react';
 import { Goal } from '../../db/types';
 import { BottomSheet } from './BottomSheet';
 import { useNotifications } from '../hooks/useNotifications';
+import { formatAmountInput, parseAmountInput } from '../utils/formatCurrency';
 
 interface GoalFormProps {
   isOpen: boolean;
@@ -57,21 +58,12 @@ export const GoalForm: React.FC<GoalFormProps> = ({
     }
   }, [initialData, isOpen]);
 
-  const formatAmount = (value: string) => {
-    if (!value) return '';
-    const parts = value.split('.');
-    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-    return parts.join('.');
-  };
-
-  const parseAmount = (value: string) => value.replace(/\s/g, '');
-
   const handleAmountChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     setter: React.Dispatch<React.SetStateAction<string>>
   ) => {
     const value = e.target.value;
-    const parsed = parseAmount(value);
+    const parsed = parseAmountInput(value);
     if (/^\d*\.?\d*$/.test(parsed)) {
       setter(parsed);
     }
@@ -141,7 +133,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({
             type="tel"
             inputMode="decimal"
             placeholder="0"
-            value={formatAmount(targetAmount)}
+            value={formatAmountInput(targetAmount)}
             onChange={(e) => handleAmountChange(e, setTargetAmount)}
             className="w-full text-3xl font-bold text-center bg-transparent outline-none"
           />
@@ -155,7 +147,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({
             type="tel"
             inputMode="decimal"
             placeholder="0"
-            value={formatAmount(currentAmount)}
+            value={formatAmountInput(currentAmount)}
             onChange={(e) => handleAmountChange(e, setCurrentAmount)}
             className="w-full px-4 py-3 bg-muted rounded-xl outline-none focus:ring-2 focus:ring-violet-600"
           />

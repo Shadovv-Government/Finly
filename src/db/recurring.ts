@@ -4,6 +4,7 @@
 import { db } from './db';
 import { RecurringTemplate, RecurringInterval } from './types';
 import { addTransaction } from './operations';
+import { MS_PER_DAY } from '../app/constants';
 
 export interface DueTemplate {
   template: RecurringTemplate;
@@ -43,7 +44,7 @@ export function getNextDate(currentDate: number, interval: RecurringInterval): n
 export function getDaysUntilDue(nextDate: number): number {
   const now = Date.now();
   const diff = nextDate - now;
-  return Math.ceil(diff / (24 * 60 * 60 * 1000));
+  return Math.ceil(diff / MS_PER_DAY);
 }
 
 // ==================== Due Templates ====================
@@ -58,7 +59,7 @@ export async function getDueTemplates(): Promise<RecurringTemplate[]> {
 
   const now = Date.now();
   const today = new Date(now).setHours(0, 0, 0, 0);
-  const tomorrow = today + (24 * 60 * 60 * 1000);
+  const tomorrow = today + MS_PER_DAY;
 
   return templates.filter(t => t.nextDate <= tomorrow);
 }
@@ -72,7 +73,7 @@ export async function getUpcomingPayments(daysAhead: number = 7): Promise<DueTem
     .toArray();
 
   const now = Date.now();
-  const cutoff = now + (daysAhead * 24 * 60 * 60 * 1000);
+  const cutoff = now + (daysAhead * MS_PER_DAY);
 
   const result: DueTemplate[] = [];
 

@@ -1,5 +1,5 @@
 import { Bell, Camera, Plus, Calendar } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { CategoryBadge } from '../components/CategoryBadge';
@@ -17,17 +17,18 @@ import {
 } from '../components/ui/dialog';
 import { BottomSheet } from '../components/BottomSheet';
 import { AddTransactionForm } from '../components/AddTransactionForm';
+import { MS_PER_MONTH, MS_PER_WEEK } from '../constants';
 
 export const Dashboard = () => {
   const [period, setPeriod] = useState<PeriodType>('month');
-  const [customStartDate, setCustomStartDate] = useState<Date>(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
+  const [customStartDate, setCustomStartDate] = useState<Date>(new Date(Date.now() - MS_PER_MONTH));
   const [customEndDate, setCustomEndDate] = useState<Date>(new Date());
   const [isCustomPeriodOpen, setIsCustomPeriodOpen] = useState(false);
-  
-  const periodRange = period === 'custom' 
+
+  const periodRange = period === 'custom'
     ? { start: customStartDate.getTime(), end: customEndDate.getTime() }
     : getPeriodRange(period);
-    
+
   const { currentBalance, expensesByCategory: analyticsExpenses, savingsAmount, freeBalance } = useAnalytics({ period, startDate: periodRange.start, endDate: periodRange.end });
   const { transactions } = useTransactions({ period, startDate: periodRange.start, endDate: periodRange.end });
   const { categories } = useCategories();
@@ -41,14 +42,20 @@ export const Dashboard = () => {
   const balance = currentBalance;
   const hasSavings = savingsAmount > 0;
 
-  // Transform analytics data for pie chart
-  const expensesByCategory = analyticsExpenses.map(c => ({
-    name: c.categoryName,
-    value: c.amount,
-    color: c.color,
-  }));
+  // Transform analytics data for pie chart (мемоизация)
+  const expensesByCategory = useMemo(() => 
+    analyticsExpenses.map(c => ({
+      name: c.categoryName,
+      value: c.amount,
+      color: c.color,
+    })),
+    [analyticsExpenses]
+  );
 
-  const recentTransactions = transactions.slice(0, 5);
+  const recentTransactions = useMemo(() => 
+    transactions.slice(0, 5),
+    [transactions]
+  );
 
   const avatarColors = [
     'from-amber-400 to-pink-500',
@@ -373,7 +380,7 @@ export const Dashboard = () => {
             <div className="flex gap-2 pt-4">
               <button
                 onClick={() => {
-                  setCustomStartDate(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
+                  setCustomStartDate(new Date(Date.now() - MS_PER_WEEK));
                   setCustomEndDate(new Date());
                 }}
                 className="flex-1 py-2 bg-muted rounded-xl font-medium"
@@ -382,7 +389,7 @@ export const Dashboard = () => {
               </button>
               <button
                 onClick={() => {
-                  setCustomStartDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
+                  setCustomStartDate(new Date(Date.now() - MS_PER_MONTH));
                   setCustomEndDate(new Date());
                 }}
                 className="flex-1 py-2 bg-muted rounded-xl font-medium"
