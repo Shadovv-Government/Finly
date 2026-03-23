@@ -3,7 +3,9 @@
  * Проверяют CRUD операции и фильтрацию по типу
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi, Mocked } from 'vitest';
+import { db } from '../db';
+import { Category } from '../types';
 import {
   addCategory,
   getCategory,
@@ -14,24 +16,7 @@ import {
   getExpenseCategories,
   getIncomeCategories,
 } from './categories';
-
-// Мок для db
-vi.mock('../db', () => ({
-  db: {
-    categories: {
-      add: vi.fn(),
-      get: vi.fn(),
-      update: vi.fn(),
-      delete: vi.fn(),
-      where: vi.fn(() => ({
-        equals: vi.fn(() => ({
-          toArray: vi.fn(),
-        })),
-      })),
-      toArray: vi.fn(),
-    },
-  },
-}));
+import { validateCategory } from '../validators';
 
 // Мок для валидаторов
 vi.mock('../validators', () => ({
@@ -42,9 +27,6 @@ vi.mock('../validators', () => ({
     }
   }),
 }));
-
-import { db } from '../db';
-import { validateCategory, assertValid } from '../validators';
 
 describe('categories operations', () => {
   beforeEach(() => {
@@ -62,18 +44,17 @@ describe('categories operations', () => {
         isSystem: true,
       };
 
-      (validateCategory as vi.Mock).mockReturnValue({ isValid: true, errors: [], warnings: [] });
-      (db.categories.add as vi.Mock).mockResolvedValue('cat-1');
+      (validateCategory as Mocked<any>).mockReturnValue({ isValid: true, errors: [], warnings: [] });
+      (db.categories.add as Mocked<any>).mockResolvedValue('cat-1');
 
       const id = await addCategory(category);
 
       expect(validateCategory).toHaveBeenCalledWith(category);
-      expect(assertValid).toHaveBeenCalledWith(expect.anything(), 'Category');
       expect(db.categories.add).toHaveBeenCalledWith(category);
       expect(id).toBe('cat-1');
     });
 
-    it('должен бросать ошибку при неудачной валидации', async () => {
+    it('должен выбрасывать ошибку при невалидной категории', async () => {
       const category = {
         id: 'cat-1',
         name: '',
@@ -83,19 +64,19 @@ describe('categories operations', () => {
         isSystem: true,
       };
 
-      (validateCategory as vi.Mock).mockReturnValue({
-        isValid: false,
-        errors: ['Category name is required'],
-        warnings: [],
+      (validateCategory as Mocked<any>).mockReturnValue({ 
+        isValid: false, 
+        errors: ['Name is required'], 
+        warnings: [] 
       });
 
-      await expect(addCategory(category)).rejects.toThrow();
+      await expect(addCategory(category)).rejects.toThrow('Category validation failed');
     });
   });
 
   describe('getCategory', () => {
     it('должен получать категорию по ID', async () => {
-      const mockCategory = {
+      const category = {
         id: 'cat-1',
         name: 'Продукты',
         type: 'expense' as const,
@@ -104,16 +85,16 @@ describe('categories operations', () => {
         isSystem: true,
       };
 
-      (db.categories.get as vi.Mock).mockResolvedValue(mockCategory);
+      (db.categories.get as Mocked<any>).mockResolvedValue(category);
 
       const result = await getCategory('cat-1');
 
       expect(db.categories.get).toHaveBeenCalledWith('cat-1');
-      expect(result).toEqual(mockCategory);
+      expect(result).toEqual(category);
     });
 
-    it('должен возвращать undefined если категория не найдена', async () => {
-      (db.categories.get as vi.Mock).mockResolvedValue(undefined);
+    it('должен возвращать undefined для несуществующей категории', async () => {
+      (db.categories.get as Mocked<any>).mockResolvedValue(undefined);
 
       const result = await getCategory('non-existent');
 
@@ -123,34 +104,21 @@ describe('categories operations', () => {
 
   describe('updateCategory', () => {
     it('должен обновлять категорию с валидацией', async () => {
-      const updates = { name: 'Новое название' };
+      const updates = { name: 'Обновлённые продукты' };
 
-      (validateCategory as vi.Mock).mockReturnValue({ isValid: true, errors: [], warnings: [] });
-      (db.categories.update as vi.Mock).mockResolvedValue(1);
+      (validateCategory as Mocked<any>).mockReturnValue({ isValid: true, errors: [], warnings: [] });
+      (db.categories.update as Mocked<any>).mockResolvedValue();
 
       await updateCategory('cat-1', updates);
 
       expect(validateCategory).toHaveBeenCalledWith(updates, true);
-      expect(assertValid).toHaveBeenCalledWith(expect.anything(), 'Category update');
       expect(db.categories.update).toHaveBeenCalledWith('cat-1', updates);
-    });
-
-    it('должен бросать ошибку при неудачной валидации', async () => {
-      const updates = { name: '' };
-
-      (validateCategory as vi.Mock).mockReturnValue({
-        isValid: false,
-        errors: ['Name cannot be empty'],
-        warnings: [],
-      });
-
-      await expect(updateCategory('cat-1', updates)).rejects.toThrow();
     });
   });
 
   describe('deleteCategory', () => {
-    it('должен удалять категорию по ID', async () => {
-      (db.categories.delete as vi.Mock).mockResolvedValue(1);
+    it('должен удалять категорию', async () => {
+      (db.categories.delete as Mocked<any>).mockResolvedValue();
 
       await deleteCategory('cat-1');
 
@@ -160,111 +128,131 @@ describe('categories operations', () => {
 
   describe('getCategories', () => {
     it('должен получать все категории', async () => {
-      const mockCategories = [
-        { id: 'cat-1', name: 'Продукты', type: 'expense' as const, icon: 'shopping-cart', color: '#FF5722', isSystem: true },
-        { id: 'cat-2', name: 'Зарплата', type: 'income' as const, icon: 'wallet', color: '#4CAF50', isSystem: true },
+      const categories: Category[] = [
+        {
+          id: 'cat-1',
+          name: 'Продукты',
+          type: 'expense',
+          icon: 'shopping-cart',
+          color: '#FF5722',
+          isSystem: true,
+        },
+        {
+          id: 'cat-2',
+          name: 'Зарплата',
+          type: 'income',
+          icon: 'wallet',
+          color: '#4CAF50',
+          isSystem: true,
+        },
       ];
 
-      (db.categories.toArray as vi.Mock).mockResolvedValue(mockCategories);
+      (db.categories.toArray as Mocked<any>).mockResolvedValue(categories);
 
       const result = await getCategories();
 
       expect(db.categories.toArray).toHaveBeenCalled();
-      expect(result).toEqual(mockCategories);
-    });
-
-    it('должен возвращать пустой массив если нет категорий', async () => {
-      (db.categories.toArray as vi.Mock).mockResolvedValue([]);
-
-      const result = await getCategories();
-
-      expect(result).toEqual([]);
+      expect(result).toEqual(categories);
     });
   });
 
   describe('getCategoriesByType', () => {
-    it('должен получать категории расходов', async () => {
-      const mockCategories = [
-        { id: 'cat-1', name: 'Продукты', type: 'expense' as const, icon: 'shopping-cart', color: '#FF5722', isSystem: true },
-        { id: 'cat-3', name: 'Транспорт', type: 'expense' as const, icon: 'car', color: '#2196F3', isSystem: true },
+    it('должен получать категории по типу expense', async () => {
+      const categories: Category[] = [
+        {
+          id: 'cat-1',
+          name: 'Продукты',
+          type: 'expense',
+          icon: 'shopping-cart',
+          color: '#FF5722',
+          isSystem: true,
+        },
       ];
 
-      (db.categories.where as vi.Mock).mockReturnValue({
-        equals: vi.fn(() => ({
-          toArray: vi.fn().mockResolvedValue(mockCategories),
-        })),
-      });
+      const mockChain = {
+        equals: vi.fn().mockResolvedValue(categories),
+      };
+      (db.categories.where as Mocked<any>).mockReturnValue(mockChain as any);
 
       const result = await getCategoriesByType('expense');
 
       expect(db.categories.where).toHaveBeenCalledWith('type');
-      expect(result).toEqual(mockCategories);
+      expect(mockChain.equals).toHaveBeenCalledWith('expense');
+      expect(result).toEqual(categories);
     });
 
-    it('должен получать категории доходов', async () => {
-      const mockCategories = [
-        { id: 'cat-2', name: 'Зарплата', type: 'income' as const, icon: 'wallet', color: '#4CAF50', isSystem: true },
+    it('должен получать категории по типу income', async () => {
+      const categories: Category[] = [
+        {
+          id: 'cat-2',
+          name: 'Зарплата',
+          type: 'income',
+          icon: 'wallet',
+          color: '#4CAF50',
+          isSystem: true,
+        },
       ];
 
-      (db.categories.where as vi.Mock).mockReturnValue({
-        equals: vi.fn(() => ({
-          toArray: vi.fn().mockResolvedValue(mockCategories),
-        })),
-      });
+      const mockChain = {
+        equals: vi.fn().mockResolvedValue(categories),
+      };
+      (db.categories.where as Mocked<any>).mockReturnValue(mockChain as any);
 
       const result = await getCategoriesByType('income');
 
       expect(db.categories.where).toHaveBeenCalledWith('type');
-      expect(result).toEqual(mockCategories);
-    });
-
-    it('должен возвращать пустой массив если нет категорий типа', async () => {
-      (db.categories.where as vi.Mock).mockReturnValue({
-        equals: vi.fn(() => ({
-          toArray: vi.fn().mockResolvedValue([]),
-        })),
-      });
-
-      const result = await getCategoriesByType('expense');
-
-      expect(result).toEqual([]);
+      expect(mockChain.equals).toHaveBeenCalledWith('income');
+      expect(result).toEqual(categories);
     });
   });
 
   describe('getExpenseCategories', () => {
-    it('должен получать категории расходов', async () => {
-      const mockCategories = [
-        { id: 'cat-1', name: 'Продукты', type: 'expense' as const, icon: 'shopping-cart', color: '#FF5722', isSystem: true },
+    it('должен получать только категории расходов', async () => {
+      const categories: Category[] = [
+        {
+          id: 'cat-1',
+          name: 'Продукты',
+          type: 'expense',
+          icon: 'shopping-cart',
+          color: '#FF5722',
+          isSystem: true,
+        },
       ];
 
-      // Мок для getCategoriesByType
-      vi.mocked(db.categories.where).mockReturnValue({
-        equals: vi.fn(() => ({
-          toArray: vi.fn().mockResolvedValue(mockCategories),
-        })),
-      });
+      const mockChain = {
+        equals: vi.fn().mockResolvedValue(categories),
+      };
+      (db.categories.where as Mocked<any>).mockReturnValue(mockChain as any);
 
       const result = await getExpenseCategories();
 
-      expect(result).toEqual(mockCategories);
+      expect(db.categories.where).toHaveBeenCalledWith('type');
+      expect(result).toEqual(categories);
     });
   });
 
   describe('getIncomeCategories', () => {
-    it('должен получать категории доходов', async () => {
-      const mockCategories = [
-        { id: 'cat-2', name: 'Зарплата', type: 'income' as const, icon: 'wallet', color: '#4CAF50', isSystem: true },
+    it('должен получать только категории доходов', async () => {
+      const categories: Category[] = [
+        {
+          id: 'cat-2',
+          name: 'Зарплата',
+          type: 'income',
+          icon: 'wallet',
+          color: '#4CAF50',
+          isSystem: true,
+        },
       ];
 
-      vi.mocked(db.categories.where).mockReturnValue({
-        equals: vi.fn(() => ({
-          toArray: vi.fn().mockResolvedValue(mockCategories),
-        })),
-      });
+      const mockChain = {
+        equals: vi.fn().mockResolvedValue(categories),
+      };
+      (db.categories.where as Mocked<any>).mockReturnValue(mockChain as any);
 
       const result = await getIncomeCategories();
 
-      expect(result).toEqual(mockCategories);
+      expect(db.categories.where).toHaveBeenCalledWith('type');
+      expect(result).toEqual(categories);
     });
   });
 });

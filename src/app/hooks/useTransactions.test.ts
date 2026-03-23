@@ -21,7 +21,7 @@ vi.mock('../utils/errorHandler', () => ({
   AppError: class AppError extends Error {},
   DatabaseError: class DatabaseError extends Error {},
   logError: vi.fn(),
-  formatErrorForUser: vi.fn((err) => 'Ошибка операций'),
+  formatErrorForUser: vi.fn(() => 'Ошибка операций'),
 }));
 
 import {
@@ -65,7 +65,7 @@ describe('useTransactions', () => {
         { id: 2, amount: 5000, type: 'income' as const, categoryId: 'cat-2', date: Date.now(), currency: 'RUB', rate: 1, createdAt: Date.now() },
       ];
 
-      (getAllTransactions as vi.Mock).mockResolvedValue(mockTransactions);
+      (getAllTransactions as any).mockResolvedValue(mockTransactions);
 
       const { result } = renderHook(() => useTransactions());
 
@@ -85,7 +85,7 @@ describe('useTransactions', () => {
       const startDate = Date.now() - 86400000;
       const endDate = Date.now();
 
-      (getTransactionsByPeriod as vi.Mock).mockResolvedValue(mockTransactions);
+      (getTransactionsByPeriod as any).mockResolvedValue(mockTransactions);
 
       const { result } = renderHook(() => useTransactions({
         period: 'custom',
@@ -102,8 +102,8 @@ describe('useTransactions', () => {
     });
 
     it('должен обрабатывать ошибку при загрузке', async () => {
-      (getAllTransactions as vi.Mock).mockRejectedValue(new Error('DB error'));
-      (formatErrorForUser as vi.Mock).mockReturnValue('Ошибка загрузки');
+      (getAllTransactions as any).mockRejectedValue(new Error('DB error'));
+      (formatErrorForUser as any).mockReturnValue('Ошибка загрузки');
 
       const { result } = renderHook(() => useTransactions());
 
@@ -121,8 +121,8 @@ describe('useTransactions', () => {
         { id: 1, amount: 1000, type: 'expense' as const, categoryId: 'cat-1', date: Date.now(), currency: 'RUB', rate: 1, createdAt: Date.now() },
       ];
 
-      (getAllTransactions as vi.Mock).mockResolvedValue(mockTransactions);
-      (addTransaction as vi.Mock).mockResolvedValue(2);
+      (getAllTransactions as any).mockResolvedValue(mockTransactions);
+      (addTransaction as any).mockResolvedValue(2);
 
       const { result } = renderHook(() => useTransactions());
 
@@ -148,9 +148,9 @@ describe('useTransactions', () => {
     });
 
     it('должен бросать ошибку при неудачном добавлении', async () => {
-      const mockTransactions = [];
-      (getAllTransactions as vi.Mock).mockResolvedValue(mockTransactions);
-      (addTransaction as vi.Mock).mockRejectedValue(new Error('Add failed'));
+      const mockTransactions: any[] = [];
+      (getAllTransactions as any).mockResolvedValue(mockTransactions);
+      (addTransaction as any).mockRejectedValue(new Error('Add failed'));
 
       const { result } = renderHook(() => useTransactions());
 
@@ -177,8 +177,8 @@ describe('useTransactions', () => {
         { id: 1, amount: 1000, type: 'expense' as const, categoryId: 'cat-1', date: Date.now(), currency: 'RUB', rate: 1, createdAt: Date.now() },
       ];
 
-      (getAllTransactions as vi.Mock).mockResolvedValue(mockTransactions);
-      (updateTransaction as vi.Mock).mockResolvedValue(undefined);
+      (getAllTransactions as any).mockResolvedValue(mockTransactions);
+      (updateTransaction as any).mockResolvedValue(undefined);
 
       const { result } = renderHook(() => useTransactions());
 
@@ -195,8 +195,8 @@ describe('useTransactions', () => {
     });
 
     it('должен бросать ошибку при неудачном обновлении', async () => {
-      (getAllTransactions as vi.Mock).mockResolvedValue([]);
-      (updateTransaction as vi.Mock).mockRejectedValue(new Error('Update failed'));
+      (getAllTransactions as any).mockResolvedValue([]);
+      (updateTransaction as any).mockRejectedValue(new Error('Update failed'));
 
       const { result } = renderHook(() => useTransactions());
 
@@ -214,8 +214,8 @@ describe('useTransactions', () => {
         { id: 1, amount: 1000, type: 'expense' as const, categoryId: 'cat-1', date: Date.now(), currency: 'RUB', rate: 1, createdAt: Date.now() },
       ];
 
-      (getAllTransactions as vi.Mock).mockResolvedValue(mockTransactions);
-      (deleteTransaction as vi.Mock).mockResolvedValue(undefined);
+      (getAllTransactions as any).mockResolvedValue(mockTransactions);
+      (deleteTransaction as any).mockResolvedValue(undefined);
 
       const { result } = renderHook(() => useTransactions());
 
@@ -232,8 +232,8 @@ describe('useTransactions', () => {
     });
 
     it('должен бросать ошибку при неудачном удалении', async () => {
-      (getAllTransactions as vi.Mock).mockResolvedValue([]);
-      (deleteTransaction as vi.Mock).mockRejectedValue(new Error('Delete failed'));
+      (getAllTransactions as any).mockResolvedValue([]);
+      (deleteTransaction as any).mockRejectedValue(new Error('Delete failed'));
 
       const { result } = renderHook(() => useTransactions());
 
@@ -254,7 +254,7 @@ describe('useTransactions', () => {
         { id: 2, amount: 2000, type: 'income' as const, categoryId: 'cat-2', date: Date.now(), currency: 'RUB', rate: 1, createdAt: Date.now() },
       ];
 
-      (getAllTransactions as vi.Mock).mockResolvedValueOnce(initialTransactions);
+      (getAllTransactions as any).mockResolvedValueOnce(initialTransactions);
 
       const { result } = renderHook(() => useTransactions());
 
@@ -262,7 +262,7 @@ describe('useTransactions', () => {
         expect(result.current.loading).toBe(false);
       });
 
-      (getAllTransactions as vi.Mock).mockResolvedValueOnce(newTransactions);
+      (getAllTransactions as any).mockResolvedValueOnce(newTransactions);
 
       await act(async () => {
         await result.current.refresh();
@@ -272,11 +272,11 @@ describe('useTransactions', () => {
     });
 
     it('должен очищать ошибку при успешном refresh', async () => {
-      (getAllTransactions as vi.Mock)
+      (getAllTransactions as any)
         .mockRejectedValueOnce(new Error('Error'))
         .mockResolvedValueOnce([]);
 
-      (formatErrorForUser as vi.Mock).mockReturnValue('Ошибка');
+      (formatErrorForUser as any).mockReturnValue('Ошибка');
 
       const { result } = renderHook(() => useTransactions());
 
@@ -302,7 +302,7 @@ describe('useTransactions', () => {
     });
 
     it('должен принимать период day', async () => {
-      (getAllTransactions as vi.Mock).mockResolvedValue([]);
+      (getAllTransactions as any).mockResolvedValue([]);
 
       const { result } = renderHook(() => useTransactions({ period: 'day' }));
 
@@ -314,7 +314,7 @@ describe('useTransactions', () => {
     });
 
     it('должен принимать период week', async () => {
-      (getAllTransactions as vi.Mock).mockResolvedValue([]);
+      (getAllTransactions as any).mockResolvedValue([]);
 
       const { result } = renderHook(() => useTransactions({ period: 'week' }));
 

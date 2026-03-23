@@ -17,7 +17,7 @@ vi.mock('../utils/errorHandler', () => ({
   AppError: class AppError extends Error {},
   DatabaseError: class DatabaseError extends Error {},
   logError: vi.fn(),
-  formatErrorForUser: vi.fn((err) => 'Ошибка загрузки категорий'),
+  formatErrorForUser: vi.fn(() => 'Ошибка загрузки категорий'),
 }));
 
 import { getCategories } from '../../db/operations';
@@ -55,7 +55,7 @@ describe('useCategories', () => {
         { id: 'cat-2', name: 'Зарплата', type: 'income' as const, icon: 'wallet', color: '#4CAF50', isSystem: true },
       ];
 
-      (getCategories as vi.Mock).mockResolvedValue(mockCategories);
+      (getCategories as any).mockResolvedValue(mockCategories);
 
       const { result } = renderHook(() => useCategories());
 
@@ -68,7 +68,7 @@ describe('useCategories', () => {
     });
 
     it('должен обрабатывать пустой список категорий', async () => {
-      (getCategories as vi.Mock).mockResolvedValue([]);
+      (getCategories as any).mockResolvedValue([]);
 
       const { result } = renderHook(() => useCategories());
 
@@ -82,8 +82,8 @@ describe('useCategories', () => {
 
     it('должен обрабатывать ошибку при загрузке', async () => {
       const mockError = new Error('DB error');
-      (getCategories as vi.Mock).mockRejectedValue(mockError);
-      (formatErrorForUser as vi.Mock).mockReturnValue('Ошибка загрузки категорий');
+      (getCategories as any).mockRejectedValue(mockError);
+      (formatErrorForUser as any).mockReturnValue('Ошибка загрузки категорий');
 
       const { result } = renderHook(() => useCategories());
 
@@ -101,7 +101,7 @@ describe('useCategories', () => {
       const initialCategories = [{ id: 'cat-1', name: 'Старые', type: 'expense' as const, icon: 'wallet', color: '#000', isSystem: true }];
       const newCategories = [{ id: 'cat-2', name: 'Новые', type: 'income' as const, icon: 'wallet', color: '#000', isSystem: true }];
 
-      (getCategories as vi.Mock).mockResolvedValueOnce(initialCategories);
+      (getCategories as any).mockResolvedValueOnce(initialCategories);
 
       const { result } = renderHook(() => useCategories());
 
@@ -112,7 +112,7 @@ describe('useCategories', () => {
       expect(result.current.categories).toEqual(initialCategories);
 
       // Обновляем мок для refresh
-      (getCategories as vi.Mock).mockResolvedValueOnce(newCategories);
+      (getCategories as any).mockResolvedValueOnce(newCategories);
 
       // Вызываем refresh
       await act(async () => {
@@ -123,7 +123,7 @@ describe('useCategories', () => {
     });
 
     it('должен устанавливать loading во время refresh', async () => {
-      (getCategories as vi.Mock).mockResolvedValue([]);
+      (getCategories as any).mockResolvedValue([]);
 
       const { result } = renderHook(() => useCategories());
 
@@ -133,7 +133,7 @@ describe('useCategories', () => {
 
       let isLoadingDuringRefresh = false;
 
-      (getCategories as vi.Mock).mockImplementation(async () => {
+      (getCategories as any).mockImplementation(async () => {
         isLoadingDuringRefresh = true;
         return [];
       });
@@ -147,8 +147,8 @@ describe('useCategories', () => {
 
     it('должен очищать ошибку при успешном refresh', async () => {
       // Сначала ошибка
-      (getCategories as vi.Mock).mockRejectedValueOnce(new Error('Error'));
-      (formatErrorForUser as vi.Mock).mockReturnValue('Ошибка');
+      (getCategories as any).mockRejectedValueOnce(new Error('Error'));
+      (formatErrorForUser as any).mockReturnValue('Ошибка');
 
       const { result } = renderHook(() => useCategories());
 
@@ -159,7 +159,7 @@ describe('useCategories', () => {
       expect(result.current.error).toBe('Ошибка');
 
       // Затем успех
-      (getCategories as vi.Mock).mockResolvedValueOnce([]);
+      (getCategories as any).mockResolvedValueOnce([]);
 
       await act(async () => {
         await result.current.refresh();
@@ -175,7 +175,7 @@ describe('useCategories', () => {
         { id: 'cat-1', name: 'Тест', type: 'expense' as const, icon: 'wallet', color: '#000', isSystem: true },
       ];
 
-      (getCategories as vi.Mock).mockResolvedValue(mockCategories);
+      (getCategories as any).mockResolvedValue(mockCategories);
 
       const { result } = renderHook(() => useCategories());
 

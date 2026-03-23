@@ -42,21 +42,21 @@ describe('AddTransactionForm', () => {
     vi.clearAllMocks();
 
     // Настройка моков по умолчанию
-    (useCategories as vi.Mock).mockReturnValue({
+    (useCategories as any).mockReturnValue({
       categories: mockCategories,
       loading: false,
       error: null,
     });
 
-    (useTransactions as vi.Mock).mockReturnValue({
+    (useTransactions as any).mockReturnValue({
       add: vi.fn().mockResolvedValue(1),
     });
 
-    (useNotifications as vi.Mock).mockReturnValue({
+    (useNotifications as any).mockReturnValue({
       notifyTransaction: vi.fn(),
     });
 
-    (useTransactionForm as vi.Mock).mockReturnValue({
+    (useTransactionForm as any).mockReturnValue({
       formData: {
         amount: '',
         type: 'expense',
@@ -111,7 +111,7 @@ describe('AddTransactionForm', () => {
   describe('переключение типа транзакции', () => {
     it('должен переключаться на доход при клике', () => {
       const mockSetFormData = vi.fn();
-      (useTransactionForm as vi.Mock).mockReturnValue({
+      (useTransactionForm as any).mockReturnValue({
         formData: {
           amount: '',
           type: 'expense',
@@ -138,10 +138,8 @@ describe('AddTransactionForm', () => {
     });
 
     it('должен показывать категории доходов при выборе income', () => {
-      const mockSetFormData = vi.fn((fn) => {
-        // noop
-      });
-      (useTransactionForm as vi.Mock).mockReturnValue({
+      const mockSetFormData = vi.fn();
+      (useTransactionForm as any).mockReturnValue({
         formData: {
           amount: '',
           type: 'income',
@@ -171,7 +169,7 @@ describe('AddTransactionForm', () => {
     it('должен вызывать parseQuickInput при нажатии Enter', () => {
       const mockParseQuickInput = vi.fn();
       const mockSetQuickInput = vi.fn();
-      (useTransactionForm as vi.Mock).mockReturnValue({
+      (useTransactionForm as any).mockReturnValue({
         formData: {
           amount: '',
           type: 'expense',
@@ -199,7 +197,7 @@ describe('AddTransactionForm', () => {
 
     it('должен вызывать parseQuickInput при клике на кнопку', () => {
       const mockParseQuickInput = vi.fn();
-      (useTransactionForm as vi.Mock).mockReturnValue({
+      (useTransactionForm as any).mockReturnValue({
         formData: {
           amount: '',
           type: 'expense',
@@ -227,7 +225,7 @@ describe('AddTransactionForm', () => {
     });
 
     it('должен отключать кнопку парсинга если quickInput пустой', () => {
-      (useTransactionForm as vi.Mock).mockReturnValue({
+      (useTransactionForm as any).mockReturnValue({
         formData: {
           amount: '',
           type: 'expense',
@@ -262,7 +260,7 @@ describe('AddTransactionForm', () => {
 
     it('должен вызывать handleAmountChange при вводе', () => {
       const mockHandleAmountChange = vi.fn();
-      (useTransactionForm as vi.Mock).mockReturnValue({
+      (useTransactionForm as any).mockReturnValue({
         formData: {
           amount: '1000',
           type: 'expense',
@@ -292,7 +290,7 @@ describe('AddTransactionForm', () => {
   describe('выбор категории', () => {
     it('должен выбирать категорию при клике', () => {
       const mockSetFormData = vi.fn();
-      (useTransactionForm as vi.Mock).mockReturnValue({
+      (useTransactionForm as any).mockReturnValue({
         formData: {
           amount: '',
           type: 'expense',
@@ -321,7 +319,7 @@ describe('AddTransactionForm', () => {
     });
 
     it('должен показывать выделение для выбранной категории', () => {
-      (useTransactionForm as vi.Mock).mockReturnValue({
+      (useTransactionForm as any).mockReturnValue({
         formData: {
           amount: '',
           type: 'expense',
@@ -350,8 +348,8 @@ describe('AddTransactionForm', () => {
     it('должен сохранять транзакцию при клике на кнопку', async () => {
       const mockAdd = vi.fn().mockResolvedValue(1);
       const mockNotifyTransaction = vi.fn();
-      (useTransactions as vi.Mock).mockReturnValue({ add: mockAdd });
-      (useNotifications as vi.Mock).mockReturnValue({ notifyTransaction: mockNotifyTransaction });
+      (useTransactions as any).mockReturnValue({ add: mockAdd });
+      (useNotifications as any).mockReturnValue({ notifyTransaction: mockNotifyTransaction });
 
       render(<AddTransactionForm onClose={mockOnClose} />);
 
@@ -365,9 +363,9 @@ describe('AddTransactionForm', () => {
     it('должен вызывать onClose после успешного сохранения', async () => {
       const mockAdd = vi.fn().mockResolvedValue(1);
       const mockNotifyTransaction = vi.fn();
-      (useTransactions as vi.Mock).mockReturnValue({ add: mockAdd });
-      (useNotifications as vi.Mock).mockReturnValue({ notifyTransaction: mockNotifyTransaction });
-      (useTransactionForm as vi.Mock).mockReturnValue({
+      (useTransactions as any).mockReturnValue({ add: mockAdd });
+      (useNotifications as any).mockReturnValue({ notifyTransaction: mockNotifyTransaction });
+      (useTransactionForm as any).mockReturnValue({
         formData: {
           amount: '1000',
           type: 'expense',
@@ -399,8 +397,8 @@ describe('AddTransactionForm', () => {
 
     it('должен обрабатывать ошибку при сохранении', async () => {
       const mockAdd = vi.fn().mockRejectedValue(new Error('Failed'));
-      (useTransactions as vi.Mock).mockReturnValue({ add: mockAdd });
-      (useTransactionForm as vi.Mock).mockReturnValue({
+      (useTransactions as any).mockReturnValue({ add: mockAdd });
+      (useTransactionForm as any).mockReturnValue({
         formData: {
           amount: '1000',
           type: 'expense',

@@ -132,8 +132,8 @@ describe('useTransactionForm', () => {
         comment: 'кофе',
       };
 
-      (parseNaturalLanguage as vi.Mock).mockReturnValue(mockParsed);
-      (findBestMatch as vi.Mock).mockResolvedValue(null);
+      (parseNaturalLanguage as any).mockReturnValue(mockParsed);
+      (findBestMatch as any).mockResolvedValue(null);
 
       const { result } = renderHook(() => useTransactionForm());
 
@@ -164,8 +164,8 @@ describe('useTransactionForm', () => {
         type: 'expense' as const,
       };
 
-      (parseNaturalLanguage as vi.Mock).mockReturnValue(mockParsed);
-      (findBestMatch as vi.Mock).mockResolvedValue({ category: mockCategory });
+      (parseNaturalLanguage as any).mockReturnValue(mockParsed);
+      (findBestMatch as any).mockResolvedValue({ category: mockCategory });
 
       const { result } = renderHook(() => useTransactionForm());
 
@@ -192,8 +192,8 @@ describe('useTransactionForm', () => {
         type: 'income' as const, // не совпадает
       };
 
-      (parseNaturalLanguage as vi.Mock).mockReturnValue(mockParsed);
-      (findBestMatch as vi.Mock).mockResolvedValue({ category: mockCategory });
+      (parseNaturalLanguage as any).mockReturnValue(mockParsed);
+      (findBestMatch as any).mockResolvedValue({ category: mockCategory });
 
       const { result } = renderHook(() => useTransactionForm());
 
@@ -209,7 +209,7 @@ describe('useTransactionForm', () => {
     });
 
     it('должен возвращать ошибку если парсинг не удался', async () => {
-      (parseNaturalLanguage as vi.Mock).mockReturnValue(null);
+      (parseNaturalLanguage as any).mockReturnValue(null);
 
       const { result } = renderHook(() => useTransactionForm());
 
@@ -228,7 +228,7 @@ describe('useTransactionForm', () => {
     });
 
     it('должен обрабатывать исключения при парсинге', async () => {
-      (parseNaturalLanguage as vi.Mock).mockImplementation(() => {
+      (parseNaturalLanguage as any).mockImplementation(() => {
         throw new Error('AI error');
       });
 
@@ -251,7 +251,7 @@ describe('useTransactionForm', () => {
 
       let parsingStarted = false;
 
-      (parseNaturalLanguage as vi.Mock).mockImplementation(() => {
+      (parseNaturalLanguage as any).mockImplementation(() => {
         parsingStarted = true;
         return null;
       });

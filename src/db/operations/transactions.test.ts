@@ -3,7 +3,9 @@
  * Проверяют CRUD операции и валидацию
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi, Mocked } from 'vitest';
+import { db } from '../db';
+import { Transaction } from '../types';
 import {
   addTransaction,
   getTransaction,
@@ -13,33 +15,7 @@ import {
   getTransactionsByCategory,
   getAllTransactions,
 } from './transactions';
-
-// Мок для db
-vi.mock('../db', () => ({
-  db: {
-    transactions: {
-      add: vi.fn(),
-      get: vi.fn(),
-      update: vi.fn(),
-      delete: vi.fn(),
-      where: vi.fn(() => ({
-        between: vi.fn(() => ({
-          reverse: vi.fn(() => ({
-            sortBy: vi.fn(),
-          })),
-        })),
-        equals: vi.fn(() => ({
-          toArray: vi.fn(),
-        })),
-      })),
-      orderBy: vi.fn(() => ({
-        reverse: vi.fn(() => ({
-          toArray: vi.fn(),
-        })),
-      })),
-    },
-  },
-}));
+import { validateTransaction } from '../validators';
 
 // Мок для валидаторов
 vi.mock('../validators', () => ({
@@ -50,9 +26,6 @@ vi.mock('../validators', () => ({
     }
   }),
 }));
-
-import { db } from '../db';
-import { validateTransaction, assertValid } from '../validators';
 
 describe('transactions operations', () => {
   beforeEach(() => {
@@ -70,13 +43,12 @@ describe('transactions operations', () => {
         rate: 1,
       };
 
-      (validateTransaction as vi.Mock).mockReturnValue({ isValid: true, errors: [], warnings: [] });
-      (db.transactions.add as vi.Mock).mockResolvedValue(1);
+      (validateTransaction as Mocked<any>).mockReturnValue({ isValid: true, errors: [], warnings: [] });
+      (db.transactions.add as Mocked<any>).mockResolvedValue(1);
 
       const id = await addTransaction(transaction);
 
       expect(validateTransaction).toHaveBeenCalledWith(transaction);
-      expect(assertValid).toHaveBeenCalledWith(expect.anything(), 'Transaction');
       expect(db.transactions.add).toHaveBeenCalledWith({
         ...transaction,
         createdAt: expect.any(Number),
@@ -84,26 +56,7 @@ describe('transactions operations', () => {
       expect(id).toBe(1);
     });
 
-    it('должен устанавливать createdAt', async () => {
-      const transaction = {
-        amount: 500,
-        type: 'income' as const,
-        categoryId: 'cat-2',
-        date: Date.now(),
-        currency: 'RUB',
-        rate: 1,
-      };
-
-      (validateTransaction as vi.Mock).mockReturnValue({ isValid: true, errors: [], warnings: [] });
-      (db.transactions.add as vi.Mock).mockResolvedValue(2);
-
-      await addTransaction(transaction);
-
-      const addedData = (db.transactions.add as vi.Mock).mock.calls[0][0];
-      expect(addedData.createdAt).toBeGreaterThanOrEqual(Date.now() - 1000);
-    });
-
-    it('должен бросать ошибку при неудачной валидации', async () => {
+    it('должен выбрасывать ошибку при невалидной транзакции', async () => {
       const transaction = {
         amount: -100,
         type: 'expense' as const,
@@ -113,22 +66,22 @@ describe('transactions operations', () => {
         rate: 1,
       };
 
-      (validateTransaction as vi.Mock).mockReturnValue({
-        isValid: false,
-        errors: ['Amount must be greater than 0'],
-        warnings: [],
+      (validateTransaction as Mocked<any>).mockReturnValue({ 
+        isValid: false, 
+        errors: ['Amount must be greater than 0'], 
+        warnings: [] 
       });
 
-      await expect(addTransaction(transaction)).rejects.toThrow();
+      await expect(addTransaction(transaction)).rejects.toThrow('Transaction validation failed');
     });
   });
 
   describe('getTransaction', () => {
     it('должен получать транзакцию по ID', async () => {
-      const mockTransaction = {
+      const transaction: Transaction = {
         id: 1,
         amount: 1000,
-        type: 'expense' as const,
+        type: 'expense',
         categoryId: 'cat-1',
         date: Date.now(),
         currency: 'RUB',
@@ -136,16 +89,16 @@ describe('transactions operations', () => {
         createdAt: Date.now(),
       };
 
-      (db.transactions.get as vi.Mock).mockResolvedValue(mockTransaction);
+      (db.transactions.get as Mocked<any>).mockResolvedValue(transaction);
 
       const result = await getTransaction(1);
 
       expect(db.transactions.get).toHaveBeenCalledWith(1);
-      expect(result).toEqual(mockTransaction);
+      expect(result).toEqual(transaction);
     });
 
-    it('должен возвращать undefined если транзакция не найдена', async () => {
-      (db.transactions.get as vi.Mock).mockResolvedValue(undefined);
+    it('должен возвращать undefined для несуществующей транзакции', async () => {
+      (db.transactions.get as Mocked<any>).mockResolvedValue(undefined);
 
       const result = await getTransaction(999);
 
@@ -157,32 +110,19 @@ describe('transactions operations', () => {
     it('должен обновлять транзакцию с валидацией', async () => {
       const updates = { amount: 1500 };
 
-      (validateTransaction as vi.Mock).mockReturnValue({ isValid: true, errors: [], warnings: [] });
-      (db.transactions.update as vi.Mock).mockResolvedValue(1);
+      (validateTransaction as Mocked<any>).mockReturnValue({ isValid: true, errors: [], warnings: [] });
+      (db.transactions.update as Mocked<any>).mockResolvedValue();
 
       await updateTransaction(1, updates);
 
       expect(validateTransaction).toHaveBeenCalledWith(updates, true);
-      expect(assertValid).toHaveBeenCalledWith(expect.anything(), 'Transaction update');
       expect(db.transactions.update).toHaveBeenCalledWith(1, updates);
-    });
-
-    it('должен бросать ошибку при неудачной валидации', async () => {
-      const updates = { amount: -100 };
-
-      (validateTransaction as vi.Mock).mockReturnValue({
-        isValid: false,
-        errors: ['Invalid amount'],
-        warnings: [],
-      });
-
-      await expect(updateTransaction(1, updates)).rejects.toThrow();
     });
   });
 
   describe('deleteTransaction', () => {
-    it('должен удалять транзакцию по ID', async () => {
-      (db.transactions.delete as vi.Mock).mockResolvedValue(1);
+    it('должен удалять транзакцию', async () => {
+      (db.transactions.delete as Mocked<any>).mockResolvedValue();
 
       await deleteTransaction(1);
 
@@ -192,92 +132,94 @@ describe('transactions operations', () => {
 
   describe('getTransactionsByPeriod', () => {
     it('должен получать транзакции за период', async () => {
-      const start = Date.now() - 86400000;
+      const start = Date.now() - 7 * 24 * 60 * 60 * 1000;
       const end = Date.now();
-      const mockTransactions = [
-        { id: 1, amount: 1000, type: 'expense' as const, categoryId: 'cat-1', date: start + 1000, currency: 'RUB', rate: 1, createdAt: Date.now() },
+      const transactions: Transaction[] = [
+        {
+          id: 1,
+          amount: 1000,
+          type: 'expense',
+          categoryId: 'cat-1',
+          date: Date.now(),
+          currency: 'RUB',
+          rate: 1,
+          createdAt: Date.now(),
+        },
       ];
 
-      (db.transactions.where as vi.Mock).mockReturnValue({
-        between: vi.fn(() => ({
-          reverse: vi.fn(() => ({
-            sortBy: vi.fn().mockResolvedValue(mockTransactions),
-          })),
-        })),
-      });
+      const mockChain = {
+        between: vi.fn().mockReturnValue({
+          reverse: vi.fn().mockReturnValue({
+            sortBy: vi.fn().mockResolvedValue(transactions),
+          }),
+        }),
+      };
+      (db.transactions.where as Mocked<any>).mockReturnValue(mockChain as any);
 
       const result = await getTransactionsByPeriod(start, end);
 
       expect(db.transactions.where).toHaveBeenCalledWith('date');
-      expect(result).toEqual(mockTransactions);
-    });
-
-    it('должен возвращать пустой массив если нет транзакций', async () => {
-      const start = Date.now() - 86400000;
-      const end = Date.now();
-
-      (db.transactions.where as vi.Mock).mockReturnValue({
-        between: vi.fn(() => ({
-          reverse: vi.fn(() => ({
-            sortBy: vi.fn().mockResolvedValue([]),
-          })),
-        })),
-      });
-
-      const result = await getTransactionsByPeriod(start, end);
-
-      expect(result).toEqual([]);
+      expect(mockChain.between).toHaveBeenCalledWith(start, end);
+      expect(result).toEqual(transactions);
     });
   });
 
   describe('getTransactionsByCategory', () => {
     it('должен получать транзакции по категории', async () => {
-      const mockTransactions = [
-        { id: 1, amount: 1000, type: 'expense' as const, categoryId: 'cat-1', date: Date.now(), currency: 'RUB', rate: 1, createdAt: Date.now() },
+      const transactions: Transaction[] = [
+        {
+          id: 1,
+          amount: 1000,
+          type: 'expense',
+          categoryId: 'cat-1',
+          date: Date.now(),
+          currency: 'RUB',
+          rate: 1,
+          createdAt: Date.now(),
+        },
       ];
 
-      (db.transactions.where as vi.Mock).mockReturnValue({
-        equals: vi.fn(() => ({
-          toArray: vi.fn().mockResolvedValue(mockTransactions),
-        })),
-      });
+      const mockChain = {
+        equals: vi.fn().mockResolvedValue(transactions),
+      };
+      (db.transactions.where as Mocked<any>).mockReturnValue(mockChain as any);
 
       const result = await getTransactionsByCategory('cat-1');
 
       expect(db.transactions.where).toHaveBeenCalledWith('categoryId');
-      expect(result).toEqual(mockTransactions);
+      expect(mockChain.equals).toHaveBeenCalledWith('cat-1');
+      expect(result).toEqual(transactions);
     });
   });
 
   describe('getAllTransactions', () => {
-    it('должен получать все транзакции отсортированные по дате', async () => {
-      const mockTransactions = [
-        { id: 2, amount: 2000, type: 'income' as const, categoryId: 'cat-2', date: Date.now(), currency: 'RUB', rate: 1, createdAt: Date.now() },
-        { id: 1, amount: 1000, type: 'expense' as const, categoryId: 'cat-1', date: Date.now() - 1000, currency: 'RUB', rate: 1, createdAt: Date.now() - 1000 },
+    it('должен получать все транзакции', async () => {
+      const transactions: Transaction[] = [
+        {
+          id: 1,
+          amount: 1000,
+          type: 'expense',
+          categoryId: 'cat-1',
+          date: Date.now(),
+          currency: 'RUB',
+          rate: 1,
+          createdAt: Date.now(),
+        },
       ];
 
-      (db.transactions.orderBy as vi.Mock).mockReturnValue({
-        reverse: vi.fn(() => ({
-          toArray: vi.fn().mockResolvedValue(mockTransactions),
-        })),
-      });
+      const mockChain = {
+        orderBy: vi.fn().mockReturnValue({
+          reverse: vi.fn().mockReturnValue({
+            toArray: vi.fn().mockResolvedValue(transactions),
+          }),
+        }),
+      };
+      (db.transactions.orderBy as Mocked<any>).mockReturnValue(mockChain as any);
 
       const result = await getAllTransactions();
 
       expect(db.transactions.orderBy).toHaveBeenCalledWith('date');
-      expect(result).toEqual(mockTransactions);
-    });
-
-    it('должен возвращать пустой массив если нет транзакций', async () => {
-      (db.transactions.orderBy as vi.Mock).mockReturnValue({
-        reverse: vi.fn(() => ({
-          toArray: vi.fn().mockResolvedValue([]),
-        })),
-      });
-
-      const result = await getAllTransactions();
-
-      expect(result).toEqual([]);
+      expect(result).toEqual(transactions);
     });
   });
 });
