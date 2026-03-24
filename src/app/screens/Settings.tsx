@@ -1,4 +1,4 @@
-import { Sun, Moon, Monitor, ChevronRight, Download, Upload, Bell, Repeat, LogOut, Pencil } from 'lucide-react';
+import { Sun, Moon, Monitor, ChevronRight, Download, Upload, Bell, Repeat, LogOut, Pencil, Fingerprint } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { Switch } from '../components/ui/switch';
@@ -17,7 +17,8 @@ import { Input } from '../components/ui/input';
 
 export const Settings = () => {
   const { theme, setTheme } = useTheme();
-  const { user, updateProfile, logout } = useAuth();
+  const { user, updateProfile, logout, biometric } = useAuth();
+  const [biometricLoading, setBiometricLoading] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
   const [editName, setEditName] = useState('');
@@ -76,6 +77,21 @@ export const Settings = () => {
   const handleAvatarSelect = async (color: string) => {
     await updateProfile({ avatarColor: color });
     setIsAvatarDialogOpen(false);
+  };
+
+  const handleBiometricToggle = async () => {
+    setBiometricLoading(true);
+    try {
+      if (biometric.isEnabled) {
+        await biometric.disable();
+      } else {
+        await biometric.enable();
+      }
+    } catch {
+      // пользователь отменил или ошибка — ничего не делаем
+    } finally {
+      setBiometricLoading(false);
+    }
   };
 
   return (
@@ -178,6 +194,33 @@ export const Settings = () => {
           </button>
         </div>
       </div>
+
+      {/* Security */}
+      {biometric.isSupported && (
+        <div className="px-4 py-4">
+          <h2 className="font-bold mb-3">Безопасность</h2>
+          <div className="bg-card rounded-2xl border border-border overflow-hidden">
+            <div className="flex items-center justify-between p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-950 flex items-center justify-center">
+                  <Fingerprint className="w-5 h-5 text-violet-600 dark:text-violet-500" />
+                </div>
+                <div>
+                  <p className="font-medium">Face ID / Отпечаток</p>
+                  <p className="text-xs text-muted-foreground">
+                    Блокировка через 5 минут
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={biometric.isEnabled}
+                onCheckedChange={handleBiometricToggle}
+                disabled={biometricLoading}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Notifications */}
       <div className="px-4 py-4">

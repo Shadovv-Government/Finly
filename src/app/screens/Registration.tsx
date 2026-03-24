@@ -4,18 +4,22 @@ import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { BiometricSetupCard } from '../components/BiometricSetupCard';
 import { Wallet } from 'lucide-react';
+
+type Step = 'register' | 'biometric';
 
 export const Registration = () => {
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const { register } = useAuth();
+  const [step, setStep] = useState<Step>('register');
+  const { register, biometric } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!name.trim()) {
       setError('Введите имя');
       return;
@@ -31,13 +35,26 @@ export const Registration = () => {
 
     try {
       await register(name.trim());
-      navigate('/');
+      if (biometric.isSupported) {
+        setStep('biometric');
+      } else {
+        navigate('/');
+      }
     } catch (err) {
       setError('Ошибка регистрации. Попробуйте снова.');
       console.error(err);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleEnableBiometric = async () => {
+    await biometric.enable();
+    navigate('/');
+  };
+
+  const handleSkipBiometric = () => {
+    navigate('/');
   };
 
   return (
@@ -53,37 +70,44 @@ export const Registration = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="name" className="text-sm font-medium">
-                Как к вам обращаться?
-              </label>
-              <Input
-                id="name"
-                type="text"
-                placeholder="Введите ваше имя"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+          {step === 'register' ? (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="name" className="text-sm font-medium">
+                  Как к вам обращаться?
+                </label>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="Введите ваше имя"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  disabled={isLoading}
+                  className="text-base"
+                />
+                {error && (
+                  <p className="text-sm text-red-500">{error}</p>
+                )}
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full h-12 text-base font-medium"
                 disabled={isLoading}
-                className="text-base"
-              />
-              {error && (
-                <p className="text-sm text-red-500">{error}</p>
-              )}
-            </div>
+              >
+                {isLoading ? 'Загрузка...' : 'Начать'}
+              </Button>
 
-            <Button
-              type="submit"
-              className="w-full h-12 text-base font-medium"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Загрузка...' : 'Начать'}
-            </Button>
-
-            <p className="text-xs text-center text-muted-foreground">
-              Это создаст локальный аккаунт на этом устройстве
-            </p>
-          </form>
+              <p className="text-xs text-center text-muted-foreground">
+                Это создаст локальный аккаунт на этом устройстве
+              </p>
+            </form>
+          ) : (
+            <BiometricSetupCard
+              onEnable={handleEnableBiometric}
+              onSkip={handleSkipBiometric}
+            />
+          )}
         </CardContent>
       </Card>
     </div>

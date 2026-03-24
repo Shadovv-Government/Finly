@@ -14,12 +14,16 @@ import { Registration } from './screens/Registration';
 import { PrivacyPolicy } from './screens/PrivacyPolicy';
 import { TermsOfService } from './screens/TermsOfService';
 import { useAuth } from './contexts/AuthContext';
+import { LockScreen } from './screens/LockScreen';
 
 // Protected route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, biometric } = useAuth();
   if (!user) {
     return <Navigate to="/register" replace />;
+  }
+  if (biometric.isEnabled && biometric.isLocked) {
+    return <LockScreen />;
   }
   return <>{children}</>;
 }

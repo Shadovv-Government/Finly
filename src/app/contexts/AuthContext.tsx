@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '../../db/types';
 import { getCurrentUser, createUser, updateUser, deleteUser } from '../../db/operations';
+import { clearBiometricSettings } from '../../db/operations/biometric';
+import { useBiometric, BiometricHook } from '../hooks/useBiometric';
 
 interface AuthContextType {
   user: User | null;
@@ -8,6 +10,7 @@ interface AuthContextType {
   register: (name: string) => Promise<void>;
   updateProfile: (updates: Partial<User>) => Promise<void>;
   logout: () => Promise<void>;
+  biometric: BiometricHook;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -15,6 +18,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const biometric = useBiometric(user?.id ?? '', user?.name ?? '');
 
   useEffect(() => {
     loadUser();
@@ -32,7 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function register(name: string) {
-    const deviceId = navigator.userAgent; // простой идентификатор устройства
+    const deviceId = navigator.userAgent;
     const id = await createUser(name, deviceId);
     const newUser: User = {
       id,
@@ -51,12 +56,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function logout() {
     if (!user) return;
+    await clearBiometricSettings();
     await deleteUser(user.id);
     setUser(null);
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, register, updateProfile, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, register, updateProfile, logout, biometric }}>
       {children}
     </AuthContext.Provider>
   );

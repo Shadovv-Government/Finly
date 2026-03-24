@@ -9,3 +9,4 @@ export * from './recurring';
 export * from './settings';
 export * from './aiPatterns';
 export * from './users';
+export * from './biometric';
