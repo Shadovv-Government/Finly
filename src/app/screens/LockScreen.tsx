@@ -40,7 +40,6 @@ export const LockScreen = () => {
   // Автоматически показываем биометрию при монтировании
   useEffect(() => {
     handleUnlock();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const getInitial = (name: string) => name.charAt(0).toUpperCase();
