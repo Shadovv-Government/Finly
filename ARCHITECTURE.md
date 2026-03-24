@@ -486,3 +486,268 @@ this.version(2).stores({
 - **Отсутствие бэкенда:** все данные только на устройстве пользователя
 - **Нет сетевых запросов:** приложение не отправляет данные на сервер
 - **Локальное хранение:** IndexedDB + localStorage для настроек
+
+---
+
+## 13. Структура состояний (Zustand)
+
+### Хуки для работы с данными
+
+| Хук | Описание |
+|-----|----------|
+| `useTransactions` | Загрузка, фильтрация, CRUD операций |
+| `useCategories` | Категории доходов/расходов |
+| `useBudgets` | Управление бюджетами и лимитами |
+| `useGoals` | Финансовые цели и прогресс |
+| `useAnalytics` | Аналитические данные для графиков |
+
+### Вспомогательные хуки
+
+| Хук | Описание |
+|-----|----------|
+| `useNotifications` | Уведомления (Sonner) |
+| `useTransactionForm` | Логика формы транзакций |
+
+---
+
+## 14. Утилиты (`src/app/utils/`)
+
+| Модуль | Функции |
+|--------|---------|
+| `formatCurrency.ts` | Форматирование сумм с валютой |
+| `errorHandler.ts` | Обработка и логирование ошибок |
+| `notifications.ts` | Helper-функции для уведомлений |
+| `notificationIcons.ts` | Иконки для уведомлений |
+
+**Тесты:**
+- `formatCurrency.test.ts` — тесты форматирования
+- `errorHandler.test.ts` — тесты обработки ошибок
+- `useTransactionForm.test.ts` — тесты хука формы
+- `useCategories.test.ts` — тесты хука категорий
+- `useTransactions.test.ts` — тесты хука транзакций
+
+---
+
+## 15. Стилевая архитектура (`src/styles/`)
+
+| Файл | Описание |
+|------|----------|
+| `index.css` | Основные стили, utility-классы |
+| `tailwind.css` | Конфигурация Tailwind CSS 4.x |
+| `theme.css` | CSS-переменные тем (light/dark) |
+| `fonts.css` | Подключение шрифтов |
+
+### Utility-классы
+
+```css
+.scrollbar-hide          /* Скрытие скроллбара */
+.safe-area-inset-bottom  /* Padding для iOS safe area */
+```
+
+### Темизация
+
+- CSS-переменные для всех цветов
+- Поддержка `prefers-color-scheme: dark`
+- Переключение через `ThemeContext`
+- Сохранение в `localStorage`
+
+---
+
+## 16. PWA-конфигурация (`vite.config.ts`)
+
+### Manifest настройки
+
+```typescript
+manifest: {
+  name: 'Finly — Управление личными финансами',
+  short_name: 'Finly',
+  description: 'PWA для контроля личных финансов',
+  theme_color: '#7c3aed',
+  background_color: '#ffffff',
+  display: 'standalone',
+  start_url: '/',
+  orientation: 'portrait',
+  icons: [
+    {
+      src: '/pwa-192x192.svg',
+      sizes: '192x192',
+      type: 'image/svg+xml',
+    },
+    {
+      src: '/pwa-512x512.svg',
+      sizes: '512x512',
+      type: 'image/svg+xml',
+    },
+  ],
+}
+```
+
+### Workbox стратегии
+
+| Паттерн | Стратегия | Назначение |
+|---------|-----------|------------|
+| `**/*.{js,css,woff,woff2}` | CacheFirst | Статические ресурсы |
+| `**/*.{png,svg,ico}` | CacheFirst | Изображения, иконки |
+| `/` | NetworkFirst | HTML страницы |
+| `*` | StaleWhileRevalidate | Остальные запросы |
+
+---
+
+## 17. Маршрутизация
+
+### Защищённые роуты
+
+Требуют авторизации (Redirect на `/register`):
+
+| Путь | Компонент |
+|------|-----------|
+| `/` | Dashboard |
+| `/history` | TransactionHistory |
+| `/analytics` | Analytics |
+| `/settings` | Settings |
+| `/budgets` | Budgets |
+| `/goals` | Goals |
+| `/categories` | Categories |
+| `/ai-assistant` | AIAssistant |
+| `/components` | ComponentShowcase |
+
+### Публичные роуты
+
+Доступны без авторизации:
+
+| Путь | Компонент |
+|------|-----------|
+| `/onboarding` | Onboarding |
+| `/register` | Registration |
+| `/privacy` | PrivacyPolicy |
+| `/terms` | TermsOfService |
+
+---
+
+## 18. Жизненный цикл приложения
+
+### 1. Первый запуск
+
+```
+1. Загрузка main.tsx
+2. Инициализация Dexie (FinlyDB)
+3. Проверка categories.isEmpty()
+4. Если пусто → seedDatabase()
+5. Рендер App.tsx с ThemeProvider + AuthProvider
+6. Проверка currentUser
+7. Если нет пользователя → Redirect на /register
+8. Если есть → Переход на /
+```
+
+### 2. Добавление транзакции
+
+```
+1. Пользователь нажимает «+» в BottomNav
+2. Открывается BottomSheet с AddTransactionForm
+3. useTransactionForm валидирует данные
+4. AI-парсинг комментария (parseNaturalLanguage)
+5. Поиск категории (findBestMatch)
+6. addTransaction() → IndexedDB
+7. Обновление кэша аналитики
+8. Уведомление об успехе (toast)
+9. Закрытие BottomSheet
+```
+
+### 3. Обработка повторяющихся платежей
+
+```
+1. При запуске: processDueTemplates()
+2. Поиск шаблонов с nextDate <= today
+3. Для каждого: createTransaction()
+4. Обновление nextDate по интервалу
+5. Уведомление о созданных транзакциях
+```
+
+---
+
+## 19. Производительность
+
+### Оптимизации
+
+| Техника | Реализация |
+|---------|------------|
+| Code splitting | React Router lazy loading |
+| Tree shaking | Tailwind CSS, ES-модули |
+| Кэширование | Service Worker (Workbox) |
+| Индексы БД | Dexie индексация полей |
+| Мемоизация | React.memo, useMemo, useCallback |
+
+### Размеры бандла
+
+- **main.js:** ~200-300 KB (gzipped)
+- **vendor.js:** ~500-700 KB (React, Recharts, Dexie)
+- **CSS:** ~20-30 KB (Tailwind purge)
+
+---
+
+## 20. Расширяемость
+
+### Добавление новой фичи
+
+1. **Типы:** Добавить интерфейс в `src/db/types.ts`
+2. **БД:** Обновить схему в `src/db/db.ts`
+3. **CRUD:** Функции в `src/db/operations.ts`
+4. **Хук:** Создать `src/app/hooks/useNewFeature.ts`
+5. **UI:** Компоненты в `src/app/components/`
+6. **Экран:** `src/app/screens/NewFeatureScreen.tsx`
+7. **Роут:** Добавить в `src/app/routes.tsx`
+8. **Тесты:** `*.test.ts` файлы
+
+### Миграции БД
+
+```typescript
+this.version(3).stores({
+  newTable: '++id, indexedField',
+}).upgrade(async tx => {
+  // Миграция данных
+  const oldData = await tx.table('oldTable').toArray();
+  // ...
+});
+```
+
+---
+
+## 21. Зависимости
+
+### Основные
+
+| Пакет | Версия | Назначение |
+|-------|--------|------------|
+| react | ^18.3.1 | UI фреймворк |
+| react-router-dom | ^7.13.1 | Маршрутизация |
+| zustand | ^4.5.2 | State management |
+| dexie | ^3.2.7 | IndexedDB ORM |
+| tailwindcss | 4.1.12 | CSS framework |
+| lucide-react | 0.487.0 | Иконки |
+| recharts | 2.15.2 | Графики |
+| chart.js | ^4.4.2 | Альтернативные графики |
+| motion | 12.23.24 | Анимации |
+| sonner | 2.0.3 | Уведомления |
+
+### Dev-зависимости
+
+| Пакет | Версия | Назначение |
+|-------|--------|------------|
+| vite | 6.3.5 | Сборщик |
+| vite-plugin-pwa | ^1.2.0 | PWA плагин |
+| typescript | ^5.4.5 | Типизация |
+| vitest | ^4.1.1 | Тестирование |
+| @testing-library/react | ^16.3.2 | React тесты |
+| eslint | ^8.57.0 | Линтинг |
+
+---
+
+## 22. Будущие улучшения
+
+### В разработке
+
+- [ ] Биометрическая аутентификация (WebAuthn)
+- [ ] Мультивалютность с авто-конвертацией
+- [ ] Push-уведомления о лимитах
+
+
