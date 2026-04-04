@@ -5,7 +5,6 @@ import { db } from '../db';
 import { Goal } from '../types';
 import { validateGoal, assertValid } from '../validators';
 import { getCategories, addCategory, updateCategory } from './categories';
-import { addTransaction } from './transactions';
 
 /**
  * Добавляет новую цель с валидацией
