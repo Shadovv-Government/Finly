@@ -13,7 +13,6 @@ import {
   markNotificationAsRead,
   markAllNotificationsAsRead,
   deleteNotification,
-  getUnreadCount,
   clearReadNotifications,
   clearExpiredNotifications,
 } from '../../db/operations/notifications';
@@ -31,19 +30,15 @@ export function useNotificationPanel() {
   const { budgets } = useBudgets();
   const { goals } = useGoals();
   const { expensesByCategory } = useAnalytics({ period: 'month' });
-  const { transactions } = useTransactions({ period: 'month', ...getPeriodRange('month') });
+  const { start: txStart, end: txEnd } = getPeriodRange('month');
+  const { transactions } = useTransactions({ period: 'month', startDate: txStart, endDate: txEnd });
   const [persistedNotifications, setPersistedNotifications] = useState<NotificationItem[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
 
   // Load persisted notifications
   const loadNotifications = useCallback(async () => {
     await clearExpiredNotifications();
-    const [all, count] = await Promise.all([
-      getAllNotifications(),
-      getUnreadCount(),
-    ]);
+    const all = await getAllNotifications();
     setPersistedNotifications(all);
-    setUnreadCount(count);
   }, []);
 
   useEffect(() => {
@@ -235,44 +230,55 @@ export function useNotificationPanel() {
   // Fetch recurring payments async and merge
   const [recurringItems, setRecurringItems] = useState<PanelNotification[]>([]);
 
-  useEffect(() => {
-    const loadRecurring = async () => {
-      const upcoming = await getUpcomingPayments(3); // next 3 days
-      const now = Date.now();
+  const loadRecurring = useCallback(async () => {
+    const upcoming = await getUpcomingPayments(3); // next 3 days
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayTs = today.getTime();
 
-      const items: PanelNotification[] = upcoming.map(payment => {
-        const isDueToday = payment.daysUntilDue === 0 || payment.daysUntilDue < 0;
-        return {
-          type: isDueToday ? 'recurring-due' : 'recurring-upcoming' as NotificationType,
-          title: isDueToday
-            ? `Сегодня: ${payment.template.comment || 'Платёж'}`
-            : `Через ${Math.abs(payment.daysUntilDue)} дн.: ${payment.template.comment || 'Платёж'}`,
-          subtitle: `${payment.template.amount.toLocaleString('ru-RU')} ₽${payment.isOverdue ? ' (просрочено)' : ''}`,
-          icon: 'Clock',
-          iconColor: isDueToday ? 'text-red-500' : 'text-blue-500',
-          iconBg: isDueToday ? 'bg-red-100 dark:bg-red-900/30' : 'bg-blue-100 dark:bg-blue-900/30',
-          data: { templateId: payment.template.id },
-          read: false,
-          createdAt: now,
-          actionLabel: isDueToday ? 'Создать сейчас' : 'Посмотреть',
-          actionData: `/history`,
-        };
-      });
+    const items: PanelNotification[] = upcoming.map(payment => {
+      const isDueToday = payment.daysUntilDue === 0 || payment.daysUntilDue < 0;
+      return {
+        type: isDueToday ? 'recurring-due' : 'recurring-upcoming' as NotificationType,
+        title: isDueToday
+          ? `Сегодня: ${payment.template.comment || 'Платёж'}`
+          : `Через ${Math.abs(payment.daysUntilDue)} дн.: ${payment.template.comment || 'Платёж'}`,
+        subtitle: `${payment.template.amount.toLocaleString('ru-RU')} ₽${payment.isOverdue ? ' (просрочено)' : ''}`,
+        icon: 'Clock',
+        iconColor: isDueToday ? 'text-red-500' : 'text-blue-500',
+        iconBg: isDueToday ? 'bg-red-100 dark:bg-red-900/30' : 'bg-blue-100 dark:bg-blue-900/30',
+        data: { templateId: payment.template.id },
+        read: false,
+        createdAt: todayTs,
+        actionLabel: isDueToday ? 'Создать сейчас' : 'Посмотреть',
+        actionData: `/history`,
+      };
+    });
 
-      setRecurringItems(items);
-    };
-
-    loadRecurring();
+    setRecurringItems(items);
   }, []);
+
+  useEffect(() => {
+    loadRecurring();
+  }, [loadRecurring]);
 
   // Merge all notifications: dynamic + recurring + persisted (read ones)
   const allNotifications = useMemo<PanelNotification[]>(() => {
     const dynamic = [...dynamicNotifications, ...recurringItems];
     const persistedRead = persistedNotifications.filter(n => n.read);
 
-    // Merge: dynamic ones are "new" (unread), persisted read stay as history
+    // Keys of already-persisted-read notifications — skip their unread dynamic duplicates
+    const persistedReadKeys = new Set(
+      persistedRead.map(n => `${n.type}-${JSON.stringify(n.data)}`)
+    );
+
+    // Only include dynamic items that haven't been marked as read yet
+    const filteredDynamic = dynamic.filter(
+      n => !persistedReadKeys.has(`${n.type}-${JSON.stringify(n.data)}`)
+    );
+
     const merged: PanelNotification[] = [
-      ...dynamic,
+      ...filteredDynamic,
       ...persistedRead.map(p => ({
         ...p,
         actionLabel: undefined,
@@ -284,7 +290,8 @@ export function useNotificationPanel() {
     return merged.sort((a, b) => b.createdAt - a.createdAt);
   }, [dynamicNotifications, recurringItems, persistedNotifications]);
 
-  const hasUnread = unreadCount > 0 || dynamicNotifications.length > 0 || recurringItems.some(r => !r.read);
+  const hasUnread = allNotifications.some(n => !n.read);
+  const unreadCount = allNotifications.filter(n => !n.read).length;
 
   // Mark all as read and persist
   const handleMarkAllRead = useCallback(async () => {
@@ -296,7 +303,8 @@ export function useNotificationPanel() {
     const toAdd = [...dynamicNotifications, ...recurringItems].filter(
       n => !existingKeys.has(`${n.type}-${JSON.stringify(n.data)}`)
     );
-    await Promise.all(toAdd.map(n => addNotification({ ...n, read: true })));
+    const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 дней
+    await Promise.all(toAdd.map(n => addNotification({ ...n, read: true, expiresAt })));
     await loadNotifications();
   }, [dynamicNotifications, recurringItems, persistedNotifications, loadNotifications]);
 
@@ -306,7 +314,6 @@ export function useNotificationPanel() {
     setPersistedNotifications(prev =>
       prev.map(n => n.id === id ? { ...n, read: true } : n)
     );
-    setUnreadCount(prev => Math.max(0, prev - 1));
   }, []);
 
   // Delete notification
@@ -321,6 +328,10 @@ export function useNotificationPanel() {
     setPersistedNotifications(prev => prev.filter(n => !n.read));
   }, []);
 
+  const refresh = useCallback(async () => {
+    await Promise.all([loadNotifications(), loadRecurring()]);
+  }, [loadNotifications, loadRecurring]);
+
   return {
     notifications: allNotifications,
     hasUnread,
@@ -329,7 +340,7 @@ export function useNotificationPanel() {
     markRead: handleMarkRead,
     deleteNotification: handleDelete,
     clearRead: handleClearRead,
-    refresh: loadNotifications,
+    refresh,
   };
 }
 

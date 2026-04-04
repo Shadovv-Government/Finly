@@ -4,6 +4,7 @@ import {
   getExpensesByCategory,
   getIncomeByCategory,
   getSpendingTrend,
+  getIncomeTrend,
   getCurrentBalance,
   getBalanceWithSavings,
   CategoryAnalytics,
@@ -56,6 +57,7 @@ export function useAnalytics(options: UseAnalyticsOptions = {}) {
   const [expensesByCategory, setExpensesByCategory] = useState<CategoryAnalytics[]>([]);
   const [incomeByCategory, setIncomeByCategory] = useState<CategoryAnalytics[]>([]);
   const [spendingTrend, setSpendingTrend] = useState<SpendingTrendPoint[]>([]);
+  const [incomeTrend, setIncomeTrend] = useState<SpendingTrendPoint[]>([]);
   const [currentBalance, setCurrentBalance] = useState<number>(0);
   const [savingsAmount, setSavingsAmount] = useState<number>(0);
   const [freeBalance, setFreeBalance] = useState<number>(0);
@@ -69,18 +71,21 @@ export function useAnalytics(options: UseAnalyticsOptions = {}) {
         ? { start: startDate, end: endDate }
         : getPeriodRange(period);
 
+      const trendDays = period === 'day' ? 7 : 30;
       const [
         balanceData,
         expensesData,
         incomeData,
         trendData,
+        incomeTrendData,
         currentBalanceData,
         balanceWithSavingsData,
       ] = await Promise.all([
         getBalanceByPeriod(range.start, range.end),
         getExpensesByCategory(range.start, range.end),
         getIncomeByCategory(range.start, range.end),
-        getSpendingTrend(period === 'day' ? 7 : 30),
+        getSpendingTrend(trendDays),
+        getIncomeTrend(trendDays),
         getCurrentBalance(),
         getBalanceWithSavings(),
       ]);
@@ -89,6 +94,7 @@ export function useAnalytics(options: UseAnalyticsOptions = {}) {
       setExpensesByCategory(expensesData);
       setIncomeByCategory(incomeData);
       setSpendingTrend(trendData);
+      setIncomeTrend(incomeTrendData);
       setCurrentBalance(currentBalanceData);
       setSavingsAmount(balanceWithSavingsData.savingsAmount);
       setFreeBalance(balanceWithSavingsData.freeBalance);
@@ -109,6 +115,7 @@ export function useAnalytics(options: UseAnalyticsOptions = {}) {
     expensesByCategory,
     incomeByCategory,
     spendingTrend,
+    incomeTrend,
     currentBalance,
     savingsAmount,
     freeBalance,

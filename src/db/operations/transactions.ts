@@ -47,11 +47,11 @@ export async function deleteTransaction(id: number): Promise<void> {
  * Получает транзакции за период
  */
 export async function getTransactionsByPeriod(start: number, end: number): Promise<Transaction[]> {
-  return db.transactions
+  const results = await db.transactions
     .where('date')
     .between(start, end)
-    .reverse()
-    .sortBy('date');
+    .toArray();
+  return results.sort((a, b) => b.date - a.date);
 }
 
 /**
