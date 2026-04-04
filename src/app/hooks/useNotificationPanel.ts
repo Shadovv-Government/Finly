@@ -322,11 +322,24 @@ export function useNotificationPanel() {
     setPersistedNotifications(prev => prev.filter(n => n.id !== id));
   }, []);
 
-  // Clear read notifications
+  // Clear read notifications — preserve read markers for currently active dynamic items
   const handleClearRead = useCallback(async () => {
-    await clearReadNotifications();
-    setPersistedNotifications(prev => prev.filter(n => !n.read));
-  }, []);
+    const activeKeys = new Set(
+      [...dynamicNotifications, ...recurringItems].map(
+        n => `${n.type}-${JSON.stringify(n.data)}`
+      )
+    );
+    // Delete only persisted-read notifications that are NOT active dynamic items
+    setPersistedNotifications(prev => {
+      const toDelete = prev.filter(
+        n => n.read && !activeKeys.has(`${n.type}-${JSON.stringify(n.data)}`)
+      );
+      Promise.all(toDelete.map(n => deleteNotification(n.id!))).catch(() => {});
+      return prev.filter(
+        n => !n.read || activeKeys.has(`${n.type}-${JSON.stringify(n.data)}`)
+      );
+    });
+  }, [dynamicNotifications, recurringItems]);
 
   const refresh = useCallback(async () => {
     await Promise.all([loadNotifications(), loadRecurring()]);
