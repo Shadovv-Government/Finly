@@ -103,7 +103,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
     <>
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-40 ${
+        className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] ${
           closing ? 'animate-fade-out' : 'animate-fade-in'
         }`}
         onClick={onClose}
@@ -112,7 +112,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
       {/* Bottom Sheet */}
       <div
         ref={sheetRef}
-        className={`fixed bottom-0 left-0 right-0 bg-card rounded-t-[2.5rem] z-50
+        className={`fixed bottom-0 left-0 right-0 bg-card rounded-t-[2.5rem] z-[70]
                    max-h-[90vh] overflow-hidden flex flex-col safe-area-inset-bottom
                    ${closing ? 'animate-slide-down' : 'animate-slide-up'}`}
         onClick={(e) => e.stopPropagation()}
