@@ -208,12 +208,22 @@ src/db/
 ├── types.ts           — TypeScript-интерфейсы
 ├── db.ts              — Класс Dexie, схема БД (singleton)
 ├── seed.ts            — Начальное заполнение (категории, настройки)
-├── operations.ts      — CRUD-функции для всех таблиц
+├── validators.ts      — Валидация данных
 ├── analytics.ts       — Аналитика для графиков и дашбордов
 ├── ai.ts              — Авто-категоризация и рекомендации
 ├── recurring.ts       — Обработка повторяющихся платежей
 ├── exportImport.ts    — Экспорт/импорт (JSON, CSV)
-├── validators.ts      — Валидация данных
+├── operations/        — CRUD-функции (модульная структура)
+│   ├── index.ts       — Ре-экспорт всех операций
+│   ├── transactions.ts — CRUD транзакций (+ тесты)
+│   ├── categories.ts  — CRUD категорий (+ тесты)
+│   ├── budgets.ts     — CRUD бюджетов
+│   ├── goals.ts       — CRUD целей
+│   ├── recurring.ts   — CRUD повторяющихся платежей
+│   ├── settings.ts    — CRUD настроек
+│   ├── users.ts       — CRUD пользователей
+│   ├── aiPatterns.ts  — CRUD AI паттернов
+│   └── biometric.ts   — Биометрическая аутентификация
 └── readme.md          — Документация по БД
 ```
 
@@ -248,18 +258,25 @@ src/db/
 
 ## 7. Модули слоя данных
 
-### 7.1 `operations.ts` — CRUD операции
+### 7.1 `operations/` — CRUD операции (модульная структура)
 
-| Сущность | Функции |
-|----------|---------|
-| **Transactions** | `addTransaction`, `getTransaction`, `updateTransaction`, `deleteTransaction`, `getTransactionsByPeriod`, `getTransactionsByCategory`, `getAllTransactions`, `getCurrentUser` |
-| **Categories** | `addCategory`, `getCategory`, `updateCategory`, `deleteCategory`, `getCategories`, `getCategoriesByType`, `getExpenseCategories`, `getIncomeCategories` |
-| **Budgets** | `addBudget`, `getBudget`, `updateBudget`, `deleteBudget`, `getBudgetByCategory`, `getActiveBudgets` |
-| **Goals** | `addGoal`, `getGoal`, `updateGoal`, `deleteGoal`, `getGoals`, `getActiveGoals`, `contributeToGoal` |
-| **Recurring** | `addRecurringTemplate`, `getRecurringTemplate`, `updateRecurringTemplate`, `deleteRecurringTemplate`, `getActiveRecurringTemplates` |
-| **Settings** | `getSetting`, `setSetting`, `getAllSettings` |
-| **AI Patterns** | `addAIPattern`, `getAIPattern`, `updateAIPattern`, `deleteAIPattern` |
-| **Users** | `createUser`, `getUser`, `updateUser`, `deleteUser`, `getCurrentUser` |
+CRUD-операции разделены по отдельным файлам для каждой сущности:
+
+| Файл | Сущность | Основные функции |
+|------|----------|------------------|
+| `transactions.ts` | **Transactions** | `addTransaction`, `getTransaction`, `updateTransaction`, `deleteTransaction`, `getTransactionsByPeriod`, `getTransactionsByCategory`, `getAllTransactions` |
+| `categories.ts` | **Categories** | `addCategory`, `getCategory`, `updateCategory`, `deleteCategory`, `getCategories`, `getCategoriesByType`, `getExpenseCategories`, `getIncomeCategories` |
+| `budgets.ts` | **Budgets** | `addBudget`, `getBudget`, `updateBudget`, `deleteBudget`, `getBudgetByCategory`, `getActiveBudgets` |
+| `goals.ts` | **Goals** | `addGoal`, `getGoal`, `updateGoal`, `deleteGoal`, `getGoals`, `getActiveGoals`, `contributeToGoal` |
+| `recurring.ts` | **Recurring** | `addRecurringTemplate`, `getRecurringTemplate`, `updateRecurringTemplate`, `deleteRecurringTemplate`, `getActiveRecurringTemplates` |
+| `settings.ts` | **Settings** | `getSetting`, `setSetting`, `getAllSettings` |
+| `users.ts` | **Users** | `createUser`, `getUser`, `updateUser`, `deleteUser`, `getCurrentUser` |
+| `aiPatterns.ts` | **AI Patterns** | `addAIPattern`, `getAIPattern`, `updateAIPattern`, `deleteAIPattern` |
+| `biometric.ts` | **Biometric** | `getBiometricSettings`, `updateBiometricSettings`, `getPinHash`, `setPinHash` |
+
+Все функции экспортируются через `operations/index.ts`.
+
+**Тесты:** `transactions.test.ts`, `categories.test.ts`
 
 ---
 
@@ -366,9 +383,13 @@ interface ValidationResult {
 | `AIAssistant.tsx` | AI-ассистент |
 | `Onboarding.tsx` | Онбординг для новых пользователей |
 | `Registration.tsx` | Регистрация/вход пользователя |
+| `LockScreen.tsx` | Экран блокировки (PIN/биометрия) |
+| `AddTransaction.tsx` | Экран добавления транзакции |
 | `PrivacyPolicy.tsx` | Политика конфиденциальности |
 | `TermsOfService.tsx` | Условия использования |
 | `ComponentShowcase.tsx` | Демонстрация компонентов |
+
+**Всего: 15 экранов**
 
 ### 8.4 Маршрутизация (`routes.tsx`)
 
@@ -489,7 +510,7 @@ this.version(2).stores({
 
 ---
 
-## 13. Структура состояний (Zustand)
+## 13. Структура состояний (Zustand + Custom Hooks)
 
 ### Хуки для работы с данными
 
@@ -505,8 +526,11 @@ this.version(2).stores({
 
 | Хук | Описание |
 |-----|----------|
+| `useBiometric` | Биометрическая аутентификация |
 | `useNotifications` | Уведомления (Sonner) |
 | `useTransactionForm` | Логика формы транзакций |
+
+**Всего: 8 хуков**
 
 ---
 
@@ -525,6 +549,64 @@ this.version(2).stores({
 - `useTransactionForm.test.ts` — тесты хука формы
 - `useCategories.test.ts` — тесты хука категорий
 - `useTransactions.test.ts` — тесты хука транзакций
+
+---
+
+## 14.5 Система уведомлений (`NotificationsPanel` + `useNotificationPanel`)
+
+### Панель уведомлений
+
+Компонент `NotificationsPanel.tsx` открывается по кнопке-колокольчику на Dashboard. Отображает уведомления, сгруппированные по дате:
+
+| Группа | Условие |
+|--------|---------|
+| **Сегодня** | `createdAt` < 24ч |
+| **Вчера** | `createdAt` < 48ч |
+| **На этой неделе** | `createdAt` < 7 дней |
+| **Ранее** | старше 7 дней |
+
+### Типы уведомлений (9 типов)
+
+| Тип | Условие генерации | Иконка | Цвет |
+|-----|-------------------|--------|------|
+| `budget-overrun` | Потрачено ≥ 100% бюджета | AlertTriangle | Красный |
+| `budget-warning` | Потрачено 80–99% бюджета | AlertTriangle | Жёлтый |
+| `goal-done` | Накоплено ≥ 100% цели | CheckCircle2 | Зелёный |
+| `goal-near` | Накоплено 80–99% цели | Target | Фиолетовый |
+| `goal-deadline` | Дедлайн ≤ 7 дней или прошёл | Calendar / AlertTriangle | Оранжевый / Красный |
+| `recurring-due` | Платёж должен сегодня | Clock | Красный |
+| `recurring-upcoming` | Платёж через 1–3 дня | Clock | Синий |
+| `anomalous-expense` | Трата > 2σ от среднего | TrendingUp | Синий |
+| `duplicate-transaction` | 2 одинаковые операции за < 1ч | Copy | Жёлтый |
+
+### Persist и прочтение
+
+- Уведомления сохраняются в IndexedDB (таблица `notifications`, схема v3)
+- При открытии панели все динамические уведомления помечаются как прочитанные
+- Кнопки действий: **"Прочитать все"**, **"Очистить прочитанные"**
+- Красный индикатор на колокольчике показывается только при наличии непрочитанных
+
+### Действия в уведомлениях
+
+Каждое уведомление имеет кнопку действия с навигацией:
+- Бюджеты → `/budgets`
+- Цели → `/goals`
+- Транзакции → `/history`
+
+### Настройки уведомлений (Settings)
+
+4 переключателя:
+1. **Push-уведомления** — браузерные Notification API
+2. **Бюджеты** — уведомления о превышении лимитов
+3. **Цели** — уведомления о достижениях и дедлайнах
+4. **Регулярные платежи** — напоминания о платежах
+
+### Хуки
+
+| Хук | Описание |
+|-----|----------|
+| `useNotificationPanel` | Генерация + persist уведомлений, группировка по дате |
+| `useNotifications` | Push-уведомления (Sonner + Browser Notification API) |
 
 ---
 
@@ -728,6 +810,18 @@ this.version(3).stores({
 | chart.js | ^4.4.2 | Альтернативные графики |
 | motion | 12.23.24 | Анимации |
 | sonner | 2.0.3 | Уведомления |
+| @mui/material | ^5.15.15 | Дополнительные UI-компоненты |
+| react-hook-form | 7.55.0 | Управление формами |
+| date-fns | 3.6.0 | Работа с датами |
+| uuid | ^13.0.0 | Генерация UUID |
+| canvas-confetti | 1.9.4 | Анимация конфетти |
+| vaul | 1.1.2 | Drawer-компоненты |
+| embla-carousel-react | 8.6.0 | Карусель |
+| react-dnd | 16.0.1 | Drag-and-drop |
+
+### Дополнительные UI-компоненты (Radix UI + shadcn/ui)
+
+30+ компонентов: accordion, alert-dialog, aspect-ratio, avatar, checkbox, collapsible, context-menu, dialog, dropdown-menu, hover-card, label, menubar, navigation-menu, popover, progress, radio-group, scroll-area, select, separator, slider, slot, switch, tabs, toggle, toggle-group, tooltip, command, calendar, carousel, drawer, form, input-otp, resizable, menubar.
 
 ### Dev-зависимости
 
@@ -738,15 +832,72 @@ this.version(3).stores({
 | typescript | ^5.4.5 | Типизация |
 | vitest | ^4.1.1 | Тестирование |
 | @testing-library/react | ^16.3.2 | React тесты |
+| @testing-library/jest-dom | ^6.9.1 | Jest DOM матчеры |
+| @testing-library/user-event | ^14.6.1 | Эмуляция пользовательского ввода |
+| @vitest/coverage-v8 | ^4.1.1 | Покрытие кода |
+| jsdom | ^29.0.1 | Среда тестирования |
 | eslint | ^8.57.0 | Линтинг |
 
 ---
 
-## 22. Будущие улучшения
+## 22. Тестирование
 
-### В разработке
+### Инфраструктура
 
-- [ ] Биометрическая аутентификация (WebAuthn)
+| Инструмент | Версия | Назначение |
+|------------|--------|------------|
+| Vitest | ^4.1.1 | Тест-раннер |
+| Testing Library | ^16.3.2 | Рендер и запросы |
+| jsdom | ^29.0.1 | DOM-среда |
+| coverage-v8 | ^4.1.1 | Покрытие кода |
+
+### Покрытие
+
+- **Порог:** 50% branches, functions, lines, statements
+- **Команды:** `npm run test`, `npm run test:watch`, `npm run test:coverage`
+
+### Тест-файлы (10+)
+
+| Категория | Файлы |
+|-----------|-------|
+| **Компоненты** | `AddTransactionForm.test.tsx`, `ErrorBoundary.test.tsx` |
+| **Хуки** | `useTransactions.test.ts`, `useCategories.test.ts`, `useTransactionForm.test.ts` |
+| **Утилиты** | `formatCurrency.test.ts`, `errorHandler.test.ts` |
+| **БД операции** | `operations/transactions.test.ts`, `operations/categories.test.ts` |
+| **Валидаторы** | `db/validators.test.ts` |
+
+---
+
+## 23. CI/CD Pipeline
+
+### GitHub Actions (`.github/workflows/ci.yml`)
+
+**Триггеры:**
+- Push на `main` или `feature/*`
+- Pull Request в `main`
+
+**Джобы:**
+
+| Джоб | Шаги | Описание |
+|------|------|----------|
+| **build** | Checkout → Node 20 → `npm ci` → `npm run lint` → `npm run build` | Проверка и сборка |
+| **deploy** | Vercel Action | Деплой на продакшен (только `main`) |
+
+---
+
+## 24. Будущие улучшения
+
+### Реализовано
+
+- [x] Биометрическая аутентификация (PIN + WebAuthn Face ID / Touch ID) — частично реализовано
+- [x] Система уведомлений с persist, группировкой по дате и действиями
+- [x] Уведомления о повторяющихся платежах
+- [x] Уведомления об аномальных тратах и дубликатах
+- [x] Уведомления о дедлайнах целей
+- [x] Настройки уведомлений (4 переключателя)
+
+### В планах
+
 - [ ] Мультивалютность с авто-конвертацией
 - [ ] Push-уведомления о лимитах
 

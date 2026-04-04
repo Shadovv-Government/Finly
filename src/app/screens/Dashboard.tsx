@@ -9,6 +9,7 @@ import { useAnalytics, getPeriodRange, PeriodType } from '../hooks/useAnalytics'
 import { useTransactions } from '../hooks/useTransactions';
 import { useCategories } from '../hooks/useCategories';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotificationPanel } from '../hooks/useNotificationPanel';
 import {
   Dialog,
   DialogContent,
@@ -34,6 +35,7 @@ export const Dashboard = () => {
   const { transactions } = useTransactions({ period, startDate: periodRange.start, endDate: periodRange.end });
   const { categories } = useCategories();
   const { user, updateProfile } = useAuth();
+  const { hasUnread } = useNotificationPanel();
   const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -107,7 +109,9 @@ export const Dashboard = () => {
               className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center relative"
             >
               <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              {hasUnread && (
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              )}
             </button>
             <button
               onClick={handleAvatarClick}

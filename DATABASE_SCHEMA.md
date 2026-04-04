@@ -81,6 +81,20 @@ erDiagram
         string avatarColor
     }
 
+    NOTIFICATIONS {
+        int id PK
+        string type
+        string title
+        string subtitle
+        string icon
+        string iconColor
+        string iconBg
+        json data
+        boolean read
+        int createdAt
+        int expiresAt
+    }
+
     TRANSACTIONS ||--o{ CATEGORIES : "belongs to"
     BUDGETS ||--o{ CATEGORIES : "tracks"
     RECURRING_TEMPLATES ||--o{ CATEGORIES : "categorizes"
@@ -101,6 +115,7 @@ erDiagram
 | `settings` | `key` (string) | — | KV-хранилище настроек приложения |
 | `aiPatterns` | `++id` (auto-increment) | `pattern, categoryId` | Паттерны для AI авто-категоризации |
 | `users` | `id` (UUID string) | `createdAt` | Профиль пользователя |
+| `notifications` | `++id` (auto-increment) | `type, read, createdAt, expiresAt` | Уведомления с persist и статусом прочтения |
 
 ## Relationships
 
@@ -244,6 +259,8 @@ interface AppSettings {
 | `theme` | `'light' \| 'dark' \| 'system'` | Тема оформления |
 | `baseCurrency` | `'RUB'` | Базовая валюта |
 | `onboardingComplete` | `false` | Пройден ли онбординг |
+| `biometricEnabled` | `false` | Включена ли биометрия |
+| `pinHash` | `string \| null` | Хэш PIN-кода |
 
 ---
 
@@ -279,6 +296,45 @@ interface User {
 
 ---
 
+### NotificationItem
+
+Уведомление с persist и статусом прочтения.
+
+```typescript
+type NotificationType =
+  | 'budget-overrun'      // Бюджет превышен
+  | 'budget-warning'      // Бюджет почти исчерпан (80%+)
+  | 'goal-done'           // Цель достигнута
+  | 'goal-near'           // Почти у цели (80%+)
+  | 'goal-deadline'       // Дедлайн цели приближается/прошёл
+  | 'recurring-due'       // Повторяющийся платёж сегодня
+  | 'recurring-upcoming'  // Предстоящий платёж (1-3 дня)
+  | 'anomalous-expense'   // Аномально крупная трата
+  | 'duplicate-transaction'; // Возможный дубликат
+
+interface NotificationItem {
+  id?: number;
+  type: NotificationType;
+  title: string;          // заголовок уведомления
+  subtitle: string;       // подробное описание
+  icon: string;           // название Lucide иконки
+  iconColor: string;      // цвет иконки (tailwind class)
+  iconBg: string;         // цвет фона бейджа (tailwind class)
+  data?: Record<string, any>; // доп. данные (categoryId, goalId и т.д.)
+  read: boolean;          // статус прочтения
+  createdAt: number;      // timestamp создания
+  expiresAt?: number;     // опционально: timestamp авто-удаления
+}
+```
+
+**Индексы:**
+- `type` — фильтрация по типу
+- `read` — фильтр прочитанных/непрочитанных
+- `createdAt` — сортировка по времени
+- `expiresAt` — авто-удаление просроченных
+
+---
+
 ## Database Versioning
 
 ```typescript
@@ -295,6 +351,10 @@ this.version(1).stores({
 
 this.version(2).stores({
   users: 'id, createdAt',
+});
+
+this.version(3).stores({
+  notifications: '++id, type, read, createdAt, expiresAt',
 });
 ```
 
@@ -346,14 +406,31 @@ await seedDatabase();
 
 ## Files
 
+### Core Files
+
 | File | Description |
 |------|-------------|
 | `types.ts` | TypeScript-интерфейсы для всех сущностей |
 | `db.ts` | Класс Dexie и объявление схем таблиц (singleton) |
 | `seed.ts` | Начальное заполнение БД (категории, настройки) |
-| `operations.ts` | CRUD-функции для всех таблиц |
+| `validators.ts` | Валидация данных перед записью (+ тесты) |
 | `analytics.ts` | Аналитические запросы для графиков |
 | `ai.ts` | Логика авто-категоризации |
 | `recurring.ts` | Обработка повторяющихся платежей |
 | `exportImport.ts` | Экспорт/импорт данных (JSON, CSV) |
-| `validators.ts` | Валидация данных перед записью |
+
+### Operations (`operations/`)
+
+| File | Description | Tests |
+|------|-------------|-------|
+| `index.ts` | Ре-экспорт всех CRUD операций | — |
+| `transactions.ts` | CRUD транзакций | ✅ |
+| `categories.ts` | CRUD категорий | ✅ |
+| `budgets.ts` | CRUD бюджетов | — |
+| `goals.ts` | CRUD целей | — |
+| `settings.ts` | CRUD настроек | — |
+| `recurring.ts` | CRUD повторяющихся платежей | — |
+| `users.ts` | CRUD пользователей | — |
+| `aiPatterns.ts` | CRUD AI паттернов | — |
+| `biometric.ts` | Биометрическая аутентификация | — |
+| `notifications.ts` | CRUD уведомлений (+ persist, read/unread) | — |

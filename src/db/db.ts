@@ -2,7 +2,8 @@
 import Dexie, { Table } from 'dexie';
 import {
   Transaction, Category, Budget, Goal,
-  RecurringTemplate, AppSettings, AIPattern, User
+  RecurringTemplate, AppSettings, AIPattern, User,
+  NotificationItem,
 } from './types';
 
 class FinlyDatabase extends Dexie {
@@ -15,6 +16,7 @@ class FinlyDatabase extends Dexie {
   settings!: Table<AppSettings, string>;
   aiPatterns!: Table<AIPattern, number>;
   users!: Table<User, string>;
+  notifications!: Table<NotificationItem, number>;
 
   constructor() {
     super('FinlyDB');
@@ -46,6 +48,11 @@ class FinlyDatabase extends Dexie {
     this.version(2).stores({
       // Пользователи
       users: 'id, createdAt',
+    });
+
+    this.version(3).stores({
+      // Уведомления с persist и статусом прочтения
+      notifications: '++id, type, read, createdAt, expiresAt',
     });
   }
 }

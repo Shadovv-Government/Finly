@@ -1,109 +1,139 @@
 import { useMemo } from 'react';
-import { AlertTriangle, CheckCircle2, Target, Bell } from 'lucide-react';
+import { Bell, CheckCheck, Trash2 } from 'lucide-react';
 import { BottomSheet } from './BottomSheet';
-import { useBudgets } from '../hooks/useBudgets';
-import { useGoals } from '../hooks/useGoals';
-import { useAnalytics } from '../hooks/useAnalytics';
+import { useNotificationPanel, iconMap } from '../hooks/useNotificationPanel';
+import { useNavigate } from 'react-router-dom';
 
 interface NotificationsPanelProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-interface NotificationItem {
-  id: string;
-  type: 'budget-overrun' | 'budget-warning' | 'goal-done' | 'goal-near';
-  title: string;
-  subtitle: string;
-  icon: React.ReactNode;
-  iconBg: string;
-}
-
 export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ isOpen, onClose }) => {
-  const { budgets } = useBudgets();
-  const { goals } = useGoals();
-  const { expensesByCategory } = useAnalytics({ period: 'month' });
+  const {
+    notifications,
+    hasUnread,
+    markAllRead,
+    clearRead,
+  } = useNotificationPanel();
+  const navigate = useNavigate();
 
-  const notifications = useMemo<NotificationItem[]>(() => {
-    const items: NotificationItem[] = [];
+  // Group notifications by date
+  const groupedNotifications = useMemo(() => {
+    const groups: { label: string; items: typeof notifications }[] = [];
+    const now = Date.now();
+    const MS_PER_DAY = 86400000;
 
-    // Budget alerts
-    for (const budget of budgets) {
-      const spent = expensesByCategory.find(e => e.categoryId === budget.categoryId)?.amount ?? 0;
-      const ratio = budget.amount > 0 ? spent / budget.amount : 0;
+    for (const item of notifications) {
+      const age = now - item.createdAt;
+      let label: string;
 
-      if (ratio >= 1) {
-        items.push({
-          id: `budget-overrun-${budget.categoryId}`,
-          type: 'budget-overrun',
-          title: 'Бюджет превышен',
-          subtitle: `Потрачено ${spent.toLocaleString('ru-RU')} ₽ при лимите ${budget.amount.toLocaleString('ru-RU')} ₽`,
-          icon: <AlertTriangle className="w-5 h-5 text-red-500" />,
-          iconBg: 'bg-red-100 dark:bg-red-900/30',
-        });
-      } else if (ratio >= 0.8) {
-        items.push({
-          id: `budget-warning-${budget.categoryId}`,
-          type: 'budget-warning',
-          title: 'Бюджет почти исчерпан',
-          subtitle: `Использовано ${Math.round(ratio * 100)}% лимита — осталось ${(budget.amount - spent).toLocaleString('ru-RU')} ₽`,
-          icon: <AlertTriangle className="w-5 h-5 text-amber-500" />,
-          iconBg: 'bg-amber-100 dark:bg-amber-900/30',
-        });
+      if (age < MS_PER_DAY) {
+        label = 'Сегодня';
+      } else if (age < MS_PER_DAY * 2) {
+        label = 'Вчера';
+      } else if (age < MS_PER_DAY * 7) {
+        label = 'На этой неделе';
+      } else {
+        label = 'Ранее';
       }
+
+      let group = groups.find(g => g.label === label);
+      if (!group) {
+        group = { label, items: [] };
+        groups.push(group);
+      }
+      group.items.push(item);
     }
 
-    // Goal alerts
-    for (const goal of goals) {
-      if (!goal.isActive) continue;
-      const ratio = goal.targetAmount > 0 ? goal.currentAmount / goal.targetAmount : 0;
+    return groups;
+  }, [notifications]);
 
-      if (ratio >= 1) {
-        items.push({
-          id: `goal-done-${goal.id}`,
-          type: 'goal-done',
-          title: `Цель достигнута: ${goal.name}`,
-          subtitle: `Накоплено ${goal.currentAmount.toLocaleString('ru-RU')} ₽`,
-          icon: <CheckCircle2 className="w-5 h-5 text-green-500" />,
-          iconBg: 'bg-green-100 dark:bg-green-900/30',
-        });
-      } else if (ratio >= 0.8) {
-        items.push({
-          id: `goal-near-${goal.id}`,
-          type: 'goal-near',
-          title: `Почти у цели: ${goal.name}`,
-          subtitle: `Накоплено ${Math.round(ratio * 100)}% — осталось ${(goal.targetAmount - goal.currentAmount).toLocaleString('ru-RU')} ₽`,
-          icon: <Target className="w-5 h-5 text-violet-500" />,
-          iconBg: 'bg-violet-100 dark:bg-violet-900/30',
-        });
-      }
+  const handleAction = (actionData?: string) => {
+    if (actionData) {
+      onClose();
+      navigate(actionData);
     }
+  };
 
-    return items;
-  }, [budgets, goals, expensesByCategory]);
+  const handleMarkAllRead = async () => {
+    await markAllRead();
+  };
+
+  const handleClearRead = async () => {
+    await clearRead();
+  };
 
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} title="Уведомления">
       <div className="px-4 py-3 pb-8">
+        {/* Actions bar */}
+        {notifications.length > 0 && (
+          <div className="flex items-center gap-2 mb-3">
+            {hasUnread && (
+              <button
+                onClick={handleMarkAllRead}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <CheckCheck className="w-3.5 h-3.5" />
+                Прочитать все
+              </button>
+            )}
+            <button
+              onClick={handleClearRead}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-red-500 transition-colors ml-auto"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Очистить прочитанные
+            </button>
+          </div>
+        )}
+
         {notifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
             <Bell className="w-12 h-12 opacity-30" />
             <p className="text-sm">Всё в порядке, уведомлений нет</p>
           </div>
         ) : (
-          <ul className="flex flex-col gap-3">
-            {notifications.map(item => (
-              <li key={item.id} className="flex items-start gap-3 p-3 rounded-2xl bg-muted/50">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${item.iconBg}`}>
-                  {item.icon}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground leading-tight">{item.title}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{item.subtitle}</p>
-                </div>
-              </li>
+          <div className="flex flex-col gap-4">
+            {groupedNotifications.map(group => (
+              <div key={group.label}>
+                <p className="text-xs font-medium text-muted-foreground mb-2 px-1">
+                  {group.label}
+                </p>
+                <ul className="flex flex-col gap-2">
+                  {group.items.map((item, idx) => (
+                    <li
+                      key={item.id ?? `dynamic-${item.type}-${idx}`}
+                      className={`flex items-start gap-3 p-3 rounded-2xl transition-colors ${
+                        item.read ? 'bg-muted/30 opacity-70' : 'bg-muted/50'
+                      }`}
+                    >
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${item.iconBg}`}>
+                        {iconMap[item.icon] || <Bell className="w-5 h-5" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground leading-tight">
+                          {item.title}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {item.subtitle}
+                        </p>
+                        {item.actionLabel && !item.read && (
+                          <button
+                            onClick={() => handleAction(item.actionData)}
+                            className="text-xs font-medium text-violet-600 dark:text-violet-400 mt-1.5 hover:underline"
+                          >
+                            {item.actionLabel} →
+                          </button>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </div>
     </BottomSheet>

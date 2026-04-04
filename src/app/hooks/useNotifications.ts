@@ -8,6 +8,14 @@ import {
   sendBudgetOverrunNotification,
   sendGoalReminderNotification,
 } from '../utils/notifications';
+import {
+  getUnreadCount,
+  markAllNotificationsAsRead,
+  markNotificationAsRead,
+  deleteNotification,
+  clearReadNotifications,
+  clearAllNotifications,
+} from '../../db/operations/notifications';
 
 export function useNotifications() {
   // Запрос разрешения при монтировании
@@ -53,5 +61,12 @@ export function useNotifications() {
     notifyGoalAchieved,
     notifyBudgetOverrun,
     notifyGoalReminder,
+    // Persist operations
+    getUnreadCount,
+    markAllNotificationsAsRead,
+    markNotificationAsRead,
+    deleteNotification,
+    clearReadNotifications,
+    clearAllNotifications,
   };
 }

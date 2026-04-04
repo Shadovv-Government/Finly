@@ -75,6 +75,11 @@ npm run preview
 - Сохранение предпочтений в localStorage
 - Кастомизация через CSS-переменные
 
+#### Биометрическая аутентификация
+- Экран блокировки (LockScreen) с PIN-кодом
+- Настройка биометрии (BiometricSetupCard) — Face ID / Touch ID через Web Authentication API
+- Включение/отключение в настройках безопасности
+
 ### AI-ассистент
 
 - Автокатегоризация операций на основе паттернов
@@ -98,10 +103,15 @@ npm run preview
 - **React 18.3.1** — UI-фреймворк
 - **React Router 7.13.1** — клиентская маршрутизация
 - **Zustand 4.5.2** — управление состоянием
-- **UI-компоненты:** Radix UI, shadcn/ui
-- **Стили:** Tailwind CSS 4.1.12
-- **Графики:** Recharts 2.15.2, Chart.js 4.4.2
+- **react-hook-form 7.55.0** — управление формами
+- **UI-компоненты:** Radix UI (полный набор), shadcn/ui, cmdk, vaul (bottom sheets), embla-carousel, react-dnd
+- **Стили:** Tailwind CSS 4.1.12, class-variance-authority, tailwind-merge
+- **Графики:** Recharts 2.15.2, Chart.js 4.4.2 + react-chartjs-2
 - **Иконки:** Lucide React 0.487.0, Material Icons 5.15.15
+- **Анимации:** motion 12.23.24, canvas-confetti
+- **Уведомления:** sonner 2.0.3
+- **Даты:** date-fns 3.6.0
+- **Drag & Drop:** react-dnd 16.0.1
 
 ### Хранение данных
 - **IndexedDB** — браузерная NoSQL-база
@@ -115,6 +125,13 @@ npm run preview
 ### Инфраструктура
 - **Git** — система контроля версий
 - **Деплой:** Vercel
+- **CI/CD:** GitHub Actions (build + test при push/PR)
+
+### Тестирование
+- **Vitest 4.1.1** — тест-раннер
+- **Testing Library** — @testing-library/react, @testing-library/dom, @testing-library/user-event, @testing-library/jest-dom
+- **@vitest/coverage-v8** — отчёт покрытия
+- **jsdom 29.0.1** — DOM-окружение
 
 ## Структура проекта
 
@@ -135,6 +152,14 @@ finly/
 │   │   │   ├── AuthContext.tsx # Авторизация и профиль пользователя
 │   │   │   └── ThemeContext.tsx # Темы (light/dark/system)
 │   │   ├── hooks/              # Кастомные React-хуки
+│   │   │   ├── useAnalytics.ts
+│   │   │   ├── useBiometric.ts
+│   │   │   ├── useBudgets.ts
+│   │   │   ├── useCategories.ts
+│   │   │   ├── useGoals.ts
+│   │   │   ├── useNotifications.ts
+│   │   │   ├── useTransactionForm.ts
+│   │   │   └── useTransactions.ts
 │   │   ├── screens/
 │   │   │   ├── Dashboard.tsx
 │   │   │   ├── TransactionHistory.tsx
@@ -146,6 +171,8 @@ finly/
 │   │   │   ├── AIAssistant.tsx
 │   │   │   ├── Onboarding.tsx
 │   │   │   ├── Registration.tsx
+│   │   │   ├── AddTransaction.tsx
+│   │   │   ├── LockScreen.tsx
 │   │   │   ├── PrivacyPolicy.tsx
 │   │   │   ├── TermsOfService.tsx
 │   │   │   └── ComponentShowcase.tsx
@@ -156,14 +183,23 @@ finly/
 │   ├── db/
 │   │   ├── db.ts               # Dexie-конфигурация (FinlyDB)
 │   │   ├── types.ts            # TypeScript-типы сущностей
-│   │   ├── operations.ts       # CRUD-операции
-│   │   ├── analytics.ts        # Аналитические запросы
-│   │   ├── ai.ts               # AI-автокатегоризация
-│   │   ├── recurring.ts        # Повторяющиеся платежи
-│   │   ├── exportImport.ts     # Экспорт/импорт данных
 │   │   ├── validators.ts       # Валидация данных
 │   │   ├── seed.ts             # Начальные данные (категории)
-│   │   └── readme.md           # Документация по БД
+│   │   ├── readme.md           # Документация по БД
+│   │   ├── operations/         # CRUD-операции (модульная структура)
+│   │   │   ├── index.ts
+│   │   │   ├── transactions.ts
+│   │   │   ├── categories.ts
+│   │   │   ├── budgets.ts
+│   │   │   ├── goals.ts
+│   │   │   ├── recurring.ts
+│   │   │   ├── settings.ts
+│   │   │   ├── users.ts
+│   │   │   ├── aiPatterns.ts
+│   │   │   └── biometric.ts
+│   │   ├── analytics.ts        # Аналитические запросы
+│   │   ├── ai.ts               # AI-автокатегоризация
+│   │   └── exportImport.ts     # Экспорт/импорт данных
 │   ├── styles/
 │   │   ├── index.css           # Основные стили
 │   │   ├── tailwind.css        # Tailwind-конфигурация
@@ -191,6 +227,24 @@ finly/
 | `npm run build` | Сборка для продакшена (tsc + vite build) |
 | `npm run preview` | Предпросмотр продакшен-сборки |
 | `npm run lint` | Проверка кода ESLint |
+| `npm run test` | Запуск тестов (Vitest) |
+| `npm run test:watch` | Тесты в режиме наблюдения |
+| `npm run test:ui` | Тесты с UI (Vitest UI) |
+| `npm run test:coverage` | Тесты с отчётом покрытия |
+
+## Тестирование
+
+Проект использует **Vitest** + **Testing Library** (React, DOM, jest-dom, user-event). Тесты покрывают компоненты, хуки, утилиты и операции с БД.
+
+```bash
+npm run test        # однократный запуск
+npm run test:watch  # режим наблюдения
+npm run test:ui     # визуальный UI
+```
+
+Покрытие: 10+ тестовых файлов — компоненты (`AddTransactionForm`, `ErrorBoundary`), хуки (`useCategories`, `useTransactionForm`, `useTransactions`), утилиты (`errorHandler`, `formatCurrency`), операции БД (`categories`, `transactions`) и валидаторы.
+
+CI/CD: сборка и тесты запускаются автоматически через GitHub Actions при push и pull request.
 
 ## База данных
 
@@ -231,7 +285,11 @@ finly/
 - Нижняя панель навигации (BottomNav) для мобильных
 - BottomSheet для форм добавления операций
 - Темная/светлая тема с системным детектированием
-- Уведомления через Toaster (Sonner)
+- Уведомления через Toaster (Sonner) и панель уведомлений с persist в IndexedDB
+- 9 типов уведомлений: бюджеты, цели, дедлайны, повторяющиеся платежи, аномальные траты, дубликаты
+- Группировка уведомлений по дате (Сегодня, Вчера, На этой неделе, Ранее)
+- Действия в уведомлениях с навигацией к соответствующему экрану
+- Настройки уведомлений: 4 переключателя (Push, Бюджеты, Цели, Платежи)
 
 ### Производительность
 - Code splitting через React Router

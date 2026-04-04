@@ -78,3 +78,28 @@ export interface User {
   deviceId?: string; // идентификатор устройства
   avatarColor?: string; // цвет аватара (градиент)
 }
+
+export type NotificationType =
+  | 'budget-overrun'
+  | 'budget-warning'
+  | 'goal-done'
+  | 'goal-near'
+  | 'goal-deadline'
+  | 'recurring-due'
+  | 'recurring-upcoming'
+  | 'anomalous-expense'
+  | 'duplicate-transaction';
+
+export interface NotificationItem {
+  id?: number;
+  type: NotificationType;
+  title: string;
+  subtitle: string;
+  icon: string; // lucide icon name
+  iconColor: string; // tailwind color class for icon
+  iconBg: string; // tailwind bg color for badge
+  data?: Record<string, any>; // дополнительные данные (categoryId, goalId и т.д.)
+  read: boolean;
+  createdAt: number; // timestamp
+  expiresAt?: number; // опционально: когда удалить
+}

@@ -19,6 +19,13 @@ Finly использует **IndexedDB** через библиотеку **Dexie
 | `recurringTemplates` | `++id` | `nextDate`, `isActive` | Шаблоны повторяющихся платежей |
 | `settings` | `key` (string) | — | Настройки приложения |
 | `aiPatterns` | `++id` | `pattern`, `categoryId` | Паттерны для авто-категоризации |
+| `users` | `id` (string) | `createdAt` | Профиль пользователя |
+| `notifications` | `++id` | `type`, `read`, `createdAt`, `expiresAt` | Уведомления с persist |
+
+**Версии схемы:**
+- **v1:** Базовые таблицы (7 таблиц)
+- **v2:** Добавлена таблица `users`
+- **v3:** Добавлена таблица `notifications` (persist, read/unread)
 
 ## Типы данных
 
@@ -69,41 +76,62 @@ await seedDatabase();
 При первом запуске создаются:
 
 **Категории расходов:**
-| ID | Название | Иконка |
-|----|----------|--------|
-| `cat_food` | Еда | 🍔 |
-| `cat_transport` | Транспорт | 🚗 |
-| `cat_home` | Жильё | 🏠 |
-| `cat_fun` | Развлечения | 🎉 |
+| ID | Название | Иконка | Цвет |
+|----|----------|--------|------|
+| `cat_food` | Еда | Utensils | #FF5722 |
+| `cat_transport` | Транспорт | Car | #2196F3 |
+| `cat_home` | Жильё | Home | #795548 |
+| `cat_fun` | Развлечения | PartyPopper | #E91E63 |
 
 **Категории доходов:**
-| ID | Название | Иконка |
-|----|----------|--------|
-| `inc_salary` | Зарплата | 💰 |
-| `inc_gift` | Подарок | 🎁 |
+| ID | Название | Иконка | Цвет |
+|----|----------|--------|------|
+| `inc_salary` | Зарплата | Wallet | #4CAF50 |
+| `inc_gift` | Подарок | Gift | #9C27B0 |
 
 **Настройки по умолчанию:**
 - `theme`: `'light'`
 - `baseCurrency`: `'RUB'`
 - `onboardingComplete`: `false`
 
+**Миграция иконок:** если в БД есть категории со старыми эмодзи-иконками (🍔, 🚗...), они автоматически заменяются на названия иконок Lucide (Utensils, Car...).
+
 ## Файлы
+
+### Core Files
 
 | Файл | Описание |
 |------|----------|
 | `types.ts` | TypeScript-интерфейсы для всех сущностей |
-| `db.ts` | Класс Dexie и объявление схем таблиц |
+| `db.ts` | Класс Dexie и объявление схем таблиц (singleton) |
 | `seed.ts` | Начальное заполнение БД (категории, настройки) |
-| `operations.ts` | CRUD-функции для всех таблиц |
+| `validators.ts` | Валидация данных перед записью (+ тесты) |
 | `analytics.ts` | Аналитические запросы для графиков и дашбордов |
 | `ai.ts` | Логика авто-категоризации и умных подсказок |
 | `recurring.ts` | Обработка повторяющихся платежей |
 | `exportImport.ts` | Экспорт/импорт данных (JSON, CSV) |
-| `validators.ts` | Валидация данных перед записью в БД |
+
+### Operations (`operations/`)
+
+CRUD-операции разделены по отдельным файлам для каждой сущности:
+
+| Файл | Описание | Тесты |
+|------|----------|-------|
+| `index.ts` | Ре-экспорт всех CRUD операций | — |
+| `transactions.ts` | CRUD транзакций | ✅ |
+| `categories.ts` | CRUD категорий | ✅ |
+| `budgets.ts` | CRUD бюджетов | — |
+| `goals.ts` | CRUD целей | — |
+| `settings.ts` | CRUD настроек | — |
+| `recurring.ts` | CRUD повторяющихся платежей | — |
+| `users.ts` | CRUD пользователей | — |
+| `aiPatterns.ts` | CRUD AI паттернов | — |
+| `biometric.ts` | Биометрическая аутентификация | — |
+| `notifications.ts` | CRUD уведомлений (+ persist, read/unread) | — |
 
 ---
 
-## Модуль `operations.ts` — CRUD операции
+## Модуль `operations/` — CRUD операции
 
 Централизованные helper-функции для работы с данными.
 
@@ -173,6 +201,16 @@ await seedDatabase();
 | `setSetting<T>(key, value)` | Установить настройку |
 | `getAllSettings()` | Получить все настройки |
 
+### Users
+
+| Функция | Описание |
+|---------|----------|
+| `createUser(user)` | Создать пользователя |
+| `getUser(id)` | Получить пользователя |
+| `updateUser(id, updates)` | Обновить пользователя |
+| `deleteUser(id)` | Удалить пользователя |
+| `getCurrentUser()` | Получить текущего пользователя |
+
 ### AI Patterns
 
 | Функция | Описание |
@@ -181,6 +219,31 @@ await seedDatabase();
 | `getAIPattern(id)` | Получить паттерн |
 | `updateAIPattern(id, updates)` | Обновить паттерн |
 | `deleteAIPattern(id)` | Удалить паттерн |
+
+### Biometric
+
+| Функция | Описание |
+|---------|----------|
+| `getBiometricSettings()` | Получить настройки биометрии |
+| `updateBiometricSettings(settings)` | Обновить настройки биометрии |
+| `getPinHash()` | Получить хэш PIN-кода |
+| `setPinHash(hash)` | Сохранить хэш PIN-кода |
+
+### Notifications
+
+| Функция | Описание |
+|---------|----------|
+| `addNotification(notification)` | Добавить уведомление |
+| `getNotification(id)` | Получить уведомление по ID |
+| `getAllNotifications()` | Получить все (новые сверху) |
+| `getUnreadNotifications()` | Получить непрочитанные |
+| `markNotificationAsRead(id)` | Пометить как прочитанное |
+| `markAllNotificationsAsRead()` | Пометить все как прочитанные |
+| `deleteNotification(id)` | Удалить уведомление |
+| `clearReadNotifications()` | Удалить все прочитанные |
+| `clearAllNotifications()` | Полная очистка |
+| `getUnreadCount()` | Количество непрочитанных |
+| `clearExpiredNotifications()` | Удалить просроченные |
 
 **Пример:**
 ```typescript
@@ -440,10 +503,9 @@ assertValid(result, 'Transaction'); // бросит Error если не вали
 При изменении схемы нужно обновлять версию:
 
 ```typescript
-this.version(2).stores({
+this.version(3).stores({
   // новые индексы или таблицы
-  transactions: '++id, date, categoryId, type, createdAt, amount',
-}).upgrade(tx => {
+}).upgrade(async tx => {
   // логика миграции
 });
 ```

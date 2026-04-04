@@ -1,4 +1,4 @@
-import { Sun, Moon, Monitor, ChevronRight, Download, Upload, Bell, Repeat, LogOut, Pencil, Fingerprint } from 'lucide-react';
+import { Sun, Moon, Monitor, ChevronRight, Download, Upload, Bell, Repeat, LogOut, Pencil, Fingerprint, AlertTriangle, Target } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { Switch } from '../components/ui/switch';
@@ -233,12 +233,38 @@ export const Settings = () => {
               </div>
               <div>
                 <p className="font-medium">Push-уведомления</p>
-                <p className="text-xs text-muted-foreground">Важные события</p>
+                <p className="text-xs text-muted-foreground">Браузерные уведомления</p>
               </div>
             </div>
             <Switch defaultChecked />
           </div>
-          
+
+          <div className="flex items-center justify-between p-4 border-b border-border">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950 flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-500" />
+              </div>
+              <div>
+                <p className="font-medium">Бюджеты</p>
+                <p className="text-xs text-muted-foreground">Превышение лимитов</p>
+              </div>
+            </div>
+            <Switch defaultChecked />
+          </div>
+
+          <div className="flex items-center justify-between p-4 border-b border-border">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-green-100 dark:bg-green-950 flex items-center justify-center">
+                <Target className="w-5 h-5 text-green-600 dark:text-green-500" />
+              </div>
+              <div>
+                <p className="font-medium">Цели</p>
+                <p className="text-xs text-muted-foreground">Достижения и дедлайны</p>
+              </div>
+            </div>
+            <Switch defaultChecked />
+          </div>
+
           <div className="flex items-center justify-between p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-950 flex items-center justify-center">
@@ -246,10 +272,10 @@ export const Settings = () => {
               </div>
               <div>
                 <p className="font-medium">Регулярные платежи</p>
-                <p className="text-xs text-muted-foreground">Напоминания</p>
+                <p className="text-xs text-muted-foreground">Напоминания о платежах</p>
               </div>
             </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            <Switch defaultChecked />
           </div>
         </div>
       </div>
