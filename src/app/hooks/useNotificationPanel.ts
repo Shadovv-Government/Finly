@@ -13,7 +13,6 @@ import {
   markNotificationAsRead,
   markAllNotificationsAsRead,
   deleteNotification,
-  clearReadNotifications,
   clearExpiredNotifications,
 } from '../../db/operations/notifications';
 import { getUpcomingPayments } from '../../db/recurring';
