@@ -17,6 +17,7 @@ import {
 } from '../components/ui/dialog';
 import { BottomSheet } from '../components/BottomSheet';
 import { AddTransactionForm } from '../components/AddTransactionForm';
+import { NotificationsPanel } from '../components/NotificationsPanel';
 import { MS_PER_MONTH, MS_PER_WEEK } from '../constants';
 
 export const Dashboard = () => {
@@ -35,6 +36,7 @@ export const Dashboard = () => {
   const { user, updateProfile } = useAuth();
   const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
   // Calculate totals from analytics
   const income = balance?.income ?? 0;
@@ -100,7 +102,10 @@ export const Dashboard = () => {
             <h1 className="text-xl font-bold">{user?.name || 'Пользователь'}</h1>
           </div>
           <div className="flex items-center gap-3">
-            <button className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center relative">
+            <button
+              onClick={() => setIsNotificationsOpen(true)}
+              className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center relative"
+            >
               <Bell className="w-5 h-5" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
             </button>
@@ -414,6 +419,11 @@ export const Dashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <NotificationsPanel
+        isOpen={isNotificationsOpen}
+        onClose={() => setIsNotificationsOpen(false)}
+      />
     </div>
   );
 };
