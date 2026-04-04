@@ -24,10 +24,8 @@ export async function getNotification(id: number): Promise<NotificationItem | un
  * Получает все непрочитанные уведомления
  */
 export async function getUnreadNotifications(): Promise<NotificationItem[]> {
-  return db.notifications
-    .where('read')
-    .equals(0)
-    .sortBy('createdAt');
+  const all = await db.notifications.orderBy('createdAt').toArray();
+  return all.filter(n => !n.read);
 }
 
 /**
@@ -51,10 +49,7 @@ export async function markNotificationAsRead(id: number): Promise<void> {
  * Помечает все уведомления как прочитанные
  */
 export async function markAllNotificationsAsRead(): Promise<void> {
-  await db.notifications
-    .where('read')
-    .equals(0)
-    .modify({ read: true });
+  await db.notifications.filter(n => !n.read).modify({ read: true });
 }
 
 /**
@@ -68,10 +63,7 @@ export async function deleteNotification(id: number): Promise<void> {
  * Очищает все прочитанные уведомления
  */
 export async function clearReadNotifications(): Promise<void> {
-  await db.notifications
-    .where('read')
-    .equals(1)
-    .delete();
+  await db.notifications.filter(n => !!n.read).delete();
 }
 
 /**
@@ -85,10 +77,7 @@ export async function clearAllNotifications(): Promise<void> {
  * Получает количество непрочитанных уведомлений
  */
 export async function getUnreadCount(): Promise<number> {
-  return db.notifications
-    .where('read')
-    .equals(0)
-    .count();
+  return db.notifications.filter(n => !n.read).count();
 }
 
 /**

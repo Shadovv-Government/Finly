@@ -15,6 +15,7 @@ import {
   deleteNotification,
   getUnreadCount,
   clearReadNotifications,
+  clearExpiredNotifications,
 } from '../../db/operations/notifications';
 import { getUpcomingPayments } from '../../db/recurring';
 import type { NotificationItem, NotificationType } from '../../db/types';
@@ -36,6 +37,7 @@ export function useNotificationPanel() {
 
   // Load persisted notifications
   const loadNotifications = useCallback(async () => {
+    await clearExpiredNotifications();
     const [all, count] = await Promise.all([
       getAllNotifications(),
       getUnreadCount(),
@@ -48,10 +50,19 @@ export function useNotificationPanel() {
     loadNotifications();
   }, [loadNotifications]);
 
+  // Stable start-of-today timestamp so dynamic notifications always group under "Сегодня"
+  // and don't shift groups between re-renders
+  const todayStart = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+  }, []);
+
   // Generate dynamic notifications
   const dynamicNotifications = useMemo<PanelNotification[]>(() => {
     const items: PanelNotification[] = [];
     const now = Date.now();
+    const createdAt = todayStart; // stable per-day timestamp to keep grouping consistent
 
     // --- Budget alerts ---
     for (const budget of budgets) {
@@ -68,7 +79,7 @@ export function useNotificationPanel() {
           iconBg: 'bg-red-100 dark:bg-red-900/30',
           data: { categoryId: budget.categoryId },
           read: false,
-          createdAt: now,
+          createdAt: todayStart,
           actionLabel: 'Изменить бюджет',
           actionData: `/budgets`,
         });
@@ -82,7 +93,7 @@ export function useNotificationPanel() {
           iconBg: 'bg-amber-100 dark:bg-amber-900/30',
           data: { categoryId: budget.categoryId },
           read: false,
-          createdAt: now,
+          createdAt,
           actionLabel: 'Посмотреть',
           actionData: `/budgets`,
         });
@@ -104,7 +115,7 @@ export function useNotificationPanel() {
           iconBg: 'bg-green-100 dark:bg-green-900/30',
           data: { goalId: goal.id },
           read: false,
-          createdAt: now,
+          createdAt,
           actionLabel: 'Открыть цели',
           actionData: `/goals`,
         });
@@ -118,7 +129,7 @@ export function useNotificationPanel() {
           iconBg: 'bg-violet-100 dark:bg-violet-900/30',
           data: { goalId: goal.id },
           read: false,
-          createdAt: now,
+          createdAt,
           actionLabel: 'Пополнить',
           actionData: `/goals`,
         });
@@ -139,7 +150,7 @@ export function useNotificationPanel() {
             iconBg: 'bg-orange-100 dark:bg-orange-900/30',
             data: { goalId: goal.id },
             read: false,
-            createdAt: now,
+            createdAt,
             actionLabel: 'Пополнить',
             actionData: `/goals`,
           });
@@ -153,7 +164,7 @@ export function useNotificationPanel() {
             iconBg: 'bg-red-100 dark:bg-red-900/30',
             data: { goalId: goal.id },
             read: false,
-            createdAt: now,
+            createdAt,
             actionLabel: 'Открыть цели',
             actionData: `/goals`,
           });
@@ -186,7 +197,7 @@ export function useNotificationPanel() {
             iconBg: 'bg-blue-100 dark:bg-blue-900/30',
             data: { transactionId: tx.id },
             read: false,
-            createdAt: now,
+            createdAt,
             actionLabel: 'Посмотреть',
             actionData: `/history`,
           });
@@ -210,7 +221,7 @@ export function useNotificationPanel() {
             iconBg: 'bg-yellow-100 dark:bg-yellow-900/30',
             data: { transactionId: curr.id },
             read: false,
-            createdAt: now,
+            createdAt,
             actionLabel: 'Проверить',
             actionData: `/history`,
           });
@@ -278,17 +289,23 @@ export function useNotificationPanel() {
   // Mark all as read and persist
   const handleMarkAllRead = useCallback(async () => {
     await markAllNotificationsAsRead();
-    // Also persist current dynamic ones as read
-    for (const n of dynamicNotifications) {
-      await addNotification({ ...n, read: true });
-    }
-    setUnreadCount(0);
-    setPersistedNotifications(prev => prev.map(p => ({ ...p, read: true })));
-  }, [dynamicNotifications]);
+    // Persist dynamic/recurring notifications as read, skip already-persisted ones
+    const existingKeys = new Set(
+      persistedNotifications.map(n => `${n.type}-${JSON.stringify(n.data)}`)
+    );
+    const toAdd = [...dynamicNotifications, ...recurringItems].filter(
+      n => !existingKeys.has(`${n.type}-${JSON.stringify(n.data)}`)
+    );
+    await Promise.all(toAdd.map(n => addNotification({ ...n, read: true })));
+    await loadNotifications();
+  }, [dynamicNotifications, recurringItems, persistedNotifications, loadNotifications]);
 
   // Mark single as read
   const handleMarkRead = useCallback(async (id: number) => {
     await markNotificationAsRead(id);
+    setPersistedNotifications(prev =>
+      prev.map(n => n.id === id ? { ...n, read: true } : n)
+    );
     setUnreadCount(prev => Math.max(0, prev - 1));
   }, []);
 

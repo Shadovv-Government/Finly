@@ -1,21 +1,27 @@
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Bell, CheckCheck, Trash2 } from 'lucide-react';
 import { BottomSheet } from './BottomSheet';
-import { useNotificationPanel, iconMap } from '../hooks/useNotificationPanel';
+import { iconMap } from '../hooks/useNotificationPanel';
+import type { PanelNotification } from '../hooks/useNotificationPanel';
 import { useNavigate } from 'react-router-dom';
 
 interface NotificationsPanelProps {
   isOpen: boolean;
   onClose: () => void;
+  notifications: PanelNotification[];
+  hasUnread: boolean;
+  markAllRead: () => Promise<void>;
+  clearRead: () => Promise<void>;
 }
 
-export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ isOpen, onClose }) => {
-  const {
-    notifications,
-    hasUnread,
-    markAllRead,
-    clearRead,
-  } = useNotificationPanel();
+export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
+  isOpen,
+  onClose,
+  notifications,
+  hasUnread,
+  markAllRead,
+  clearRead,
+}) => {
   const navigate = useNavigate();
 
   // Group notifications by date
@@ -56,14 +62,6 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ isOpen, 
     }
   };
 
-  const handleMarkAllRead = async () => {
-    await markAllRead();
-  };
-
-  const handleClearRead = async () => {
-    await clearRead();
-  };
-
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} title="Уведомления">
       <div className="px-4 py-3 pb-8">
@@ -72,7 +70,7 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ isOpen, 
           <div className="flex items-center gap-2 mb-3">
             {hasUnread && (
               <button
-                onClick={handleMarkAllRead}
+                onClick={markAllRead}
                 className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
                 <CheckCheck className="w-3.5 h-3.5" />
@@ -80,7 +78,7 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ isOpen, 
               </button>
             )}
             <button
-              onClick={handleClearRead}
+              onClick={clearRead}
               className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-red-500 transition-colors ml-auto"
             >
               <Trash2 className="w-3.5 h-3.5" />

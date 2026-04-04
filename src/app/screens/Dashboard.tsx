@@ -35,7 +35,7 @@ export const Dashboard = () => {
   const { transactions } = useTransactions({ period, startDate: periodRange.start, endDate: periodRange.end });
   const { categories } = useCategories();
   const { user, updateProfile } = useAuth();
-  const { hasUnread } = useNotificationPanel();
+  const { hasUnread, notifications: panelNotifications, markAllRead, clearRead } = useNotificationPanel();
   const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -427,6 +427,10 @@ export const Dashboard = () => {
       <NotificationsPanel
         isOpen={isNotificationsOpen}
         onClose={() => setIsNotificationsOpen(false)}
+        notifications={panelNotifications}
+        hasUnread={hasUnread}
+        markAllRead={markAllRead}
+        clearRead={clearRead}
       />
     </div>
   );

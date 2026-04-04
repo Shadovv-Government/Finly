@@ -66,7 +66,20 @@ export const icons = {
   `),
 };
 
-// Получить иконку для типа уведомления
-export function getIconForType(type: 'income' | 'expense' | 'goal' | 'success' | 'warning' | 'info' | 'notification'): string {
-  return icons[type] || icons.info;
+// Получить иконку для типа уведомления (для Web Push — browser Notification API)
+const notificationTypeToIcon: Record<string, keyof typeof icons> = {
+  'budget-overrun': 'warning',
+  'budget-warning': 'warning',
+  'goal-done': 'success',
+  'goal-near': 'goal',
+  'goal-deadline': 'warning',
+  'recurring-due': 'notification',
+  'recurring-upcoming': 'notification',
+  'anomalous-expense': 'expense',
+  'duplicate-transaction': 'warning',
+};
+
+export function getIconForType(type: string): string {
+  const key = notificationTypeToIcon[type] ?? 'info';
+  return icons[key] ?? icons.info;
 }
