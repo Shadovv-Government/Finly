@@ -37,15 +37,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function register(name: string) {
-    const deviceId = navigator.userAgent;
+    const deviceId = crypto.randomUUID();
     const id = await createUser(name, deviceId);
-    const newUser: User = {
-      id,
-      name,
-      createdAt: Date.now(),
-      deviceId,
-    };
-    setUser(newUser);
+    const newUser = await getCurrentUser();
+    setUser(newUser ?? { id, name, createdAt: Date.now(), deviceId });
   }
 
   async function updateProfile(updates: Partial<User>) {

@@ -255,9 +255,52 @@ export async function getSpendingTrend(days: number): Promise<SpendingTrendPoint
   return result.sort((a, b) => a.date - b.date);
 }
 
+export async function getIncomeTrend(days: number): Promise<SpendingTrendPoint[]> {
+  const now = Date.now();
+  const start = now - (days * MS_PER_DAY);
+
+  const transactions = await db.transactions
+    .where('date')
+    .between(start, now)
+    .filter(t => t.type === 'income')
+    .toArray();
+
+  const byDay = new Map<number, number>();
+
+  for (let i = 0; i < days; i++) {
+    const dayStart = now - (i * MS_PER_DAY);
+    const dayKey = new Date(dayStart).setHours(0, 0, 0, 0);
+    if (!byDay.has(dayKey)) {
+      byDay.set(dayKey, 0);
+    }
+  }
+
+  transactions.forEach(t => {
+    const dayKey = new Date(t.date).setHours(0, 0, 0, 0);
+    const current = byDay.get(dayKey) || 0;
+    byDay.set(dayKey, current + t.amount * t.rate);
+  });
+
+  const result: SpendingTrendPoint[] = [];
+  byDay.forEach((amount, timestamp) => {
+    const date = new Date(timestamp);
+    result.push({
+      date: timestamp,
+      amount,
+      label: date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }),
+    });
+  });
+
+  return result.sort((a, b) => a.date - b.date);
+}
+
 export async function getMonthlyTrend(months: number): Promise<SpendingTrendPoint[]> {
   const now = Date.now();
+  const start = now - (months * 31 * MS_PER_DAY);
+
   const transactions = await db.transactions
+    .where('date')
+    .between(start, now)
     .filter(t => t.type === 'expense')
     .toArray();
 
@@ -308,7 +351,9 @@ export async function getBudgetProgressForPeriod(
     .equals(categoryId)
     .toArray();
 
-  const budget = budgets.find(b => b.startDate <= start);
+  const budget = budgets
+    .filter(b => b.startDate <= start)
+    .sort((a, b) => b.startDate - a.startDate)[0];
   if (!budget) return null;
 
   const expenses = await db.transactions
@@ -336,9 +381,18 @@ export async function getBudgetProgressForPeriod(
 
 export async function getAllBudgetsProgress(start: number, end: number): Promise<BudgetProgress[]> {
   const budgets = await db.budgets.filter(b => b.startDate <= start).toArray();
-  const result: BudgetProgress[] = [];
 
-  for (const budget of budgets) {
+  // Keep only the most recent budget per category
+  const latestByCategoryId = new Map<string, typeof budgets[0]>();
+  for (const b of budgets) {
+    const existing = latestByCategoryId.get(b.categoryId);
+    if (!existing || b.startDate > existing.startDate) {
+      latestByCategoryId.set(b.categoryId, b);
+    }
+  }
+
+  const result: BudgetProgress[] = [];
+  for (const budget of latestByCategoryId.values()) {
     const progress = await getBudgetProgressForPeriod(budget.categoryId, start, end);
     if (progress) {
       result.push(progress);

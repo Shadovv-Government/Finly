@@ -4,21 +4,31 @@ import { useMemo } from 'react';
 import { useAnalytics } from '../hooks/useAnalytics';
 
 export const Analytics = () => {
-  const { balance, expensesByCategory, spendingTrend } = useAnalytics();
+  const { balance, expensesByCategory, spendingTrend, incomeTrend } = useAnalytics();
 
   const income = balance?.income || 0;
   const expense = balance?.expenses || 0;
   const balanceAmount = balance?.balance || 0;
 
-  // Bar chart data from spending trend (мемоизация)
-  const weeklyData = useMemo(() => 
-    spendingTrend.slice(0, 4).map((point, i) => ({
-      week: `Нед ${i + 1}`,
-      income: Math.round(point.amount * 0.8),
-      expense: point.amount,
-    })),
-    [spendingTrend]
-  );
+  // Aggregate daily trend points into 4 weekly buckets (newest week last)
+  const weeklyData = useMemo(() => {
+    const aggregate = (points: typeof spendingTrend) => {
+      const weeks: number[] = [0, 0, 0, 0];
+      points.forEach(p => {
+        const msAgo = Date.now() - p.date;
+        const weekIdx = Math.min(3, Math.floor(msAgo / (7 * 24 * 60 * 60 * 1000)));
+        weeks[3 - weekIdx] += p.amount;
+      });
+      return weeks;
+    };
+    const expenseWeeks = aggregate(spendingTrend);
+    const incomeWeeks = aggregate(incomeTrend);
+    return [1, 2, 3, 4].map((w, i) => ({
+      week: `Нед ${w}`,
+      income: Math.round(incomeWeeks[i]),
+      expense: Math.round(expenseWeeks[i]),
+    }));
+  }, [spendingTrend, incomeTrend]);
 
   // Pie chart data (мемоизация)
   const pieData = useMemo(() => 

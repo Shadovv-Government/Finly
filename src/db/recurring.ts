@@ -131,21 +131,26 @@ export async function processDueTemplates(): Promise<{
 
   for (const template of dueTemplates) {
     try {
-      // Создаём транзакцию
-      const transactionId = await createTransactionFromTemplate(template);
-      result.transactions.push(transactionId);
-
-      // Обновляем следующую дату
-      // Если шаблон сильно просрочен, обновляем до "следующего" периода от сегодня
+      // Create one transaction per missed period (backfill)
       let nextDate = template.nextDate;
-      while (nextDate < Date.now()) {
+      const now = Date.now();
+
+      while (nextDate <= now) {
+        const transactionId = await addTransaction({
+          amount: template.amount,
+          type: template.type,
+          categoryId: template.categoryId,
+          date: nextDate,
+          currency: 'RUB',
+          rate: 1,
+          comment: template.comment,
+          templateId: template.id,
+        });
+        result.transactions.push(transactionId);
         nextDate = getNextDate(nextDate, template.interval);
       }
 
-      await db.recurringTemplates.update(template.id!, {
-        nextDate,
-      });
-
+      await db.recurringTemplates.update(template.id!, { nextDate });
       result.processed++;
     } catch (error) {
       result.errors.push({

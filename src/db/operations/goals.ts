@@ -67,10 +67,12 @@ export async function updateGoalProgress(id: number, amount: number): Promise<vo
  * Пополняет цель на указанную сумму
  */
 export async function contributeToGoal(id: number, amount: number): Promise<void> {
-  const goal = await getGoal(id);
-  if (goal) {
-    await updateGoalProgress(id, goal.currentAmount + amount);
-  }
+  await db.transaction('rw', db.goals, async () => {
+    const goal = await db.goals.get(id);
+    if (goal) {
+      await db.goals.update(id, { currentAmount: goal.currentAmount + amount });
+    }
+  });
 }
 
 /**
@@ -113,19 +115,20 @@ export async function createGoalContribution(
     }
   }
 
-  // Создаем транзакцию расхода
-  await addTransaction({
-    amount,
-    type: 'expense',
-    categoryId: targetCategoryId,
-    date: Date.now(),
-    comment: `Пополнение цели "${goal.name}"`,
-    currency: 'RUB',
-    rate: 1,
+  // Создаем транзакцию расхода и обновляем прогресс атомарно
+  await db.transaction('rw', db.transactions, db.goals, async () => {
+    await db.transactions.add({
+      amount,
+      type: 'expense',
+      categoryId: targetCategoryId!,
+      date: Date.now(),
+      comment: `Пополнение цели "${goal.name}"`,
+      currency: 'RUB',
+      rate: 1,
+      createdAt: Date.now(),
+    });
+    await db.goals.update(goalId, { currentAmount: goal.currentAmount + amount });
   });
-
-  // Обновляем прогресс цели
-  await updateGoalProgress(goalId, goal.currentAmount + amount);
 }
 
 // Для совместимости с uuid
