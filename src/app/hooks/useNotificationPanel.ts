@@ -271,14 +271,25 @@ export function useNotificationPanel() {
       persistedRead.map(n => `${n.type}-${JSON.stringify(n.data)}`)
     );
 
+    // Keys of currently active dynamic/recurring items
+    const activeKeys = new Set(
+      dynamic.map(n => `${n.type}-${JSON.stringify(n.data)}`)
+    );
+
     // Only include dynamic items that haven't been marked as read yet
     const filteredDynamic = dynamic.filter(
       n => !persistedReadKeys.has(`${n.type}-${JSON.stringify(n.data)}`)
     );
 
+    // Only show persisted-read items that are NOT active dynamic notifications
+    // (active ones are just "read markers" — they should not appear as history)
+    const historyItems = persistedRead.filter(
+      p => !activeKeys.has(`${p.type}-${JSON.stringify(p.data)}`)
+    );
+
     const merged: PanelNotification[] = [
       ...filteredDynamic,
-      ...persistedRead.map(p => ({
+      ...historyItems.map(p => ({
         ...p,
         actionLabel: undefined,
         actionData: undefined,
@@ -328,17 +339,15 @@ export function useNotificationPanel() {
         n => `${n.type}-${JSON.stringify(n.data)}`
       )
     );
-    // Delete only persisted-read notifications that are NOT active dynamic items
-    setPersistedNotifications(prev => {
-      const toDelete = prev.filter(
-        n => n.read && !activeKeys.has(`${n.type}-${JSON.stringify(n.data)}`)
-      );
-      Promise.all(toDelete.map(n => deleteNotification(n.id!))).catch(() => {});
-      return prev.filter(
-        n => !n.read || activeKeys.has(`${n.type}-${JSON.stringify(n.data)}`)
-      );
-    });
-  }, [dynamicNotifications, recurringItems]);
+    // Delete only persisted-read items that are NOT active dynamic markers
+    const toDelete = persistedNotifications.filter(
+      n => n.read && !activeKeys.has(`${n.type}-${JSON.stringify(n.data)}`)
+    );
+    await Promise.all(toDelete.map(n => deleteNotification(n.id!)));
+    setPersistedNotifications(prev =>
+      prev.filter(n => !n.read || activeKeys.has(`${n.type}-${JSON.stringify(n.data)}`))
+    );
+  }, [dynamicNotifications, recurringItems, persistedNotifications]);
 
   const refresh = useCallback(async () => {
     await Promise.all([loadNotifications(), loadRecurring()]);
