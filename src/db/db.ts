@@ -53,6 +53,14 @@ class FinlyDatabase extends Dexie {
     this.version(3).stores({
       // Уведомления с persist и статусом прочтения
       notifications: '++id, type, read, createdAt, expiresAt',
+
+      // Новые индексы для расширенных полей
+      transactions: '++id, date, categoryId, type, createdAt, userId',
+      budgets: '++id, categoryId, period, startDate, endDate',
+      settings: 'key, type, updatedAt',
+      aiPatterns: '++id, pattern, categoryId, createdBy, lastUsed',
+      users: 'id, createdAt, email, lastActiveAt',
+      goals: '++id, isActive, deadline, monthlyNeeded',
     });
   }
 }

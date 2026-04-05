@@ -62,8 +62,23 @@ export async function getTransactionsByCategory(categoryId: string): Promise<Tra
 }
 
 /**
+ * Получает транзакции по пользователю
+ */
+export async function getTransactionsByUser(userId: string): Promise<Transaction[]> {
+  return db.transactions.where('userId').equals(userId).toArray();
+}
+
+/**
  * Получает все транзакции
  */
 export async function getAllTransactions(): Promise<Transaction[]> {
   return db.transactions.orderBy('date').reverse().toArray();
+}
+
+/**
+ * Получает транзакции с тегами
+ */
+export async function getTransactionsByTag(tag: string): Promise<Transaction[]> {
+  const all = await db.transactions.toArray();
+  return all.filter(t => t.tags?.includes(tag));
 }

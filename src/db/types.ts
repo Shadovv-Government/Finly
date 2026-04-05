@@ -25,6 +25,8 @@ export interface Transaction {
   rate: number; // курс к базовой валюте на момент операции
   createdAt: number; // timestamp создания
   templateId?: number; // ссылка на шаблон, если создано автоматически
+  userId?: string; // FK → users.id (для многопользовательского режима)
+  tags?: string[]; // теги для группировки и AI-аналитики
 }
 
 export interface Budget {
@@ -33,18 +35,23 @@ export interface Budget {
   amount: number;
   period: PeriodType;
   startDate: number; // timestamp начала периода
+  endDate?: number; // timestamp конца периода (опционально)
   currency: string;
+  monthlyLimit?: number; // лимит на месяц (для динамических бюджетов)
+  notificationsEnabled?: boolean; // включать уведомления о перерасходе
 }
 
 export interface Goal {
   id?: number;
   name: string;
   targetAmount: number;
-  currentAmount: number; // придется убрать и 
+  currentAmount: number;
   deadline?: number; // timestamp
   icon: string;
   color: string;
   isActive: boolean;
+  monthlyNeeded?: number; // сколько нужно откладывать в месяц
+  monthlyContribution?: number; // фактические взносы за месяц
 }
 
 export interface RecurringTemplate {
@@ -61,22 +68,29 @@ export interface RecurringTemplate {
 export interface AppSettings {
   key: string; // primary key
   value: any;
+  type?: string; // тип значения (theme, currency, boolean...)
+  updatedAt?: number; // timestamp последнего обновления
 }
 
 export interface AIPattern {
   id?: number;
   pattern: string; // ключевое слово (например, "старбакс")
+  regex?: string; // регулярное выражение для сложных паттернов
   categoryId: string;
   confidence: number; // уверенность модели (0-1)
   usageCount: number; // сколько раз сработало
+  lastUsed?: number; // timestamp последнего использования
+  createdBy?: 'user' | 'ai'; // кто создал паттерн
 }
 
 export interface User {
   id: string; // primary key, uuid
   name: string;
+  email?: string; // email пользователя (опционально)
   createdAt: number; // timestamp
   deviceId?: string; // идентификатор устройства
   avatarColor?: string; // цвет аватара (градиент)
+  lastActiveAt?: number; // timestamp последней активности
 }
 
 export type NotificationType =

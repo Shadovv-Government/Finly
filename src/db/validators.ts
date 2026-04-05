@@ -114,6 +114,22 @@ export function validateTransaction(
     }
   }
 
+  // userId (опционально)
+  if (data.userId !== undefined && data.userId !== null) {
+    if (typeof data.userId !== 'string') {
+      errors.push('User ID must be a string');
+    }
+  }
+
+  // tags (опционально)
+  if (data.tags !== undefined && data.tags !== null) {
+    if (!Array.isArray(data.tags)) {
+      errors.push('Tags must be an array');
+    } else if (data.tags.length > 20) {
+      warnings.push('Too many tags (max 20)');
+    }
+  }
+
   return {
     isValid: errors.length === 0,
     errors,
@@ -250,6 +266,27 @@ export function validateBudget(
     } else if (data.currency.length !== 3) {
       warnings.push('Currency should be a 3-letter code (e.g., RUB, USD)');
     }
+  }
+
+  // endDate (опционально)
+  if (data.endDate !== undefined && data.endDate !== null) {
+    if (typeof data.endDate !== 'number') {
+      errors.push('End date must be a timestamp');
+    } else if (data.startDate && data.endDate < data.startDate) {
+      errors.push('End date cannot be before start date');
+    }
+  }
+
+  // monthlyLimit (опционально)
+  if (data.monthlyLimit !== undefined && data.monthlyLimit !== null) {
+    if (typeof data.monthlyLimit !== 'number' || data.monthlyLimit <= 0) {
+      errors.push('Monthly limit must be a positive number');
+    }
+  }
+
+  // notificationsEnabled (опционально)
+  if (data.notificationsEnabled !== undefined && typeof data.notificationsEnabled !== 'boolean') {
+    errors.push('notificationsEnabled must be a boolean');
   }
 
   return {
@@ -448,6 +485,29 @@ export function validateAIPattern(
     } else if (data.usageCount < 0) {
       errors.push('Usage count cannot be negative');
     }
+  }
+
+  // regex (опционально)
+  if (data.regex !== undefined && data.regex !== null) {
+    if (typeof data.regex !== 'string') {
+      errors.push('Regex must be a string');
+    } else {
+      try {
+        new RegExp(data.regex);
+      } catch {
+        errors.push('Invalid regex pattern');
+      }
+    }
+  }
+
+  // lastUsed (опционально)
+  if (data.lastUsed !== undefined && typeof data.lastUsed !== 'number') {
+    errors.push('lastUsed must be a timestamp');
+  }
+
+  // createdBy (опционально)
+  if (data.createdBy !== undefined && !['user', 'ai'].includes(data.createdBy)) {
+    errors.push('createdBy must be "user" or "ai"');
   }
 
   return {

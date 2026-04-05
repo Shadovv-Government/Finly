@@ -17,6 +17,8 @@ erDiagram
         decimal rate
         int createdAt
         int templateId FK
+        string userId FK
+        json tags
     }
 
     CATEGORIES {
@@ -35,7 +37,10 @@ erDiagram
         decimal amount
         string period "week|month"
         int startDate
+        int endDate
         string currency
+        decimal monthlyLimit
+        boolean notificationsEnabled
     }
 
     GOALS {
@@ -47,6 +52,8 @@ erDiagram
         string icon
         string color
         boolean isActive
+        decimal monthlyNeeded
+        decimal monthlyContribution
     }
 
     RECURRING_TEMPLATES {
@@ -63,22 +70,29 @@ erDiagram
     SETTINGS {
         string key PK
         any value
+        string type
+        int updatedAt
     }
 
     AI_PATTERNS {
         int id PK
         string pattern
+        string regex
         string categoryId FK
         decimal confidence
         int usageCount
+        int lastUsed
+        string createdBy
     }
 
     USERS {
         string id PK
         string name
+        string email
         int createdAt
         string deviceId
         string avatarColor
+        int lastActiveAt
     }
 
     NOTIFICATIONS {
@@ -96,6 +110,7 @@ erDiagram
     }
 
     TRANSACTIONS ||--o{ CATEGORIES : "belongs to"
+    TRANSACTIONS }o--|| USERS : "created by"
     BUDGETS ||--o{ CATEGORIES : "tracks"
     RECURRING_TEMPLATES ||--o{ CATEGORIES : "categorizes"
     AI_PATTERNS ||--o{ CATEGORIES : "suggests"
@@ -107,19 +122,20 @@ erDiagram
 
 | Table | Primary Key | Индексы | Описание |
 |-------|-------------|---------|----------|
-| `transactions` | `++id` (auto-increment) | `date, categoryId, type, createdAt` | Финансовые операции (доходы/расходы) |
+| `transactions` | `++id` (auto-increment) | `date, categoryId, type, createdAt, userId` | Финансовые операции (доходы/расходы) |
 | `categories` | `id` (UUID string) | `type, isSystem` | Категории с иконками Lucide и цветами |
-| `budgets` | `++id` (auto-increment) | `categoryId, period, startDate` | Лимиты по категориям на период |
-| `goals` | `++id` (auto-increment) | `isActive, deadline` | Финансовые цели / накопления |
+| `budgets` | `++id` (auto-increment) | `categoryId, period, startDate, endDate` | Лимиты по категориям на период |
+| `goals` | `++id` (auto-increment) | `isActive, deadline, monthlyNeeded` | Финансовые цели / накопления |
 | `recurringTemplates` | `++id` (auto-increment) | `nextDate, isActive` | Шаблоны повторяющихся платежей |
-| `settings` | `key` (string) | — | KV-хранилище настроек приложения |
-| `aiPatterns` | `++id` (auto-increment) | `pattern, categoryId` | Паттерны для AI авто-категоризации |
-| `users` | `id` (UUID string) | `createdAt` | Профиль пользователя |
+| `settings` | `key` (string) | `type, updatedAt` | KV-хранилище настроек приложения |
+| `aiPatterns` | `++id` (auto-increment) | `pattern, categoryId, createdBy, lastUsed` | Паттерны для AI авто-категоризации |
+| `users` | `id` (UUID string) | `createdAt, email, lastActiveAt` | Профиль пользователя |
 | `notifications` | `++id` (auto-increment) | `type, read, createdAt, expiresAt` | Уведомления с persist и статусом прочтения |
 
 ## Relationships
 
 - **Transactions → Categories**: Many-to-one (каждая транзакция принадлежит категории)
+- **Transactions → Users**: Many-to-one (транзакция принадлежит пользователю)
 - **Budgets → Categories**: Many-to-one (бюджеты отслеживают лимиты по категориям)
 - **Recurring Templates → Categories**: Many-to-one (шаблоны определяют категорию для платежей)
 - **AI Patterns → Categories**: Many-to-one (паттерны предлагают категории)
@@ -146,6 +162,8 @@ interface Transaction {
   rate: number;         // курс к базовой валюте
   createdAt: number;    // timestamp создания
   templateId?: number;  // FK → recurringTemplates.id (опционально)
+  userId?: string;      // FK → users.id (для многопользовательского режима)
+  tags?: string[];      // теги для группировки и AI-аналитики
 }
 ```
 
@@ -154,6 +172,7 @@ interface Transaction {
 - `categoryId` — поиск по категории
 - `type` — фильтр доходы/расходы
 - `createdAt` — сортировка по времени создания
+- `userId` — фильтр по пользователю
 
 ---
 
@@ -193,11 +212,14 @@ interface Category {
 ```typescript
 interface Budget {
   id?: number;
-  categoryId: string;   // FK → categories.id
+  categoryId: string;       // FK → categories.id
   amount: number;
   period: 'week' | 'month';
-  startDate: number;    // timestamp начала периода
+  startDate: number;        // timestamp начала периода
+  endDate?: number;         // timestamp конца периода (опционально)
   currency: string;
+  monthlyLimit?: number;    // лимит на месяц (для динамических бюджетов)
+  notificationsEnabled?: boolean; // включать уведомления о перерасходе
 }
 ```
 
@@ -213,10 +235,12 @@ interface Goal {
   name: string;
   targetAmount: number;
   currentAmount: number;
-  deadline?: number;    // timestamp (опционально)
+  deadline?: number;        // timestamp (опционально)
   icon: string;
   color: string;
   isActive: boolean;
+  monthlyNeeded?: number;       // сколько нужно откладывать в месяц
+  monthlyContribution?: number; // фактические взносы за месяц
 }
 ```
 
@@ -249,6 +273,8 @@ KV-хранилище настроек приложения.
 interface AppSettings {
   key: string;          // primary key
   value: any;
+  type?: string;        // тип значения (theme, currency, boolean...)
+  updatedAt?: number;   // timestamp последнего обновления
 }
 ```
 
@@ -272,9 +298,12 @@ interface AppSettings {
 interface AIPattern {
   id?: number;
   pattern: string;      // ключевое слово (например, "старбакс")
+  regex?: string;       // регулярное выражение для сложных паттернов
   categoryId: string;   // FK → categories.id
   confidence: number;   // уверенность модели (0-1)
   usageCount: number;   // сколько раз сработало
+  lastUsed?: number;    // timestamp последнего использования
+  createdBy?: 'user' | 'ai'; // кто создал паттерн
 }
 ```
 
@@ -288,9 +317,11 @@ interface AIPattern {
 interface User {
   id: string;           // UUID
   name: string;
+  email?: string;       // email пользователя (опционально)
   createdAt: number;    // timestamp
   deviceId?: string;    // navigator.userAgent
   avatarColor?: string; // цвет аватара
+  lastActiveAt?: number; // timestamp последней активности
 }
 ```
 
@@ -355,7 +386,53 @@ this.version(2).stores({
 
 this.version(3).stores({
   notifications: '++id, type, read, createdAt, expiresAt',
+
+  // Новые индексы для расширенных полей
+  transactions: '++id, date, categoryId, type, createdAt, userId',
+  budgets: '++id, categoryId, period, startDate, endDate',
+  settings: 'key, type, updatedAt',
+  aiPatterns: '++id, pattern, categoryId, createdBy, lastUsed',
+  users: 'id, createdAt, email, lastActiveAt',
+  goals: '++id, isActive, deadline, monthlyNeeded',
 });
+```
+
+---
+
+## AI Module
+
+Начиная с версии 3, проект включает выделенный AI-модуль (`src/app/ai/`).
+
+### Структура
+
+| File | Description |
+|------|-------------|
+| `types.ts` | Типы для AI: CategoryMatch, AIInsight, ChatMessage, SpendingAnalysis |
+| `AIService.ts` | Основной сервис: категоризация, обучение, chat |
+| `InsightEngine.ts` | Генерация инсайтов: аномалии, подписки, прогнозы |
+| `index.ts` | Экспорт модуля |
+
+### Возможности AI-модуля
+
+- **Авто-категоризация** — по паттернам, regex и истории исправлений
+- **Обучение** — запоминание исправлений пользователя
+- **Инсайты** — рост расходов, аномалии, подписки, дубликаты
+- **Прогнозы** — прогноз перерасхода бюджета до конца месяца
+- **Chat** — базовые ответы на вопросы о финансах (заглушка для LLM API)
+
+### Usage
+
+```typescript
+import { aiService, generateAllInsights } from './app/ai';
+
+// Категоризация транзакции
+const match = await aiService.categorizeTransaction('кофе 450 в старбаксе');
+
+// Генерация всех инсайтов
+const insights = await generateAllInsights();
+
+// Анализ расходов
+const analysis = await aiService.analyzeSpending(transactions);
 ```
 
 ---
@@ -412,12 +489,22 @@ await seedDatabase();
 |------|-------------|
 | `types.ts` | TypeScript-интерфейсы для всех сущностей |
 | `db.ts` | Класс Dexie и объявление схем таблиц (singleton) |
-| `seed.ts` | Начальное заполнение БД (категории, настройки) |
+| `seed.ts` | Начальное заполнение БД + миграции (категории, настройки) |
 | `validators.ts` | Валидация данных перед записью (+ тесты) |
 | `analytics.ts` | Аналитические запросы для графиков |
-| `ai.ts` | Логика авто-категоризации |
+| `ai.ts` | Логика авто-категоризации (legacy) |
 | `recurring.ts` | Обработка повторяющихся платежей |
 | `exportImport.ts` | Экспорт/импорт данных (JSON, CSV) |
+| `migrate.ts` | Миграции БД при обновлении схемы |
+
+### AI Module (`app/ai/`)
+
+| File | Description |
+|------|-------------|
+| `types.ts` | Типы AI: CategoryMatch, AIInsight, ChatMessage, SpendingAnalysis |
+| `AIService.ts` | Основной сервис: категоризация, обучение, chat |
+| `InsightEngine.ts` | Генерация инсайтов: аномалии, подписки, прогнозы |
+| `index.ts` | Экспорт модуля |
 
 ### Operations (`operations/`)
 
