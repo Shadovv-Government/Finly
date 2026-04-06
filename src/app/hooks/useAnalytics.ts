@@ -67,11 +67,11 @@ export function useAnalytics(options: UseAnalyticsOptions = {}) {
   const loadAnalytics = async () => {
     try {
       setLoading(true);
-      const range = startDate && endDate 
+      const range = startDate && endDate
         ? { start: startDate, end: endDate }
         : getPeriodRange(period);
 
-      const trendDays = period === 'day' ? 7 : 30;
+      const trendDays = period === 'day' ? 7 : period === 'week' ? 7 : 30;
       const [
         balanceData,
         expensesData,
