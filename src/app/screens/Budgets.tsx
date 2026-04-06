@@ -195,7 +195,7 @@ export const Budgets = () => {
                     <Edit2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                   </button>
                   <button
-                    onClick={() => handleDeleteBudget(budget.id)}
+                    onClick={() => handleDeleteBudget(budget.id!)}
                     className="w-8 h-8 bg-red-100 dark:bg-red-950 rounded-lg flex items-center justify-center hover:bg-red-200 dark:hover:bg-red-900 transition-colors"
                   >
                     <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
