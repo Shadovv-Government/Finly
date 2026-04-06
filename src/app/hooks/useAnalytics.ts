@@ -21,18 +21,29 @@ export interface PeriodRange {
 }
 
 export function getPeriodRange(period: PeriodType): PeriodRange {
-  const now = Date.now();
+  const now = new Date();
 
   switch (period) {
     case 'day':
-      return { start: now - MS_PER_DAY, end: now };
+      // Начало и конец текущего дня
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime();
+      return { start: startOfDay, end: endOfDay };
     case 'week':
-      return { start: now - (7 * MS_PER_DAY), end: now };
+      // Начало текущей недели (понедельник) и конец недели (воскресенье)
+      const dayOfWeek = now.getDay(); // 0 = воскресенье, 1 = понедельник
+      const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysToMonday, 0, 0, 0, 0).getTime();
+      const endOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysToMonday + 7, 0, 0, 0, 0).getTime();
+      return { start: startOfWeek, end: endOfWeek };
     case 'month':
-      return { start: now - (30 * MS_PER_DAY), end: now };
+      // Начало и конец текущего календарного месяца
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
+      return { start: startOfMonth, end: endOfMonth };
     case 'custom':
     default:
-      return { start: now - (30 * MS_PER_DAY), end: now };
+      return { start: now.getTime() - (30 * MS_PER_DAY), end: now.getTime() };
   }
 }
 

@@ -11,8 +11,7 @@ export const Budgets = () => {
   const [periodFilter, setPeriodFilter] = useState<'month' | 'week'>('month');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState<Budget | undefined>(undefined);
-  const [editingCategoryId, setEditingCategoryId] = useState<string | undefined>(undefined);
-  
+
   const { budgets, add, update, remove } = useBudgets();
   const { categories } = useCategories();
   const { expensesByCategory } = useAnalytics({ period: periodFilter });
@@ -39,21 +38,12 @@ export const Budgets = () => {
   // Открыть форму для нового бюджета
   const handleAddBudget = () => {
     setEditingBudget(undefined);
-    setEditingCategoryId(undefined);
-    setIsFormOpen(true);
-  };
-
-  // Открыть форму для нового бюджета с предвыбранной категорией
-  const handleAddBudgetForCategory = (categoryId: string) => {
-    setEditingBudget(undefined);
-    setEditingCategoryId(categoryId);
     setIsFormOpen(true);
   };
 
   // Открыть форму для редактирования
   const handleEditBudget = (budget: Budget) => {
     setEditingBudget(budget);
-    setEditingCategoryId(undefined);
     setIsFormOpen(true);
   };
 
@@ -81,12 +71,6 @@ export const Budgets = () => {
     if (percentage >= 70) return '#f59e0b'; // оранжевый
     return '#22c55e'; // зеленый
   };
-
-  // Категории без бюджета (для быстрого добавления)
-  const categoriesWithoutBudget = useMemo(() => {
-    const budgetCategoryIds = new Set(filteredBudgets.map(b => b.categoryId));
-    return categories.filter(c => c.type === 'expense' && !budgetCategoryIds.has(c.id));
-  }, [categories, filteredBudgets]);
 
   return (
     <div className="pb-20 bg-background min-h-screen">
@@ -230,30 +214,8 @@ export const Budgets = () => {
         })}
       </div>
 
-      {/* Categories without budget */}
-      {categoriesWithoutBudget.length > 0 && (
-        <div className="px-4 py-3">
-          <h2 className="text-sm font-semibold text-muted-foreground mb-3">
-            Добавить бюджет для категории
-          </h2>
-          <div className="space-y-2">
-            {categoriesWithoutBudget.map(category => (
-              <button
-                key={category.id}
-                onClick={() => handleAddBudgetForCategory(category.id)}
-                className="w-full bg-card rounded-xl p-3 border border-border flex items-center gap-3 hover:bg-muted transition-colors"
-              >
-                <CategoryBadge categoryId={category.id} size="sm" />
-                <span className="font-medium flex-1 text-left">{category.name}</span>
-                <Plus className="w-5 h-5 text-muted-foreground" />
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Empty State */}
-      {filteredBudgets.length === 0 && categoriesWithoutBudget.length === 0 && (
+      {filteredBudgets.length === 0 && (
         <div className="px-4 py-12 text-center">
           <p className="text-muted-foreground">
             Нет бюджетов на этот период.
@@ -273,11 +235,9 @@ export const Budgets = () => {
         onClose={() => {
           setIsFormOpen(false);
           setEditingBudget(undefined);
-          setEditingCategoryId(undefined);
         }}
         onSubmit={handleSubmit}
         initialData={editingBudget}
-        editingCategoryId={editingCategoryId}
       />
     </div>
   );

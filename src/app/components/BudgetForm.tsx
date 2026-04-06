@@ -11,7 +11,6 @@ interface BudgetFormProps {
   onClose: () => void;
   onSubmit: (budget: Omit<Budget, 'id'>) => Promise<void>;
   initialData?: Budget;
-  editingCategoryId?: string;
 }
 
 export const BudgetForm: React.FC<BudgetFormProps> = ({
@@ -19,7 +18,6 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({
   onClose,
   onSubmit,
   initialData,
-  editingCategoryId,
 }) => {
   const { notify } = useNotifications();
   const { categories } = useCategories();
@@ -35,18 +33,13 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({
       setSelectedCategoryId(initialData.categoryId);
       setAmount(initialData.amount.toString());
       setPeriod(initialData.period);
-    } else if (editingCategoryId) {
-      // Если передан ID категории для создания бюджета
-      setSelectedCategoryId(editingCategoryId);
-      setAmount('');
-      setPeriod('month');
     } else {
       // Сброс для нового бюджета
       setSelectedCategoryId('');
       setAmount('');
       setPeriod('month');
     }
-  }, [initialData, editingCategoryId, isOpen]);
+  }, [initialData, isOpen]);
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
