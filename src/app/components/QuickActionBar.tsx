@@ -16,7 +16,6 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
   const [isLocked, setIsLocked] = useState(false);
   const [lockProgress, setLockProgress] = useState(0); // 0–1
   const [swipeOffset, setSwipeOffset] = useState(0);
-  const [inputFocused, setInputFocused] = useState(false);
 
   const keyboardHeight = useKeyboardHeight();
 
@@ -297,8 +296,6 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
               onChange={e => setText(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && !isRecording && handleSubmit()}
               readOnly={isRecording}
-              onFocus={() => setInputFocused(true)}
-              onBlur={() => setInputFocused(false)}
               className="flex-1 min-w-0 bg-transparent outline-none text-sm"
               style={{ fontSize: '16px' }}
             />
