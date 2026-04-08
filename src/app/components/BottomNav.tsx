@@ -1,4 +1,4 @@
-import { useLocation } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { Home, History, BarChart3, Settings } from 'lucide-react';
 
 export const BottomNav = () => {
