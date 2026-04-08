@@ -154,11 +154,13 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
   };
 
   const handleClick = () => {
-    if (longPressFired.current) return;
+    // locked check MUST come before longPressFired — after a long-press lock,
+    // longPressFired stays true and would otherwise swallow this tap
     if (isLockedRef.current) {
       stopRecording(true);
       return;
     }
+    if (longPressFired.current) return;
     if (isRecordingRef.current) return;
 
     if (text.trim()) {
@@ -268,7 +270,7 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
           {/* Text field */}
           <div
             className={`flex items-center gap-2 bg-card border rounded-full px-4 py-2.5 transition-colors ${
-              isRecording ? 'border-red-400 dark:border-red-600' : 'border-border'
+              isRecording ? 'border-red-400 dark:border-red-600' : 'border-violet-500 dark:border-violet-600'
             }`}
             style={{
               transform: `translateX(-${swipeOffset}px)`,
@@ -286,6 +288,7 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
               onKeyDown={e => e.key === 'Enter' && !isRecording && handleSubmit()}
               readOnly={isRecording}
               className="flex-1 min-w-0 bg-transparent outline-none text-sm"
+              style={{ fontSize: '16px' }}
             />
             {/* Cancel/clear button — visible with text OR while recording */}
             {(text || isRecording) && (
