@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { Plus, Mic, Sparkles, X, ArrowUp, Trash2 } from 'lucide-react';
+import { useKeyboardVisible } from '../hooks/useKeyboardVisible';
 import { parseNaturalLanguage, findBestMatch } from '../../db/ai';
 import { useCategories } from '../hooks/useCategories';
 import { useTransactions } from '../hooks/useTransactions';
@@ -15,6 +16,9 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
   const [isLocked, setIsLocked] = useState(false);
   const [lockProgress, setLockProgress] = useState(0); // 0–1
   const [swipeOffset, setSwipeOffset] = useState(0);
+  const [inputFocused, setInputFocused] = useState(false);
+
+  const keyboardVisible = useKeyboardVisible();
 
   const recognitionRef = useRef<any>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -205,6 +209,9 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
     isSwipingLeft.current = false;
   };
 
+  // Hide bar when keyboard is opened by something outside this component
+  if (keyboardVisible && !inputFocused) return null;
+
   // ── UI helpers ─────────────────────────────────────────────────────────────
 
   const btnClass = isRecording
@@ -287,6 +294,8 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
               onChange={e => setText(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && !isRecording && handleSubmit()}
               readOnly={isRecording}
+              onFocus={() => setInputFocused(true)}
+              onBlur={() => setInputFocused(false)}
               className="flex-1 min-w-0 bg-transparent outline-none text-sm"
               style={{ fontSize: '16px' }}
             />

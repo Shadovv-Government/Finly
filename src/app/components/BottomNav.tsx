@@ -1,8 +1,12 @@
 import { Link, useLocation } from 'react-router';
 import { Home, History, BarChart3, Settings } from 'lucide-react';
+import { useKeyboardVisible } from '../hooks/useKeyboardVisible';
 
 export const BottomNav = () => {
   const location = useLocation();
+  const keyboardVisible = useKeyboardVisible();
+
+  if (keyboardVisible) return null;
 
   const navItems = [
     { path: '/', icon: Home, label: 'Главная' },
