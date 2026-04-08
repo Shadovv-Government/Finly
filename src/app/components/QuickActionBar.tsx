@@ -1,6 +1,5 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Plus, Mic, Sparkles, X, ArrowUp, Trash2 } from 'lucide-react';
-import { useKeyboardHeight } from '../hooks/useKeyboardVisible';
 import { parseNaturalLanguage, findBestMatch } from '../../db/ai';
 import { useCategories } from '../hooks/useCategories';
 import { useTransactions } from '../hooks/useTransactions';
@@ -17,8 +16,7 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
   const [lockProgress, setLockProgress] = useState(0); // 0–1
   const [swipeOffset, setSwipeOffset] = useState(0);
 
-  const keyboardHeight = useKeyboardHeight();
-
+  const barRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const inputContainerRef = useRef<HTMLDivElement>(null);
@@ -36,6 +34,24 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
   const isSwipingLeft = useRef(false);
 
   const SWIPE_THRESHOLD = 60;
+
+  // Direct DOM update — no React re-render lag when keyboard opens/closes
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const handle = () => {
+      const gap = window.innerHeight - vv.height - vv.offsetTop;
+      if (barRef.current) {
+        barRef.current.style.bottom = gap > 150 ? `${gap + 8}px` : '64px';
+      }
+    };
+    vv.addEventListener('resize', handle);
+    vv.addEventListener('scroll', handle);
+    return () => {
+      vv.removeEventListener('resize', handle);
+      vv.removeEventListener('scroll', handle);
+    };
+  }, []);
 
   const { categories } = useCategories();
   const { add } = useTransactions();
@@ -221,11 +237,9 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
 
   return (
     <div
+      ref={barRef}
       className="fixed left-0 right-0 z-40 px-3 py-2 pointer-events-none"
-      style={{
-        bottom: keyboardHeight > 0 ? `${keyboardHeight + 8}px` : '64px',
-        transition: 'bottom 0.15s ease',
-      }}
+      style={{ bottom: '64px', transition: 'bottom 0.15s ease' }}
     >
       {/* Lock / hint indicators */}
       {isRecording && !isLocked && lockProgress > 0.15 && (
