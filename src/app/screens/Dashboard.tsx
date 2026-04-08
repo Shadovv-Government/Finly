@@ -1,5 +1,5 @@
 import { Bell, Camera, Plus, Calendar } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Link } from 'react-router';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { CategoryBadge } from '../components/CategoryBadge';
@@ -18,6 +18,7 @@ import {
 } from '../components/ui/dialog';
 import { BottomSheet } from '../components/BottomSheet';
 import { AddTransactionForm } from '../components/AddTransactionForm';
+import { AIQuickInput } from '../components/AIQuickInput';
 import { NotificationsPanel } from '../components/NotificationsPanel';
 import { MS_PER_MONTH, MS_PER_WEEK } from '../constants';
 
@@ -38,7 +39,10 @@ export const Dashboard = () => {
   const { hasUnread, notifications: panelNotifications, markAllRead, clearRead } = useNotificationPanel();
   const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
+  const [isAISheetOpen, setIsAISheetOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout>>();
+  const longPressFired = useRef(false);
 
   // Calculate totals from analytics
   const income = balance?.income ?? 0;
@@ -316,10 +320,21 @@ export const Dashboard = () => {
         </div>
       </div>
 
-      {/* FAB Button */}
+      {/* FAB Button — click: new transaction, long press: AI input */}
       <button
-        onClick={() => setIsAddSheetOpen(true)}
-        className="fixed bottom-20 right-4 w-14 h-14 bg-gradient-to-br from-violet-600 to-indigo-700 text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow z-40"
+        onPointerDown={() => {
+          longPressFired.current = false;
+          longPressTimer.current = setTimeout(() => {
+            longPressFired.current = true;
+            setIsAISheetOpen(true);
+          }, 500);
+        }}
+        onPointerUp={() => clearTimeout(longPressTimer.current)}
+        onPointerLeave={() => clearTimeout(longPressTimer.current)}
+        onClick={() => {
+          if (!longPressFired.current) setIsAddSheetOpen(true);
+        }}
+        className="fixed bottom-20 right-4 w-14 h-14 bg-gradient-to-br from-violet-600 to-indigo-700 text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all active:scale-90 z-40"
       >
         <Plus className="w-6 h-6" />
       </button>
@@ -331,6 +346,15 @@ export const Dashboard = () => {
         title="Новая операция"
       >
         <AddTransactionForm onClose={() => setIsAddSheetOpen(false)} />
+      </BottomSheet>
+
+      {/* AI Quick Input Bottom Sheet */}
+      <BottomSheet
+        isOpen={isAISheetOpen}
+        onClose={() => setIsAISheetOpen(false)}
+        title="AI Ввод"
+      >
+        <AIQuickInput onClose={() => setIsAISheetOpen(false)} />
       </BottomSheet>
 
       {/* Avatar Selection Dialog */}
