@@ -68,11 +68,9 @@ export function validateTransaction(
     }
   }
 
-  // categoryId
+  // categoryId (теперь опционален — если не указан, будет подставлена категория "Другое")
   if (!isUpdate || data.categoryId !== undefined) {
-    if (!data.categoryId) {
-      errors.push('Category ID is required');
-    } else if (typeof data.categoryId !== 'string') {
+    if (data.categoryId !== undefined && typeof data.categoryId !== 'string') {
       errors.push('Category ID must be a string');
     }
   }

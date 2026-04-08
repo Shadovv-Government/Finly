@@ -146,8 +146,9 @@ export async function getExpensesByCategory(start: number, end: number): Promise
   const categoryMap = new Map(categories.map(c => [c.id, c]));
 
   const byCategory = new Map<string, number>();
-  
+
   transactions.forEach(t => {
+    if (!t.categoryId) return; // пропускаем транзакции без категории
     const current = byCategory.get(t.categoryId) || 0;
     byCategory.set(t.categoryId, current + t.amount * t.rate);
   });
@@ -184,8 +185,9 @@ export async function getIncomeByCategory(start: number, end: number): Promise<C
   const categoryMap = new Map(categories.map(c => [c.id, c]));
 
   const byCategory = new Map<string, number>();
-  
+
   transactions.forEach(t => {
+    if (!t.categoryId) return; // пропускаем транзакции без категории
     const current = byCategory.get(t.categoryId) || 0;
     byCategory.set(t.categoryId, current + t.amount * t.rate);
   });

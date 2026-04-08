@@ -2,7 +2,7 @@ import * as Icons from 'lucide-react';
 import { useCategories } from '../hooks/useCategories';
 
 interface CategoryBadgeProps {
-  categoryId: string;
+  categoryId?: string;
   size?: 'sm' | 'md' | 'lg';
   showName?: boolean;
 }

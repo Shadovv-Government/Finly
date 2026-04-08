@@ -345,19 +345,47 @@ describe('AddTransactionForm', () => {
   });
 
   describe('сохранение транзакции', () => {
-    it('должен сохранять транзакцию при клике на кнопку', async () => {
+    it('должен сохранять транзакцию с категорией "Другое" если категория не выбрана', async () => {
       const mockAdd = vi.fn().mockResolvedValue(1);
       const mockNotifyTransaction = vi.fn();
-      (useTransactions as any).mockReturnValue({ add: mockAdd });
+      (useTransactions as any).mockReturnValue({ add: mockAdd, transactions: [] });
+      (useCategories as any).mockReturnValue({
+        categories: [
+          { id: 'cat_other_expense', name: 'Другое', type: 'expense', icon: 'HelpCircle', color: '#9E9E9E', isSystem: true },
+        ],
+      });
       (useNotifications as any).mockReturnValue({ notifyTransaction: mockNotifyTransaction });
+      (useTransactionForm as any).mockReturnValue({
+        formData: {
+          amount: '1000',
+          type: 'expense',
+          categoryId: '', // категория не выбрана
+          comment: '',
+          date: new Date(),
+        },
+        setFormData: vi.fn(),
+        quickInput: '',
+        setQuickInput: vi.fn(),
+        isParsing: false,
+        parseQuickInput: vi.fn(),
+        formatAmount: vi.fn((v: string) => v),
+        parseAmountInput: vi.fn((v: string) => v),
+        handleAmountChange: vi.fn(),
+      });
 
       render(<AddTransactionForm onClose={mockOnClose} />);
 
       const saveButton = screen.getByText('Сохранить');
       fireEvent.click(saveButton);
 
-      // Кнопка должна быть отключена если нет categoryId
-      expect(mockAdd).not.toHaveBeenCalled();
+      // Теперь транзакция сохраняется с категорией "Другое"
+      expect(mockAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amount: 1000,
+          type: 'expense',
+          categoryId: 'cat_other_expense',
+        })
+      );
     });
 
     it('должен вызывать onClose после успешного сохранения', async () => {

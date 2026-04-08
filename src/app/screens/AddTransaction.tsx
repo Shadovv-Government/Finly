@@ -81,15 +81,33 @@ export const AddTransaction = () => {
   };
 
   const handleSave = async () => {
-    if (!amount || !selectedCategory) {
-      toast.error('Заполните сумму и категорию');
+    if (!amount) {
+      toast.error('Укажите сумму');
       return;
     }
+
+    // Определяем категорию: выбранная или "Другое"
+    let categoryId = selectedCategory;
+    if (!categoryId) {
+      const fallbackCategory = categories.find(
+        c => c.id === (type === 'expense' ? 'cat_other_expense' : 'inc_other')
+      );
+      if (fallbackCategory) {
+        categoryId = fallbackCategory.id;
+        toast.info(`Категория не выбрана, используется "${fallbackCategory.name}"`);
+      }
+    }
+
+    if (!categoryId) {
+      toast.error('Ошибка: категория не найдена');
+      return;
+    }
+
     try {
       await add({
         amount: parseFloat(amount),
         type,
-        categoryId: selectedCategory,
+        categoryId,
         date: selectedDate.getTime(),
         comment: comment || undefined,
         currency: 'RUB',

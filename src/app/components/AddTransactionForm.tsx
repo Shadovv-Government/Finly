@@ -40,15 +40,31 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
   };
 
   const handleSave = async () => {
-    if (!formData.amount || !formData.categoryId) {
+    if (!formData.amount) {
       return;
     }
+
+    // Определяем категорию: выбранная или "Другое"
+    let categoryId = formData.categoryId;
+    if (!categoryId) {
+      const fallbackCategory = categories.find(
+        c => c.id === (formData.type === 'expense' ? 'cat_other_expense' : 'inc_other')
+      );
+      if (fallbackCategory) {
+        categoryId = fallbackCategory.id;
+      }
+    }
+
+    if (!categoryId) {
+      return;
+    }
+
     try {
-      const category = categories.find(c => c.id === formData.categoryId);
+      const category = categories.find(c => c.id === categoryId);
       await add({
         amount: parseFloat(formData.amount),
         type: formData.type,
-        categoryId: formData.categoryId,
+        categoryId,
         date: formData.date.getTime(),
         comment: formData.comment || undefined,
         currency: 'RUB',

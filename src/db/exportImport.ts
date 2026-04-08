@@ -125,16 +125,19 @@ export async function exportToCSV(): Promise<string> {
     'Comment',
   ];
 
-  const rows = transactions.map(t => [
-    t.id,
-    new Date(t.date).toISOString(),
-    t.type,
-    categoryMap.get(t.categoryId) || 'Unknown',
-    t.amount,
-    t.currency,
-    t.rate,
-    `"${(t.comment || '').replace(/"/g, '""')}"`,
-  ]);
+  const rows = transactions.map(t => {
+    const category = t.categoryId ? (categoryMap.get(t.categoryId) || 'Unknown') : 'Без категории';
+    return [
+      t.id,
+      new Date(t.date).toISOString(),
+      t.type,
+      category,
+      t.amount,
+      t.currency,
+      t.rate,
+      `"${(t.comment || '').replace(/"/g, '""')}"`,
+    ];
+  });
 
   return [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
 }
@@ -217,13 +220,15 @@ export async function importData(
     if (data.transactions?.length) {
       for (const transaction of data.transactions) {
         try {
-          // Проверяем существование категории
-          const category = await db.categories.get(transaction.categoryId);
-          if (!category) {
-            result.warnings.push(
-              `Transaction skipped: category "${transaction.categoryId}" not found`
-            );
-            continue;
+          // Проверяем категорию (если указана)
+          if (transaction.categoryId) {
+            const category = await db.categories.get(transaction.categoryId);
+            if (!category) {
+              result.warnings.push(
+                `Transaction skipped: category "${transaction.categoryId}" not found`
+              );
+              continue;
+            }
           }
 
           await db.transactions.add(transaction);

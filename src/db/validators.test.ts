@@ -143,15 +143,26 @@ describe('validateTransaction', () => {
       expect(result.isValid).toBe(true);
     });
 
-    it('должен ошибаться для отсутствующего categoryId', () => {
+    it('должен проходить для транзакции без categoryId (опционален)', () => {
       const result = validateTransaction({
         amount: 1000,
         type: 'expense',
         date: Date.now(),
       } as any);
 
+      expect(result.isValid).toBe(true);
+    });
+
+    it('должен ошибаться для некорректного categoryId (не string)', () => {
+      const result = validateTransaction({
+        amount: 1000,
+        type: 'expense',
+        categoryId: 123,
+        date: Date.now(),
+      } as any);
+
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('Category ID is required');
+      expect(result.errors).toContain('Category ID must be a string');
     });
   });
 

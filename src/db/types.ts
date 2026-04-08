@@ -18,7 +18,7 @@ export interface Transaction {
   id?: number; // autoIncrement
   amount: number;
   type: TransactionType;
-  categoryId: string;
+  categoryId?: string; // опционален — если не указан, используется категория "Другое"
   date: number; // timestamp для удобного индексирования
   comment?: string;
   currency: string; // код валюты (RUB, USD)

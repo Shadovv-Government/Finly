@@ -99,7 +99,7 @@ export const TransactionHistory = () => {
                         index !== dayTransactions.length - 1 ? 'border-b border-border' : ''
                       }`}
                     >
-                      <CategoryBadge categoryId={transaction.categoryId} size="md" />
+                      <CategoryBadge categoryId={transaction.categoryId as string | undefined} size="md" />
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">
                           {category?.name || 'Без категории'}
