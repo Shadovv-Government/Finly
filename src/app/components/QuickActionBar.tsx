@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Plus, Mic, Sparkles, X, ArrowUp, Trash2 } from 'lucide-react';
-import { useKeyboardVisible } from '../hooks/useKeyboardVisible';
+import { useKeyboardHeight } from '../hooks/useKeyboardVisible';
 import { parseNaturalLanguage, findBestMatch } from '../../db/ai';
 import { useCategories } from '../hooks/useCategories';
 import { useTransactions } from '../hooks/useTransactions';
@@ -18,7 +18,7 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [inputFocused, setInputFocused] = useState(false);
 
-  const keyboardVisible = useKeyboardVisible();
+  const keyboardHeight = useKeyboardHeight();
 
   const recognitionRef = useRef<any>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -209,9 +209,6 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
     isSwipingLeft.current = false;
   };
 
-  // Hide bar when keyboard is opened by something outside this component
-  if (keyboardVisible && !inputFocused) return null;
-
   // ── UI helpers ─────────────────────────────────────────────────────────────
 
   const btnClass = isRecording
@@ -224,7 +221,13 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
   const showTrash = swipeOffset > 8;
 
   return (
-    <div className="fixed bottom-16 left-0 right-0 z-40 px-3 py-2 pointer-events-none">
+    <div
+      className="fixed left-0 right-0 z-40 px-3 py-2 pointer-events-none"
+      style={{
+        bottom: keyboardHeight > 0 ? `${keyboardHeight + 8}px` : '64px',
+        transition: 'bottom 0.15s ease',
+      }}
+    >
       {/* Lock / hint indicators */}
       {isRecording && !isLocked && lockProgress > 0.15 && (
         <div className="flex justify-center mb-2 pointer-events-none">
