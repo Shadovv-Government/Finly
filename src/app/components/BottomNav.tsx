@@ -11,10 +11,15 @@ export const BottomNav = () => {
     if (!vv) return;
 
     // On iOS Safari, fixed elements ride with the visual viewport when the
-    // keyboard opens. Counteract by translating by the viewport's offsetTop.
+    // keyboard opens. Counteract by translating by the viewport's offsetTop
+    // ONLY when the keyboard is actually open (offsetTop > 0).
     const pin = () => {
       if (navRef.current) {
-        navRef.current.style.transform = `translateY(${vv.offsetTop}px)`;
+        if (vv.offsetTop > 0) {
+          navRef.current.style.transform = `translateY(${vv.offsetTop}px)`;
+        } else {
+          navRef.current.style.transform = 'none';
+        }
       }
     };
 
