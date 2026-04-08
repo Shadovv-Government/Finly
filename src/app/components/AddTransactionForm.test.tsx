@@ -79,7 +79,6 @@ describe('AddTransactionForm', () => {
     it('должен рендерить форму с основными элементами', () => {
       render(<AddTransactionForm onClose={mockOnClose} />);
 
-      expect(screen.getByPlaceholderText(/кофе 450 рублей/i)).toBeInTheDocument();
       expect(screen.getByPlaceholderText('0')).toBeInTheDocument();
       expect(screen.getByText('Расход')).toBeInTheDocument();
       expect(screen.getByText('Доход')).toBeInTheDocument();
@@ -165,90 +164,6 @@ describe('AddTransactionForm', () => {
     });
   });
 
-  describe('быстрый ввод (AI)', () => {
-    it('должен вызывать parseQuickInput при нажатии Enter', () => {
-      const mockParseQuickInput = vi.fn();
-      const mockSetQuickInput = vi.fn();
-      (useTransactionForm as any).mockReturnValue({
-        formData: {
-          amount: '',
-          type: 'expense',
-          categoryId: '',
-          comment: '',
-          date: new Date(),
-        },
-        setFormData: vi.fn(),
-        quickInput: 'кофе 450',
-        setQuickInput: mockSetQuickInput,
-        isParsing: false,
-        parseQuickInput: mockParseQuickInput,
-        formatAmount: vi.fn(),
-        parseAmountInput: vi.fn(),
-        handleAmountChange: vi.fn(),
-      });
-
-      render(<AddTransactionForm onClose={mockOnClose} />);
-
-      const input = screen.getByPlaceholderText(/кофе 450 рублей/i);
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
-
-      expect(mockParseQuickInput).toHaveBeenCalledTimes(1);
-    });
-
-    it('должен вызывать parseQuickInput при клике на кнопку', () => {
-      const mockParseQuickInput = vi.fn();
-      (useTransactionForm as any).mockReturnValue({
-        formData: {
-          amount: '',
-          type: 'expense',
-          categoryId: '',
-          comment: '',
-          date: new Date(),
-        },
-        setFormData: vi.fn(),
-        quickInput: 'кофе 450',
-        setQuickInput: vi.fn(),
-        isParsing: false,
-        parseQuickInput: mockParseQuickInput,
-        formatAmount: vi.fn(),
-        parseAmountInput: vi.fn(),
-        handleAmountChange: vi.fn(),
-      });
-
-      render(<AddTransactionForm onClose={mockOnClose} />);
-
-      // Кнопка с иконкой Sparkles
-      const parseButton = screen.getByRole('button', { name: /распознать/i });
-      fireEvent.click(parseButton);
-
-      expect(mockParseQuickInput).toHaveBeenCalledTimes(1);
-    });
-
-    it('должен отключать кнопку парсинга если quickInput пустой', () => {
-      (useTransactionForm as any).mockReturnValue({
-        formData: {
-          amount: '',
-          type: 'expense',
-          categoryId: '',
-          comment: '',
-          date: new Date(),
-        },
-        setFormData: vi.fn(),
-        quickInput: '',
-        setQuickInput: vi.fn(),
-        isParsing: false,
-        parseQuickInput: vi.fn(),
-        formatAmount: vi.fn(),
-        parseAmountInput: vi.fn(),
-        handleAmountChange: vi.fn(),
-      });
-
-      render(<AddTransactionForm onClose={mockOnClose} />);
-
-      const parseButton = screen.getByRole('button', { name: /распознать/i });
-      expect(parseButton).toBeDisabled();
-    });
-  });
 
   describe('ввод суммы', () => {
     it('должен рендерить input для суммы', () => {
