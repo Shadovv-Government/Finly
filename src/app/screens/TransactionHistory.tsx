@@ -4,7 +4,7 @@ import { CategoryBadge } from '../components/CategoryBadge';
 import { AmountDisplay } from '../components/AmountDisplay';
 import { useTransactions } from '../hooks/useTransactions';
 import { useCategories } from '../hooks/useCategories';
-import { Transaction, Category } from '../../db/types';
+import { Transaction } from '../../db/types';
 
 export const TransactionHistory = () => {
   const { transactions } = useTransactions();
