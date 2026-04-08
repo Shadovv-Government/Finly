@@ -1,8 +1,26 @@
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { Home, History, BarChart3, Settings } from 'lucide-react';
 
 export const BottomNav = () => {
   const location = useLocation();
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const update = () => {
+      setIsKeyboardOpen(vv.offsetTop > 0);
+    };
+
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    };
+  }, []);
 
   const navItems = [
     { path: '/', icon: Home, label: 'Главная' },
@@ -10,6 +28,10 @@ export const BottomNav = () => {
     { path: '/analytics', icon: BarChart3, label: 'Аналитика' },
     { path: '/settings', icon: Settings, label: 'Настройки' },
   ];
+
+  // Hide nav when iOS keyboard is open — fixed elements ride with the
+  // visual viewport on iOS Safari, so hiding prevents it from floating up.
+  if (isKeyboardOpen) return null;
 
   return (
     <nav
