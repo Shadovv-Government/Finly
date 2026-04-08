@@ -15,7 +15,6 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
   const [isLocked, setIsLocked] = useState(false);
   const [lockProgress, setLockProgress] = useState(0); // 0–1
   const [swipeOffset, setSwipeOffset] = useState(0);
-  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
 
   const barRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
@@ -36,15 +35,22 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
 
   const SWIPE_THRESHOLD = 60;
 
-  // Direct DOM update — no React re-render lag when keyboard opens/closes
-  // On iOS Safari, fixed elements ride with the visual viewport when the
-  // keyboard opens. We hide the bar to prevent it from floating up.
+  // Direct DOM update — counteract iOS Safari visual viewport shift
+  // when keyboard opens, keeping the bar pinned above bottom nav.
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
 
     const handle = () => {
-      setIsKeyboardOpen(vv.offsetTop > 10);
+      if (!barRef.current) return;
+      if (vv.offsetTop > 10) {
+        // Keyboard open — counteract the viewport shift
+        barRef.current.style.transform = `translateY(${vv.offsetTop}px)`;
+        barRef.current.style.transition = 'none';
+      } else {
+        barRef.current.style.transform = 'none';
+        barRef.current.style.transition = 'transform 0.2s ease';
+      }
     };
 
     vv.addEventListener('resize', handle);
@@ -236,10 +242,6 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
 
   const swipeProgress = Math.min(1, swipeOffset / SWIPE_THRESHOLD);
   const showTrash = swipeOffset > 8;
-
-  // Hide bar when iOS keyboard is open — fixed elements ride with the
-  // visual viewport on iOS Safari, so hiding prevents it from floating up.
-  if (isKeyboardOpen) return null;
 
   return (
     <div
