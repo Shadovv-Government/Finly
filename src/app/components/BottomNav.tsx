@@ -1,35 +1,8 @@
-import { useEffect, useRef } from 'react';
-import { Link, useLocation } from 'react-router';
+import { useLocation } from 'react-router';
 import { Home, History, BarChart3, Settings } from 'lucide-react';
 
 export const BottomNav = () => {
   const location = useLocation();
-  const navRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-
-    // On iOS Safari, fixed elements ride with the visual viewport when the
-    // keyboard opens. Counteract by translating by the viewport's offsetTop
-    // ONLY when the keyboard is actually open (offsetTop > 0).
-    const pin = () => {
-      if (navRef.current) {
-        if (vv.offsetTop > 0) {
-          navRef.current.style.transform = `translateY(${vv.offsetTop}px)`;
-        } else {
-          navRef.current.style.transform = 'none';
-        }
-      }
-    };
-
-    vv.addEventListener('resize', pin);
-    vv.addEventListener('scroll', pin);
-    return () => {
-      vv.removeEventListener('resize', pin);
-      vv.removeEventListener('scroll', pin);
-    };
-  }, []);
 
   const navItems = [
     { path: '/', icon: Home, label: 'Главная' },
@@ -40,9 +13,7 @@ export const BottomNav = () => {
 
   return (
     <nav
-      ref={navRef}
       className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 safe-area-inset-bottom"
-      style={{ willChange: 'transform' }}
     >
       <div className="max-w-md mx-auto flex justify-around items-center h-16 px-2">
         {navItems.map(({ path, icon: Icon, label }) => {
