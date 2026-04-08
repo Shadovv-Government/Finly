@@ -1,4 +1,4 @@
-import { Calendar, MessageSquare, Mic, Sparkles } from 'lucide-react';
+import { Calendar, MessageSquare } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { useCategories } from '../hooks/useCategories';
 import { useTransactions } from '../hooks/useTransactions';
@@ -21,23 +21,11 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
   const {
     formData,
     setFormData,
-    quickInput,
-    setQuickInput,
-    isParsing,
-    parseQuickInput,
     formatAmount,
     handleAmountChange,
   } = useTransactionForm();
 
   const filteredCategories = categories.filter(c => c.type === formData.type);
-
-  // Обработка Enter в поле быстрого ввода
-  const handleQuickInputKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      parseQuickInput();
-    }
-  };
 
   const handleSave = async () => {
     if (!formData.amount) {
@@ -80,33 +68,6 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
 
   return (
     <div className="flex flex-col pb-4">
-      {/* Quick Input */}
-      <div className="px-4 py-4">
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="кофе 450 рублей в Старбаксе"
-            value={quickInput}
-            onChange={(e) => setQuickInput(e.target.value)}
-            onKeyDown={handleQuickInputKeyDown}
-            className="w-full px-4 py-3 pr-24 bg-muted rounded-xl outline-none focus:ring-2 focus:ring-violet-600"
-          />
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-            <button
-              onClick={parseQuickInput}
-              disabled={isParsing || !quickInput.trim()}
-              className="text-violet-600 hover:text-violet-700 disabled:text-muted-foreground transition-colors"
-              title="Распознать"
-            >
-              <Sparkles className="w-5 h-5" />
-            </button>
-            <button className="text-muted-foreground">
-              <Mic className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* Type Toggle */}
       <div className="px-4 py-4">
         <div className="flex gap-2 p-1 bg-muted rounded-xl">

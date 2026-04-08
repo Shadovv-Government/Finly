@@ -2,6 +2,21 @@
 @import './tailwind.css';
 @import './theme.css';
 
+/* Disable text selection globally */
+* {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+input, textarea, [contenteditable] {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
 /* Utility classes */
 .scrollbar-hide {
   -ms-overflow-style: none;

@@ -1,4 +1,4 @@
-import { Bell, Camera, Plus, Calendar } from 'lucide-react';
+import { Bell, Camera, Calendar } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
@@ -18,6 +18,7 @@ import {
 } from '../components/ui/dialog';
 import { BottomSheet } from '../components/BottomSheet';
 import { AddTransactionForm } from '../components/AddTransactionForm';
+import { QuickActionBar } from '../components/QuickActionBar';
 import { NotificationsPanel } from '../components/NotificationsPanel';
 import { MS_PER_MONTH, MS_PER_WEEK } from '../constants';
 
@@ -95,7 +96,7 @@ export const Dashboard = () => {
   };
 
   return (
-    <div className="pb-20 bg-background min-h-screen">
+    <div className="pb-36 bg-background min-h-screen">
       {/* Header */}
       <div className="px-4 pt-6 pb-4 bg-gradient-to-br from-violet-600 to-indigo-700 text-white">
         <div className="flex items-center justify-between mb-6">
@@ -316,13 +317,8 @@ export const Dashboard = () => {
         </div>
       </div>
 
-      {/* FAB Button */}
-      <button
-        onClick={() => setIsAddSheetOpen(true)}
-        className="fixed bottom-20 right-4 w-14 h-14 bg-gradient-to-br from-violet-600 to-indigo-700 text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow z-40"
-      >
-        <Plus className="w-6 h-6" />
-      </button>
+      {/* Quick Action Bar — text input + voice/add button */}
+      <QuickActionBar onOpenForm={() => setIsAddSheetOpen(true)} />
 
       {/* Add Transaction Bottom Sheet */}
       <BottomSheet
