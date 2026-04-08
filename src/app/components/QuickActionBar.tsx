@@ -4,6 +4,7 @@ import { parseNaturalLanguage, findBestMatch } from '../../db/ai';
 import { useCategories } from '../hooks/useCategories';
 import { useTransactions } from '../hooks/useTransactions';
 import { useNotifications } from '../hooks/useNotifications';
+import { useBudgetNotifications } from '../hooks/useBudgetNotifications';
 
 interface QuickActionBarProps {
   onOpenForm: () => void;
@@ -37,6 +38,7 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
   const { categories } = useCategories();
   const { add } = useTransactions();
   const { notifyTransaction } = useNotifications();
+  const { checkBudgets } = useBudgetNotifications();
 
   const SpeechRecognitionAPI =
     (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -106,6 +108,10 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
     });
 
     notifyTransaction(parsed.type, parsed.amount, category?.name ?? 'Без категории');
+
+    // Проверяем бюджеты и отправляем push-уведомления
+    await checkBudgets();
+
     setText('');
   };
 

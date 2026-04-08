@@ -3,6 +3,7 @@ import * as LucideIcons from 'lucide-react';
 import { useCategories } from '../hooks/useCategories';
 import { useTransactions } from '../hooks/useTransactions';
 import { useNotifications } from '../hooks/useNotifications';
+import { useBudgetNotifications } from '../hooks/useBudgetNotifications';
 import { useTransactionForm } from '../hooks/useTransactionForm';
 
 function CategoryIcon({ name, className, color }: { name: string; className?: string; color?: string }) {
@@ -18,6 +19,7 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
   const { categories } = useCategories();
   const { add } = useTransactions();
   const { notifyTransaction } = useNotifications();
+  const { checkBudgets } = useBudgetNotifications();
   const {
     formData,
     setFormData,
@@ -60,6 +62,10 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
       });
 
       notifyTransaction(formData.type, parseFloat(formData.amount), category?.name || 'Без категории');
+
+      // Проверяем бюджеты и отправляем push-уведомления
+      await checkBudgets();
+
       onClose();
     } catch (error) {
       // Обработка ошибки

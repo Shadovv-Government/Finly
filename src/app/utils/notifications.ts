@@ -99,7 +99,7 @@ export function sendGoalAchievedNotification(goalName: string): void {
   });
 }
 
-// Отправка уведомления о перерасходе бюджета
+// Отправка уведомления о перерасходе бюджета (100%+)
 export function sendBudgetOverrunNotification(
   categoryName: string,
   spent: number,
@@ -110,6 +110,20 @@ export function sendBudgetOverrunNotification(
     body: `По категории "${categoryName}" потрачено ${spent.toLocaleString('ru-RU')} ₽ из ${limit.toLocaleString('ru-RU')} ₽`,
     tag: 'budget-overrun',
     requireInteraction: true,
+  });
+}
+
+// Отправка уведомления о приближении к лимиту бюджета (80-100%)
+export function sendBudgetWarningNotification(
+  categoryName: string,
+  spent: number,
+  limit: number,
+  percent: number
+): void {
+  sendNotification({
+    title: '📊 Бюджет почти исчерпан',
+    body: `По категории "${categoryName}" использовано ${percent}% — ${(limit - spent).toLocaleString('ru-RU')} ₽ осталось`,
+    tag: 'budget-warning',
   });
 }
 

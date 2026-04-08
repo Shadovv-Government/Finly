@@ -5,6 +5,7 @@ import { parseNaturalLanguage, findBestMatch } from '../../db/ai';
 import { useCategories } from '../hooks/useCategories';
 import { useTransactions } from '../hooks/useTransactions';
 import { useNotifications } from '../hooks/useNotifications';
+import { useBudgetNotifications } from '../hooks/useBudgetNotifications';
 import { Category } from '../../db/types';
 
 interface ParsedResult {
@@ -36,6 +37,7 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({ onClose }) => {
   const { categories } = useCategories();
   const { add } = useTransactions();
   const { notifyTransaction } = useNotifications();
+  const { checkBudgets } = useBudgetNotifications();
 
   const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
   const hasVoice = !!SpeechRecognitionAPI;
@@ -125,6 +127,10 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({ onClose }) => {
         rate: 1,
       });
       notifyTransaction(parsedResult.type, parsedResult.amount, category?.name ?? 'Без категории');
+
+      // Проверяем бюджеты и отправляем push-уведомления
+      await checkBudgets();
+
       onClose();
     } catch {
       setIsAdding(false);

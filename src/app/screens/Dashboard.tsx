@@ -1,5 +1,5 @@
 import { Bell, Camera, Calendar } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { CategoryBadge } from '../components/CategoryBadge';
@@ -10,6 +10,7 @@ import { useTransactions } from '../hooks/useTransactions';
 import { useCategories } from '../hooks/useCategories';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotificationPanel } from '../hooks/useNotificationPanel';
+import { useBudgetNotifications } from '../hooks/useBudgetNotifications';
 import {
   Dialog,
   DialogContent,
@@ -37,9 +38,24 @@ export const Dashboard = () => {
   const { categories } = useCategories();
   const { user, updateProfile } = useAuth();
   const { hasUnread, notifications: panelNotifications, markAllRead, clearRead } = useNotificationPanel();
+  const { checkBudgets } = useBudgetNotifications();
   const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+
+  // Проверка бюджетов при загрузке и при возврате на вкладку
+  useEffect(() => {
+    checkBudgets();
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        checkBudgets();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [checkBudgets]);
 
   // Calculate totals from analytics
   const income = balance?.income ?? 0;

@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { useCategories } from '../hooks/useCategories';
 import { useTransactions } from '../hooks/useTransactions';
+import { useBudgetNotifications } from '../hooks/useBudgetNotifications';
 import { parseNaturalLanguage, findBestMatch } from '../../db/ai';
 import { formatAmountInput, parseAmountInput } from '../utils/formatCurrency';
 
@@ -17,6 +18,7 @@ export const AddTransaction = () => {
   const navigate = useNavigate();
   const { categories } = useCategories();
   const { add } = useTransactions();
+  const { checkBudgets } = useBudgetNotifications();
   const [type, setType] = useState<'income' | 'expense'>('expense');
   const [amount, setAmount] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -114,6 +116,10 @@ export const AddTransaction = () => {
         rate: 1,
       });
       toast.success('Транзакция добавлена');
+
+      // Проверяем бюджеты и отправляем push-уведомления
+      await checkBudgets();
+
       navigate('/');
     } catch (error) {
       toast.error('Ошибка при сохранении транзакции');
