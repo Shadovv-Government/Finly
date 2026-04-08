@@ -7,8 +7,10 @@ export const Layout = () => {
   const showNav = !hideNavOnPaths.includes(location.pathname);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Outlet />
+    <div className="flex flex-col bg-background overflow-hidden" style={{ height: '100dvh' }}>
+      <div className="flex-1 overflow-auto">
+        <Outlet />
+      </div>
       {showNav && <BottomNav />}
     </div>
   );

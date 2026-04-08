@@ -1,29 +1,8 @@
-import { useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router';
 import { Home, History, BarChart3, Settings } from 'lucide-react';
 
 export const BottomNav = () => {
   const location = useLocation();
-  const navRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-
-    const handle = () => {
-      const gap = window.innerHeight - vv.height - vv.offsetTop;
-      if (navRef.current) {
-        navRef.current.style.display = gap > 150 ? 'none' : '';
-      }
-    };
-
-    vv.addEventListener('resize', handle);
-    vv.addEventListener('scroll', handle);
-    return () => {
-      vv.removeEventListener('resize', handle);
-      vv.removeEventListener('scroll', handle);
-    };
-  }, []);
 
   const navItems = [
     { path: '/', icon: Home, label: 'Главная' },
@@ -33,7 +12,7 @@ export const BottomNav = () => {
   ];
 
   return (
-    <nav ref={navRef} className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 safe-area-inset-bottom">
+    <nav className="shrink-0 bg-card border-t border-border z-50 safe-area-inset-bottom">
       <div className="max-w-md mx-auto flex justify-around items-center h-16 px-2">
         {navItems.map(({ path, icon: Icon, label }) => {
           const isActive = location.pathname === path;
