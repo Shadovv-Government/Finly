@@ -16,26 +16,45 @@ export const TransactionHistory = () => {
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filterType, setFilterType] = useState<'all' | 'expense' | 'income'>('all');
 
   // Ref для закрытия datePicker при клике вне
   const dateFilterRef = useRef<HTMLDivElement>(null);
 
-  // expense категории для фильтра
-  const expenseCategories = useMemo(
-    () => categories.filter(c => c.type === 'expense'),
-    [categories]
+  // Все категории для фильтра (и expense, и income)
+  const filterCategories = useMemo(
+    () => {
+      if (filterType === 'expense') return categories.filter(c => c.type === 'expense');
+      if (filterType === 'income') return categories.filter(c => c.type === 'income');
+      return categories;
+    },
+    [categories, filterType]
   );
 
   // Фильтрация транзакций
   const filteredTransactions = useMemo(() => {
-    let filtered = transactions;
+    let filtered = [...transactions];
 
-    // 1. Поиск по комментарию
+    // 0. Фильтр по типу (расход/доход)
+    if (filterType === 'expense') {
+      filtered = filtered.filter(t => t.type === 'expense');
+    } else if (filterType === 'income') {
+      filtered = filtered.filter(t => t.type === 'income');
+    }
+
+    // 1. Поиск по комментарию, категории или сумме
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(t =>
-        t.comment?.toLowerCase().includes(query)
-      );
+      filtered = filtered.filter(t => {
+        const cat = categories.find(c => c.id === t.categoryId);
+        const commentMatch = t.comment?.toLowerCase().includes(query);
+        const categoryMatch = cat?.name.toLowerCase().includes(query);
+        // Поиск по сумме (убираем пробелы и точки для нестрогого совпадения)
+        const amountStr = t.amount.toString().replace(/[.,\s]/g, '');
+        const queryNum = query.replace(/[.,\s]/g, '');
+        const amountMatch = amountStr.includes(queryNum);
+        return commentMatch || categoryMatch || amountMatch;
+      });
     }
 
     // 2. Фильтр по категории
@@ -43,19 +62,20 @@ export const TransactionHistory = () => {
       filtered = filtered.filter(t => t.categoryId === selectedCategory);
     }
 
-    // 3. Фильтр по дате
+    // 3. Фильтр по дате (используем локальное время, не UTC)
     if (dateFrom) {
-      const from = new Date(dateFrom).getTime();
+      const [y, m, d] = dateFrom.split('-').map(Number);
+      const from = new Date(y, m - 1, d).getTime();
       filtered = filtered.filter(t => t.date >= from);
     }
     if (dateTo) {
-      // Конец выбранного дня (23:59:59)
-      const to = new Date(dateTo).getTime() + 24 * 60 * 60 * 1000 - 1;
+      const [y, m, d] = dateTo.split('-').map(Number);
+      const to = new Date(y, m - 1, d, 23, 59, 59, 999).getTime();
       filtered = filtered.filter(t => t.date <= to);
     }
 
     return filtered.sort((a, b) => b.date - a.date);
-  }, [transactions, searchQuery, selectedCategory, dateFrom, dateTo]);
+  }, [transactions, searchQuery, selectedCategory, dateFrom, dateTo, filterType, categories]);
 
   // Группировка по дате
   const groupedTransactions = useMemo(() => {
@@ -81,6 +101,7 @@ export const TransactionHistory = () => {
     setSelectedCategory(null);
     setDateFrom('');
     setDateTo('');
+    setFilterType('all');
   };
 
   // Закрытие datePicker при клике вне
@@ -105,7 +126,7 @@ export const TransactionHistory = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Поиск по комментарию..."
+            placeholder="Поиск: комментарий, категория, сумма..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-10 py-3 bg-muted rounded-xl outline-none focus:ring-2 focus:ring-violet-600"
@@ -170,6 +191,33 @@ export const TransactionHistory = () => {
         {/* Расширенные фильтры (раскрываются) */}
         {isFilterOpen && (
           <div className="mt-3 p-4 bg-muted rounded-xl space-y-4 animate-in">
+            {/* Тип транзакции */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Тип операции</label>
+              <div className="flex gap-2">
+                {([
+                  { value: 'all' as const, label: 'Все' },
+                  { value: 'expense' as const, label: 'Расходы' },
+                  { value: 'income' as const, label: 'Доходы' },
+                ]).map(item => (
+                  <button
+                    key={item.value}
+                    onClick={() => {
+                      setFilterType(item.value);
+                      setSelectedCategory(null);
+                    }}
+                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                      filterType === item.value
+                        ? 'bg-violet-600 text-white'
+                        : 'bg-card border border-border'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* По категории */}
             <div>
               <label className="text-sm font-medium mb-2 block">Категория</label>
@@ -184,7 +232,7 @@ export const TransactionHistory = () => {
                 >
                   Все
                 </button>
-                {expenseCategories.map(cat => (
+                {filterCategories.map(cat => (
                   <button
                     key={cat.id}
                     onClick={() => setSelectedCategory(cat.id)}
