@@ -266,14 +266,7 @@ export const Analytics = () => {
           {weeklyData.length > 0 && (weeklyData.some(w => w.income > 0 || w.expense > 0)) ? (
             <>
               <ResponsiveContainer width="100%" height={220}>
-                <BarChart
-                  data={weeklyData}
-                  onClick={(_, state) => {
-                    if (state && typeof state.activeTooltipIndex === 'number') {
-                      setSelectedWeekIdx(state.activeTooltipIndex);
-                    }
-                  }}
-                >
+                <BarChart data={weeklyData}>
                   <XAxis
                     dataKey="week"
                     stroke="currentColor"
@@ -292,6 +285,7 @@ export const Analytics = () => {
                     fill="#22c55e"
                     radius={[8, 8, 0, 0]}
                     cursor="pointer"
+                    onClick={(_, index) => setSelectedWeekIdx(index)}
                   />
                   <Bar
                     dataKey="expense"
@@ -299,6 +293,7 @@ export const Analytics = () => {
                     fill="#ef4444"
                     radius={[8, 8, 0, 0]}
                     cursor="pointer"
+                    onClick={(_, index) => setSelectedWeekIdx(index)}
                   />
                 </BarChart>
               </ResponsiveContainer>
