@@ -208,13 +208,13 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
         }
 
         .animate-slide-up {
-          animation: slide-up 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+          animation: slide-up 0.39s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
         .animate-slide-down {
           animation: slide-down 0.22s cubic-bezier(0.4, 0, 1, 1) forwards;
         }
         .animate-slide-down-in {
-          animation: slide-down-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+          animation: slide-down-in 0.39s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
         .animate-slide-up-out {
           animation: slide-up-out 0.22s cubic-bezier(0.4, 0, 1, 1) forwards;
