@@ -20,15 +20,27 @@ function formatShort(value: number): string {
 function formatDateRange(start: number, end: number): string {
   const s = new Date(start);
   const e = new Date(end);
-  const dayOpts: Intl.DateTimeFormatOptions = { day: 'numeric' };
-  const monthOpts: Intl.DateTimeFormatOptions = { month: 'long' };
-  const parts = [
-    s.toLocaleDateString('ru-RU', dayOpts),
-    '—',
-    e.toLocaleDateString('ru-RU', { ...dayOpts, ...monthOpts }),
-    s.getFullYear() !== e.getFullYear() ? e.getFullYear() : '',
-  ].filter(Boolean);
-  return parts.join(' ').trim();
+  const sameMonth = s.getMonth() === e.getMonth() && s.getFullYear() === e.getFullYear();
+  const sameYear = s.getFullYear() === e.getFullYear();
+
+  if (sameMonth) {
+    // "1 — 15 апреля 2026"
+    return `${s.getDate()} — ${e.toLocaleDateString('ru-RU', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    })}`;
+  }
+
+  // "1 марта — 15 апреля 2026"
+  return `${s.toLocaleDateString('ru-RU', {
+    day: 'numeric',
+    month: 'short',
+  })} — ${e.toLocaleDateString('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+    year: sameYear ? undefined : 'numeric',
+  })}`;
 }
 
 export const Analytics = () => {
@@ -37,7 +49,7 @@ export const Analytics = () => {
     getPeriodRange('month').start
   );
   const [customEnd, setCustomEnd] = useState<number>(
-    getPeriodRange('month').end
+    getPeriodRange('month').end - 1 // последняя мс текущего месяца, не начало следующего
   );
   const [isPeriodPickerOpen, setIsPeriodPickerOpen] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
@@ -121,12 +133,21 @@ export const Analytics = () => {
       ? formatDateRange(customStart, customEnd)
       : (() => {
           const r = getPeriodRange(period);
-          return formatDateRange(r.start, r.end);
+          // getPeriodRange возвращает эксклюзивный end (начало след. периода),
+          // поэтому для отображения отнимаем 1 мс
+          return formatDateRange(r.start, r.end - 1);
         })();
 
-  // Custom period date inputs
-  const dateFromStr = new Date(customStart).toISOString().split('T')[0];
-  const dateToStr = new Date(customEnd).toISOString().split('T')[0];
+  // Custom period date inputs (локальная дата, не UTC)
+  const toLocalDate = (ts: number) => {
+    const d = new Date(ts);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+  const dateFromStr = toLocalDate(customStart);
+  const dateToStr = toLocalDate(customEnd);
 
   return (
     <div className="pb-20 bg-background min-h-screen">
@@ -190,7 +211,8 @@ export const Analytics = () => {
                   type="date"
                   value={dateToStr}
                   onChange={e => {
-                    setCustomEnd(new Date(e.target.value).getTime() + 24 * 60 * 60 * 1000 - 1);
+                    const d = new Date(e.target.value);
+                    setCustomEnd(new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999).getTime());
                     setPeriod('custom');
                   }}
                   className="flex-1 px-3 py-2 bg-card rounded-lg border border-border text-sm outline-none"
