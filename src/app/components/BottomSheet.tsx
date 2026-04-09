@@ -174,34 +174,28 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
       </div>
 
       <style>{`
-        /* === Появление снизу: spring + scale + blur === */
+        /* === Появление снизу: scale + blur + fade === */
         @keyframes slide-up {
-          0%   { transform: translateY(100%) scale(0.94); filter: blur(12px); opacity: 0; }
-          55%  { transform: translateY(-10px) scale(1.015); filter: blur(0px); opacity: 1; }
-          75%  { transform: translateY(5px) scale(0.997); }
-          90%  { transform: translateY(-2px) scale(1.002); }
-          100% { transform: translateY(0) scale(1); filter: blur(0px); opacity: 1; }
+          0%   { transform: translateY(60%) scale(0.92); filter: blur(16px); opacity: 0; }
+          100% { transform: translateY(0) scale(1);     filter: blur(0px);  opacity: 1; }
         }
 
-        /* === Уход вниз: быстро и чисто === */
+        /* === Уход вниз === */
         @keyframes slide-down {
-          0%   { transform: translateY(0) scale(1); opacity: 1; }
-          100% { transform: translateY(100%) scale(0.96); opacity: 0; }
+          0%   { transform: translateY(0) scale(1);      filter: blur(0px);  opacity: 1; }
+          100% { transform: translateY(60%) scale(0.92); filter: blur(16px); opacity: 0; }
         }
 
-        /* === Появление сверху: spring + scale + blur === */
+        /* === Появление сверху: scale + blur + fade === */
         @keyframes slide-down-in {
-          0%   { transform: translateY(-100%) scale(0.94); filter: blur(12px); opacity: 0; }
-          55%  { transform: translateY(10px) scale(1.015); filter: blur(0px); opacity: 1; }
-          75%  { transform: translateY(-5px) scale(0.997); }
-          90%  { transform: translateY(2px) scale(1.002); }
-          100% { transform: translateY(0) scale(1); filter: blur(0px); opacity: 1; }
+          0%   { transform: translateY(-60%) scale(0.92); filter: blur(16px); opacity: 0; }
+          100% { transform: translateY(0) scale(1);       filter: blur(0px);  opacity: 1; }
         }
 
-        /* === Уход вверх: быстро и чисто === */
+        /* === Уход вверх === */
         @keyframes slide-up-out {
-          0%   { transform: translateY(0) scale(1); opacity: 1; }
-          100% { transform: translateY(-100%) scale(0.96); opacity: 0; }
+          0%   { transform: translateY(0) scale(1);       filter: blur(0px);  opacity: 1; }
+          100% { transform: translateY(-60%) scale(0.92); filter: blur(16px); opacity: 0; }
         }
 
         @keyframes fade-in {
