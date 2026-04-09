@@ -1,4 +1,4 @@
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { ChevronDown, Calendar } from 'lucide-react';
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { useAnalytics, getPeriodRange, PeriodType } from '../hooks/useAnalytics';
@@ -102,6 +102,8 @@ export const Analytics = () => {
 
     return weeks;
   }, [transactions, periodRange]);
+
+  const [selectedWeekIdx, setSelectedWeekIdx] = useState<number | null>(null);
 
   // ── Pie chart: expense structure ──
   const pieData = useMemo(() => {
@@ -264,7 +266,14 @@ export const Analytics = () => {
           {weeklyData.length > 0 && (weeklyData.some(w => w.income > 0 || w.expense > 0)) ? (
             <>
               <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={weeklyData}>
+                <BarChart
+                  data={weeklyData}
+                  onClick={(_, state) => {
+                    if (state && typeof state.activeTooltipIndex === 'number') {
+                      setSelectedWeekIdx(state.activeTooltipIndex);
+                    }
+                  }}
+                >
                   <XAxis
                     dataKey="week"
                     stroke="currentColor"
@@ -277,29 +286,19 @@ export const Analytics = () => {
                     fontSize={12}
                     tickFormatter={formatShort}
                   />
-                  <Tooltip
-                    formatter={(value: number, name: string) => [
-                      `${value.toLocaleString('ru-RU')} ₽`,
-                      name === 'income' ? 'Доходы' : 'Расходы',
-                    ]}
-                    contentStyle={{
-                      background: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '12px',
-                      color: 'hsl(var(--foreground))',
-                    }}
-                  />
                   <Bar
                     dataKey="income"
                     name="Доходы"
                     fill="#22c55e"
                     radius={[8, 8, 0, 0]}
+                    cursor="pointer"
                   />
                   <Bar
                     dataKey="expense"
                     name="Расходы"
                     fill="#ef4444"
                     radius={[8, 8, 0, 0]}
+                    cursor="pointer"
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -313,6 +312,48 @@ export const Analytics = () => {
                   <span className="text-sm">Расходы</span>
                 </div>
               </div>
+
+              {/* Detail panel — selected week */}
+              {selectedWeekIdx !== null && weeklyData[selectedWeekIdx] && (
+                <div className="mt-4 p-4 bg-muted rounded-xl">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-semibold">
+                      {weeklyData[selectedWeekIdx].week}
+                    </span>
+                    <button
+                      onClick={() => setSelectedWeekIdx(null)}
+                      className="text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground mb-1">Доходы</p>
+                      <p className="text-base font-bold text-green-600">
+                        +{weeklyData[selectedWeekIdx].income.toLocaleString('ru-RU')} ₽
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground mb-1">Расходы</p>
+                      <p className="text-base font-bold text-red-600">
+                        −{weeklyData[selectedWeekIdx].expense.toLocaleString('ru-RU')} ₽
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground mb-1">Баланс</p>
+                      <p className={`text-base font-bold ${
+                        weeklyData[selectedWeekIdx].income - weeklyData[selectedWeekIdx].expense >= 0
+                          ? 'text-violet-600'
+                          : 'text-gray-500'
+                      }`}>
+                        {weeklyData[selectedWeekIdx].income - weeklyData[selectedWeekIdx].expense >= 0 ? '+' : '−'}
+                        {Math.abs(weeklyData[selectedWeekIdx].income - weeklyData[selectedWeekIdx].expense).toLocaleString('ru-RU')} ₽
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <p className="text-center text-muted-foreground py-8">Нет данных за период</p>
