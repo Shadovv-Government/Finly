@@ -174,22 +174,36 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
       </div>
 
       <style>{`
+        /* === Появление снизу: spring + scale + blur === */
         @keyframes slide-up {
-          from { transform: translateY(100%); }
-          to   { transform: translateY(0); }
+          0%   { transform: translateY(100%) scale(0.94); filter: blur(12px); opacity: 0; }
+          55%  { transform: translateY(-10px) scale(1.015); filter: blur(0px); opacity: 1; }
+          75%  { transform: translateY(5px) scale(0.997); }
+          90%  { transform: translateY(-2px) scale(1.002); }
+          100% { transform: translateY(0) scale(1); filter: blur(0px); opacity: 1; }
         }
+
+        /* === Уход вниз: быстро и чисто === */
         @keyframes slide-down {
-          from { transform: translateY(0); }
-          to   { transform: translateY(100%); }
+          0%   { transform: translateY(0) scale(1); opacity: 1; }
+          100% { transform: translateY(100%) scale(0.96); opacity: 0; }
         }
+
+        /* === Появление сверху: spring + scale + blur === */
         @keyframes slide-down-in {
-          from { transform: translateY(-100%); }
-          to   { transform: translateY(0); }
+          0%   { transform: translateY(-100%) scale(0.94); filter: blur(12px); opacity: 0; }
+          55%  { transform: translateY(10px) scale(1.015); filter: blur(0px); opacity: 1; }
+          75%  { transform: translateY(-5px) scale(0.997); }
+          90%  { transform: translateY(2px) scale(1.002); }
+          100% { transform: translateY(0) scale(1); filter: blur(0px); opacity: 1; }
         }
+
+        /* === Уход вверх: быстро и чисто === */
         @keyframes slide-up-out {
-          from { transform: translateY(0); }
-          to   { transform: translateY(-100%); }
+          0%   { transform: translateY(0) scale(1); opacity: 1; }
+          100% { transform: translateY(-100%) scale(0.96); opacity: 0; }
         }
+
         @keyframes fade-in {
           from { opacity: 0; }
           to   { opacity: 1; }
@@ -200,22 +214,22 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
         }
 
         .animate-slide-up {
-          animation: slide-up 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+          animation: slide-up 0.52s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
         .animate-slide-down {
-          animation: slide-down 0.38s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+          animation: slide-down 0.3s cubic-bezier(0.4, 0, 1, 1) forwards;
         }
         .animate-slide-down-in {
-          animation: slide-down-in 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+          animation: slide-down-in 0.52s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
         .animate-slide-up-out {
-          animation: slide-up-out 0.38s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+          animation: slide-up-out 0.3s cubic-bezier(0.4, 0, 1, 1) forwards;
         }
         .animate-fade-in {
           animation: fade-in 0.3s ease-out forwards;
         }
         .animate-fade-out {
-          animation: fade-out 0.35s ease-in forwards;
+          animation: fade-out 0.3s ease-in forwards;
         }
       `}</style>
     </>
