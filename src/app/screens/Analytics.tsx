@@ -20,16 +20,13 @@ function formatShort(value: number): string {
 function formatDateRange(start: number, end: number): string {
   const s = new Date(start);
   const e = new Date(end);
-  const sameMonth = s.getMonth() === e.getMonth();
-  const sameYear = s.getFullYear() === e.getFullYear();
   const dayOpts: Intl.DateTimeFormatOptions = { day: 'numeric' };
   const monthOpts: Intl.DateTimeFormatOptions = { month: 'long' };
-  const yearOpts: Intl.DateTimeFormatOptions = { year: 'numeric' };
   const parts = [
     s.toLocaleDateString('ru-RU', dayOpts),
     '—',
     e.toLocaleDateString('ru-RU', { ...dayOpts, ...monthOpts }),
-    !sameYear ? e.getFullYear() : '',
+    s.getFullYear() !== e.getFullYear() ? e.getFullYear() : '',
   ].filter(Boolean);
   return parts.join(' ').trim();
 }
@@ -49,10 +46,7 @@ export const Analytics = () => {
   const {
     balance,
     expensesByCategory,
-    spendingTrend,
-    incomeTrend,
     loading,
-    refresh,
   } = useAnalytics({
     period,
     startDate: period === 'custom' ? customStart : undefined,
