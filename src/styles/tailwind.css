@@ -2,3 +2,9 @@
 @source '../**/*.{js,ts,jsx,tsx}';
 
 @import 'tw-animate-css';
+
+@layer utilities {
+  /* Blur-вход/выход для animate-in/animate-out из tw-animate-css */
+  .blur-enter { --tw-enter-blur: 12px; }
+  .blur-exit  { --tw-exit-blur:  12px; }
+}
