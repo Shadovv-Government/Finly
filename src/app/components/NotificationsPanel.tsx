@@ -63,7 +63,7 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
   };
 
   return (
-    <BottomSheet isOpen={isOpen} onClose={onClose} title="Уведомления">
+    <BottomSheet isOpen={isOpen} onClose={onClose} title="Уведомления" side="top">
       <div className="px-4 py-3 pb-8">
         {/* Actions bar */}
         {notifications.length > 0 && (

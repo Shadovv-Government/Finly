@@ -6,6 +6,7 @@ interface BottomSheetProps {
   onClose: () => void;
   children: React.ReactNode;
   title?: string;
+  side?: 'bottom' | 'top';
 }
 
 export const BottomSheet: React.FC<BottomSheetProps> = ({
@@ -13,7 +14,9 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
   onClose,
   children,
   title,
+  side = 'bottom',
 }) => {
+  const isTop = side === 'top';
   const sheetRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -69,7 +72,9 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
   const onDragMove = (e: React.TouchEvent | React.MouseEvent) => {
     if (!isDragging.current || dragStartY.current === null) return;
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    const delta = Math.max(0, clientY - dragStartY.current); // только вниз
+    const raw = clientY - dragStartY.current;
+    // bottom sheet: только вниз; top sheet: только вверх
+    const delta = isTop ? Math.min(0, raw) : Math.max(0, raw);
     dragCurrentY.current = delta;
     if (sheetRef.current) {
       sheetRef.current.style.transform = `translateY(${delta}px)`;
@@ -80,15 +85,18 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
   const onDragEnd = () => {
     if (!isDragging.current) return;
     isDragging.current = false;
-    const threshold = 120; // px — порог для закрытия
-    if (dragCurrentY.current > threshold) {
+    const threshold = 120;
+    const shouldClose = isTop
+      ? dragCurrentY.current < -threshold
+      : dragCurrentY.current > threshold;
+
+    if (shouldClose) {
       if (sheetRef.current) {
         sheetRef.current.style.transition = 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
-        sheetRef.current.style.transform = 'translateY(100%)';
+        sheetRef.current.style.transform = isTop ? 'translateY(-100%)' : 'translateY(100%)';
       }
       setTimeout(() => onClose(), 350);
     } else {
-      // Вернуть на место
       if (sheetRef.current) {
         sheetRef.current.style.transition = 'transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)';
         sheetRef.current.style.transform = 'translateY(0)';
@@ -109,26 +117,31 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
         onClick={onClose}
       />
 
-      {/* Bottom Sheet */}
+      {/* Sheet */}
       <div
         ref={sheetRef}
-        className={`fixed bottom-0 left-0 right-0 bg-card rounded-t-[2.5rem] z-[70]
-                   max-h-[90vh] overflow-hidden flex flex-col safe-area-inset-bottom
-                   ${closing ? 'animate-slide-down' : 'animate-slide-up'}`}
+        className={`fixed left-0 right-0 bg-card z-[70]
+                   max-h-[90vh] overflow-hidden flex flex-col
+                   ${isTop
+                     ? `top-0 rounded-b-[2.5rem] ${closing ? 'animate-slide-up-out' : 'animate-slide-down-in'}`
+                     : `bottom-0 rounded-t-[2.5rem] safe-area-inset-bottom ${closing ? 'animate-slide-down' : 'animate-slide-up'}`
+                   }`}
         onClick={(e) => e.stopPropagation()}
         onTouchMove={onDragMove}
         onMouseMove={onDragMove}
         onTouchEnd={onDragEnd}
         onMouseUp={onDragEnd}
       >
-        {/* Handle — drag zone */}
-        <div
-          className="flex items-center justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing"
-          onTouchStart={onDragStart}
-          onMouseDown={onDragStart}
-        >
-          <div className="w-10 h-1.5 bg-muted-foreground/30 rounded-full" />
-        </div>
+        {/* Handle — drag zone (сверху для bottom sheet) */}
+        {!isTop && (
+          <div
+            className="flex items-center justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing"
+            onTouchStart={onDragStart}
+            onMouseDown={onDragStart}
+          >
+            <div className="w-10 h-1.5 bg-muted-foreground/30 rounded-full" />
+          </div>
+        )}
 
         {/* Header */}
         {title && (
@@ -147,6 +160,17 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
         <div className="flex-1 overflow-y-auto">
           {children}
         </div>
+
+        {/* Handle — drag zone (снизу для top sheet) */}
+        {isTop && (
+          <div
+            className="flex items-center justify-center pb-3 pt-2 cursor-grab active:cursor-grabbing"
+            onTouchStart={onDragStart}
+            onMouseDown={onDragStart}
+          >
+            <div className="w-10 h-1.5 bg-muted-foreground/30 rounded-full" />
+          </div>
+        )}
       </div>
 
       <style>{`
@@ -157,6 +181,14 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
         @keyframes slide-down {
           from { transform: translateY(0); }
           to   { transform: translateY(100%); }
+        }
+        @keyframes slide-down-in {
+          from { transform: translateY(-100%); }
+          to   { transform: translateY(0); }
+        }
+        @keyframes slide-up-out {
+          from { transform: translateY(0); }
+          to   { transform: translateY(-100%); }
         }
         @keyframes fade-in {
           from { opacity: 0; }
@@ -172,6 +204,12 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
         }
         .animate-slide-down {
           animation: slide-down 0.38s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        .animate-slide-down-in {
+          animation: slide-down-in 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+        .animate-slide-up-out {
+          animation: slide-up-out 0.38s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
         .animate-fade-in {
           animation: fade-in 0.3s ease-out forwards;
