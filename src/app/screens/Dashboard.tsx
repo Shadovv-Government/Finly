@@ -274,16 +274,6 @@ export const Dashboard = () => {
             </div>
           </Link>
 
-          <Link to="/ai-assistant" className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3 hover:bg-muted transition-colors">
-            <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-950 flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-violet-600 dark:text-violet-400" />
-            </div>
-            <div>
-              <p className="text-sm font-medium">AI Помощник</p>
-              <p className="text-xs text-muted-foreground">Аналитика</p>
-            </div>
-          </Link>
-
           <Link to="/recurring" className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3 hover:bg-muted transition-colors">
             <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-950 flex items-center justify-center">
               <Repeat2 className="w-5 h-5 text-orange-600 dark:text-orange-400" />
@@ -291,6 +281,16 @@ export const Dashboard = () => {
             <div>
               <p className="text-sm font-medium">Повторяющиеся</p>
               <p className="text-xs text-muted-foreground">Регулярные платежи</p>
+            </div>
+          </Link>
+
+          <Link to="/ai-assistant" className="col-span-2 bg-card border border-border rounded-2xl p-4 flex items-center gap-3 hover:bg-muted transition-colors">
+            <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-950 flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium">AI Помощник</p>
+              <p className="text-xs text-muted-foreground">Аналитика</p>
             </div>
           </Link>
         </div>
