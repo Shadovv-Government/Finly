@@ -66,7 +66,7 @@ export const Recurring = () => {
       {/* Header */}
       <div className="px-4 py-4 bg-card border-b border-border">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold">Повторяющиеся</h1>
+          <h1 className="text-xl font-bold">Повтор</h1>
           <button
             onClick={handleAdd}
             className="w-9 h-9 bg-violet-600 hover:bg-violet-700 text-white rounded-xl flex items-center justify-center transition-colors"

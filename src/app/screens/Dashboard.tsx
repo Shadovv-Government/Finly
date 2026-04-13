@@ -279,7 +279,7 @@ export const Dashboard = () => {
               <Repeat2 className="w-5 h-5 text-orange-600 dark:text-orange-400" />
             </div>
             <div>
-              <p className="text-sm font-medium">Повторяющиеся</p>
+              <p className="text-sm font-medium">Повтор</p>
               <p className="text-xs text-muted-foreground">Регулярные платежи</p>
             </div>
           </Link>

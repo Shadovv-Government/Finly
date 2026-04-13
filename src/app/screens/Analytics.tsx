@@ -186,8 +186,8 @@ export const Analytics = () => {
                   }}
                   className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
                     period === p && period !== 'custom'
-                      ? 'bg-violet-600 text-white'
-                      : 'bg-card border border-border'
+                      ? 'bg-white dark:bg-card shadow-sm text-violet-600 dark:text-violet-400'
+                      : 'text-muted-foreground'
                   }`}
                 >
                   {PERIOD_LABELS[p]}
