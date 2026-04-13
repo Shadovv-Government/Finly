@@ -251,6 +251,7 @@ export const TransactionHistory = () => {
         isOpen={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}
         title="Фильтры"
+        side="top"
       >
         <div className="flex flex-col pb-4">
           {/* Тип операции */}

@@ -262,6 +262,7 @@ export const Analytics = () => {
         isOpen={isPeriodPickerOpen}
         onClose={() => setIsPeriodPickerOpen(false)}
         title="Период"
+        side="top"
       >
         <div className="flex flex-col pb-4">
           {/* Быстрый выбор */}
