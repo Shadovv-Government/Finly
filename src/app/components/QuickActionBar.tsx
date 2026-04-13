@@ -33,6 +33,7 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
 
   const recognitionRef = useRef<any>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputContainerRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval>>();
   const startTimeRef = useRef(0);
@@ -175,6 +176,7 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
     notifyTransaction(parsed.type, parsed.amount, category?.name ?? 'Без категории');
     await checkBudgets();
     setText('');
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
   };
 
   const handleSendLocked = () => {
@@ -449,16 +451,26 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
         {/* ── ОБЫЧНЫЙ РЕЖИМ ── */}
         {!isRecording && (
           <>
-            <div className="flex-1 rounded-full border border-violet-400 dark:border-violet-500">
-              <div className="flex items-center gap-2 bg-card rounded-full px-4 h-[46px]">
-                <input
-                  type="text"
+            <div className="flex-1 rounded-2xl border border-violet-400 dark:border-violet-500">
+              <div className="flex items-center gap-2 bg-card rounded-2xl px-4 py-2 min-h-[46px]">
+                <textarea
+                  ref={textareaRef}
                   placeholder="Быстрый ввод..."
                   value={text}
-                  onChange={e => setText(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-                  className="flex-1 min-w-0 bg-transparent outline-none text-sm"
-                  style={{ fontSize: '16px' }}
+                  onChange={e => {
+                    setText(e.target.value);
+                    e.target.style.height = 'auto';
+                    e.target.style.height = e.target.scrollHeight + 'px';
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSubmit();
+                    }
+                  }}
+                  rows={1}
+                  className="flex-1 min-w-0 bg-transparent outline-none text-sm resize-none overflow-hidden"
+                  style={{ fontSize: '16px', lineHeight: '1.5', maxHeight: '3em' }}
                 />
               </div>
             </div>
