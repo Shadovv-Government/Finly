@@ -113,7 +113,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
     <>
       {/* Backdrop */}
       <div
-        className={`fixed inset-x-0 bottom-0 bg-black/50 backdrop-blur-sm z-[60] ${
+        className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] ${
           reducedMotion
             ? (closing ? 'animate-fade-out-fast' : 'animate-fade-in-fast')
             : (closing ? 'animate-fade-out' : 'animate-fade-in')
