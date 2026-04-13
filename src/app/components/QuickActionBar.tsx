@@ -294,7 +294,7 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
               style={{
                 background: SHIMMER_BG,
                 backgroundSize: '300% 300%',
-                animation: 'qab-shimmer 1.2s ease infinite',
+                animation: 'qab-shimmer 2.5s ease infinite',
                 boxShadow: '0 0 20px rgba(139, 92, 246, 0.5)',
               }}
             >
@@ -327,15 +327,23 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
         {/* ── ЗАЛОЧЕНО + ЗАПИСЬ ── */}
         {isRecording && isLocked && !isPaused && (
           <>
-            <div
-              className="flex-1 rounded-full p-px"
-              style={{
-                background: SHIMMER_BG,
-                backgroundSize: '300% 300%',
-                animation: 'qab-shimmer 1.2s ease infinite',
-                boxShadow: '0 0 20px rgba(139, 92, 246, 0.5)',
-              }}
-            >
+            <div className="relative flex-1">
+              {/* Pulse rings */}
+              <div className="absolute inset-0 rounded-full bg-violet-500 opacity-20 animate-ping scale-110" />
+              <div
+                className="absolute inset-0 rounded-full bg-indigo-400 opacity-15 animate-ping scale-125"
+                style={{ animationDelay: '0.5s' }}
+              />
+
+              <div
+                className="relative rounded-full p-px"
+                style={{
+                  background: SHIMMER_BG,
+                  backgroundSize: '300% 300%',
+                  animation: 'qab-shimmer 2.5s ease infinite',
+                  boxShadow: '0 0 20px rgba(139, 92, 246, 0.5)',
+                }}
+              >
               <div className="flex items-center gap-3 bg-card border border-violet-500 dark:border-violet-600 rounded-full px-4 h-12">
                 <div className="w-2 h-2 shrink-0 rounded-full bg-violet-500 animate-pulse" />
                 <span className="font-mono text-sm tabular-nums text-foreground">
@@ -348,6 +356,7 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
                   Отмена
                 </button>
               </div>
+            </div>
             </div>
 
             {/* Pause above Send */}
@@ -373,7 +382,7 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
               style={{
                 background: SHIMMER_BG,
                 backgroundSize: '300% 300%',
-                animation: 'qab-shimmer 1.2s ease infinite',
+                animation: 'qab-shimmer 2.5s ease infinite',
                 boxShadow: '0 0 20px rgba(139, 92, 246, 0.5)',
               }}
               onPointerDown={handleInputPointerDown}
@@ -418,14 +427,14 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
               </div>
 
               {/* Pulse rings */}
-              <div className="absolute inset-0 rounded-full bg-violet-500 opacity-30 animate-ping scale-150" />
+              <div className="absolute inset-0 rounded-full bg-violet-500 opacity-30 animate-ping scale-150" style={{ animationDuration: '2s' }} />
               <div
                 className="absolute inset-0 rounded-full bg-violet-400 opacity-20 animate-ping scale-125"
-                style={{ animationDelay: '0.3s' }}
+                style={{ animationDelay: '0.5s', animationDuration: '2s' }}
               />
               <div
                 className="absolute inset-0 rounded-full bg-indigo-400 opacity-15 animate-ping scale-175"
-                style={{ animationDelay: '0.6s' }}
+                style={{ animationDelay: '1s', animationDuration: '2s' }}
               />
 
               <button
@@ -449,7 +458,14 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
         {/* ── ОБЫЧНЫЙ РЕЖИМ ── */}
         {!isRecording && (
           <>
-            <div className="flex-1 rounded-full border border-border">
+            <div
+              className="flex-1 rounded-full p-px"
+              style={{
+                background: SHIMMER_BG,
+                backgroundSize: '300% 300%',
+                animation: 'qab-shimmer 4s ease infinite',
+              }}
+            >
               <div className="flex items-center gap-2 bg-card rounded-full px-4 h-[46px]">
                 <input
                   type="text"
@@ -471,7 +487,6 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
                 onPointerUp={handlePointerUp}
                 onClick={handleClick}
                 className="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br from-violet-600 to-indigo-700 text-white select-none touch-none active:scale-90 transition-transform"
-                style={{ boxShadow: VIOLET_GLOW }}
               >
                 {text.trim() ? <Sparkles className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
               </button>
