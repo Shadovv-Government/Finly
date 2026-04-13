@@ -349,15 +349,15 @@ export const Settings = () => {
           </div>
 
           <div className="flex items-center justify-between p-4">
-            <div className="flex items-center gap-3">
+            <Link to="/recurring" className="flex items-center gap-3 flex-1">
               <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-950 flex items-center justify-center">
                 <Repeat className="w-5 h-5 text-orange-600 dark:text-orange-500" />
               </div>
               <div>
                 <p className="font-medium">Регулярные платежи</p>
-                <p className="text-xs text-muted-foreground">Напоминания о платежах</p>
+                <p className="text-xs text-muted-foreground">Шаблоны платежей</p>
               </div>
-            </div>
+            </Link>
             <Switch defaultChecked />
           </div>
         </div>
