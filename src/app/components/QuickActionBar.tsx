@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Plus, Mic, Sparkles, ArrowUp, Pause, Play, Lock, ChevronUp, Trash2 } from 'lucide-react';
 import { parseNaturalLanguage, findBestMatch } from '../../db/ai';
 import { useCategories } from '../hooks/useCategories';
@@ -43,6 +43,9 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
   const isRecordingRef = useRef(false);
   const isLockedRef = useRef(false);
 
+  const activePointerIdRef = useRef<number | null>(null);
+  const lastDeltaYRef = useRef(0);
+
   const swipeStartX = useRef(0);
   const swipeStartY = useRef(0);
   const isSwipingLeft = useRef(false);
@@ -53,6 +56,15 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
   const { add } = useTransactions();
   const { notifyTransaction } = useNotifications();
   const { checkBudgets } = useBudgetNotifications();
+
+  // Восстанавливаем pointer capture после ре-рендера при старте записи
+  useEffect(() => {
+    if (isRecording && !isLocked && buttonRef.current && activePointerIdRef.current !== null) {
+      try {
+        buttonRef.current.setPointerCapture(activePointerIdRef.current);
+      } catch (_) { /* pointer уже не активен */ }
+    }
+  }, [isRecording, isLocked]);
 
   const SpeechRecognitionAPI =
     (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -184,18 +196,26 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
     longPressFired.current = false;
     isHolding.current = true;
     pointerStartY.current = e.clientY;
+    lastDeltaYRef.current = 0;
+    activePointerIdRef.current = e.pointerId;
     buttonRef.current?.setPointerCapture(e.pointerId);
     longPressTimer.current = setTimeout(() => {
       if (isHolding.current) {
         longPressFired.current = true;
         startRecording();
+        // Если уже свайпнули вверх за время 250ms — сразу лочим
+        if (lastDeltaYRef.current > 60) {
+          isLockedRef.current = true;
+          setIsLocked(true);
+        }
       }
     }, 250);
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    if (!isRecordingRef.current || isLockedRef.current) return;
     const deltaY = pointerStartY.current - e.clientY;
+    lastDeltaYRef.current = deltaY; // всегда трекаем, даже до старта записи
+    if (!isRecordingRef.current || isLockedRef.current) return;
     const progress = Math.max(0, Math.min(1, deltaY / 80));
     setLockProgress(progress);
     if (deltaY > 60) {
