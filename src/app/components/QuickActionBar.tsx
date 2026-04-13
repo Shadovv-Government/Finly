@@ -194,11 +194,11 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    if (!isRecording || isLocked) return;
+    if (!isRecordingRef.current || isLockedRef.current) return;
     const deltaY = pointerStartY.current - e.clientY;
-    const progress = Math.max(0, Math.min(1, deltaY / 60));
+    const progress = Math.max(0, Math.min(1, deltaY / 80));
     setLockProgress(progress);
-    if (deltaY > 55) {
+    if (deltaY > 60) {
       isLockedRef.current = true;
       setIsLocked(true);
       setLockProgress(0);
@@ -370,8 +370,8 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
               <div
                 className="absolute bottom-full left-1/2 mb-2 flex flex-col items-center pointer-events-none"
                 style={{
-                  transform: `translateX(-50%) translateY(${-lockProgress * 10}px)`,
-                  opacity: lockProgress > 0.5 ? 0.3 : 1,
+                  transform: `translateX(-50%) translateY(${-lockProgress * 24}px)`,
+                  opacity: 1 - lockProgress * 0.85,
                 }}
               >
                 <div className="bg-card border border-border rounded-2xl px-2.5 py-2 flex flex-col items-center gap-0.5 shadow-md">
