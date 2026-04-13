@@ -45,6 +45,7 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
 
   const activePointerIdRef = useRef<number | null>(null);
   const lastDeltaYRef = useRef(0);
+  const permissionCachedRef = useRef(false);
 
   const swipeStartX = useRef(0);
   const swipeStartY = useRef(0);
@@ -98,7 +99,10 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
       for (let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
       setText(transcript);
     };
-    r.onerror = () => stopRecording(false);
+    r.onerror = (e: any) => {
+      if (e.error === 'no-speech' || e.error === 'aborted') return;
+      stopRecording(false);
+    };
     // onend срабатывает при stop() — игнорируем если в залоченном режиме
     r.onend = () => {
       if (isRecordingRef.current && !isLockedRef.current) {
@@ -134,15 +138,18 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
 
   const handlePause = () => {
     if (isPaused) {
-      // Возобновить — небольшая задержка перед созданием нового инстанса
-      setTimeout(() => {
-        const r = createRecognition();
-        if (!r) return;
-        recognitionRef.current = r;
+      // Возобновить — создаём инстанс синхронно (в контексте жеста, иначе iOS блокирует)
+      const r = createRecognition();
+      if (!r) return;
+      recognitionRef.current = r;
+      startTimer(pausedElapsedRef.current);
+      setIsPaused(false);
+      try {
         r.start();
-        startTimer(pausedElapsedRef.current);
-        setIsPaused(false);
-      }, 150);
+      } catch (_) {
+        // Предыдущий инстанс ещё не закрылся — короткий ретрай
+        setTimeout(() => { try { r.start(); } catch (_) {} }, 120);
+      }
     } else {
       // Пауза
       pausedElapsedRef.current = elapsed;
@@ -193,6 +200,13 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
 
   const handlePointerDown = (e: React.PointerEvent) => {
     if (isLocked) return;
+    // Кэшируем разрешение микрофона при первом касании
+    if (!permissionCachedRef.current) {
+      permissionCachedRef.current = true;
+      navigator.mediaDevices?.getUserMedia({ audio: true })
+        .then(s => s.getTracks().forEach(t => t.stop()))
+        .catch(() => {});
+    }
     longPressFired.current = false;
     isHolding.current = true;
     pointerStartY.current = e.clientY;
@@ -321,36 +335,40 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
 
         {/* ── ЗАЛОЧЕНО + ЗАПИСЬ (не пауза) ── */}
         {isRecording && isLocked && !isPaused && (
-          <>
-            <div className="flex-1 flex items-center gap-3 bg-card border border-red-400 dark:border-red-600 rounded-full px-4 h-12">
-              <div className="w-2 h-2 shrink-0 rounded-full bg-red-500 animate-pulse" />
-              <span className="font-mono text-sm tabular-nums text-foreground">
-                {formatTime(elapsed)}
-              </span>
+          <div className="flex-1 flex flex-col gap-1.5">
+            {/* Пауза — сверху по центру */}
+            <div className="flex justify-center">
               <button
-                onClick={() => stopRecording(false)}
-                className="flex-1 text-right text-sm text-red-500 font-medium active:opacity-70"
+                onClick={handlePause}
+                className="flex items-center gap-1.5 px-4 py-1 rounded-full bg-card border border-border text-sm font-medium active:scale-95 transition-transform"
               >
-                Отмена
+                <Pause className="w-3.5 h-3.5" />
+                Пауза
               </button>
             </div>
 
-            {/* Пауза */}
-            <button
-              onClick={handlePause}
-              className="w-10 h-10 shrink-0 rounded-full bg-card border border-border flex items-center justify-center active:scale-90 transition-transform"
-            >
-              <Pause className="w-4 h-4 text-foreground" />
-            </button>
-
-            {/* Отправить */}
-            <button
-              onClick={handleSendLocked}
-              className="w-12 h-12 shrink-0 rounded-full bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center shadow-lg active:scale-90 transition-transform"
-            >
-              <ArrowUp className="w-5 h-5 text-white" />
-            </button>
-          </>
+            {/* Нижний ряд */}
+            <div className="flex items-center gap-2">
+              <div className="flex-1 flex items-center gap-3 bg-card border border-red-400 dark:border-red-600 rounded-full px-4 h-12">
+                <div className="w-2 h-2 shrink-0 rounded-full bg-red-500 animate-pulse" />
+                <span className="font-mono text-sm tabular-nums text-foreground">
+                  {formatTime(elapsed)}
+                </span>
+                <button
+                  onClick={() => stopRecording(false)}
+                  className="flex-1 text-right text-sm text-red-500 font-medium active:opacity-70"
+                >
+                  Отмена
+                </button>
+              </div>
+              <button
+                onClick={handleSendLocked}
+                className="w-12 h-12 shrink-0 rounded-full bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center shadow-lg active:scale-90 transition-transform"
+              >
+                <ArrowUp className="w-5 h-5 text-white" />
+              </button>
+            </div>
+          </div>
         )}
 
         {/* ── ЗАПИСЬ (зажато, не залочено) ── */}
