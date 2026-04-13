@@ -1,7 +1,8 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Search, Filter, X, Calendar, ChevronDown } from 'lucide-react';
 import { CategoryBadge } from '../components/CategoryBadge';
 import { AmountDisplay } from '../components/AmountDisplay';
+import { BottomSheet } from '../components/BottomSheet';
 import { useTransactions } from '../hooks/useTransactions';
 import { useCategories } from '../hooks/useCategories';
 import { Transaction } from '../../db/types';
@@ -12,94 +13,64 @@ export const TransactionHistory = () => {
   const { transactions } = useTransactions();
   const { categories } = useCategories();
 
-  // Состояния фильтров
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filterType, setFilterType] = useState<'all' | 'expense' | 'income'>('all');
-
-  // Pagination
   const [visiblePages, setVisiblePages] = useState(1);
 
-  // Ref для закрытия datePicker при клике вне
-  const dateFilterRef = useRef<HTMLDivElement>(null);
+  const filterCategories = useMemo(() => {
+    if (filterType === 'expense') return categories.filter(c => c.type === 'expense');
+    if (filterType === 'income') return categories.filter(c => c.type === 'income');
+    return categories;
+  }, [categories, filterType]);
 
-  // Все категории для фильтра (и expense, и income)
-  const filterCategories = useMemo(
-    () => {
-      if (filterType === 'expense') return categories.filter(c => c.type === 'expense');
-      if (filterType === 'income') return categories.filter(c => c.type === 'income');
-      return categories;
-    },
-    [categories, filterType]
-  );
-
-  // Фильтрация транзакций
   const filteredTransactions = useMemo(() => {
     let filtered = [...transactions];
 
-    // 0. Фильтр по типу (расход/доход)
-    if (filterType === 'expense') {
-      filtered = filtered.filter(t => t.type === 'expense');
-    } else if (filterType === 'income') {
-      filtered = filtered.filter(t => t.type === 'income');
-    }
+    if (filterType === 'expense') filtered = filtered.filter(t => t.type === 'expense');
+    else if (filterType === 'income') filtered = filtered.filter(t => t.type === 'income');
 
-    // 1. Поиск по комментарию, категории или сумме
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(t => {
         const cat = categories.find(c => c.id === t.categoryId);
-        const commentMatch = t.comment?.toLowerCase().includes(query);
-        const categoryMatch = cat?.name.toLowerCase().includes(query);
-        // Поиск по сумме (убираем пробелы и точки для нестрогого совпадения)
         const amountStr = t.amount.toString().replace(/[.,\s]/g, '');
         const queryNum = query.replace(/[.,\s]/g, '');
-        const amountMatch = amountStr.includes(queryNum);
-        return commentMatch || categoryMatch || amountMatch;
+        return t.comment?.toLowerCase().includes(query)
+          || cat?.name.toLowerCase().includes(query)
+          || amountStr.includes(queryNum);
       });
     }
 
-    // 2. Фильтр по категории
-    if (selectedCategory) {
-      filtered = filtered.filter(t => t.categoryId === selectedCategory);
-    }
+    if (selectedCategory) filtered = filtered.filter(t => t.categoryId === selectedCategory);
 
-    // 3. Фильтр по дате (используем локальное время, не UTC)
     if (dateFrom) {
       const [y, m, d] = dateFrom.split('-').map(Number);
-      const from = new Date(y, m - 1, d).getTime();
-      filtered = filtered.filter(t => t.date >= from);
+      filtered = filtered.filter(t => t.date >= new Date(y, m - 1, d).getTime());
     }
     if (dateTo) {
       const [y, m, d] = dateTo.split('-').map(Number);
-      const to = new Date(y, m - 1, d, 23, 59, 59, 999).getTime();
-      filtered = filtered.filter(t => t.date <= to);
+      filtered = filtered.filter(t => t.date <= new Date(y, m - 1, d, 23, 59, 59, 999).getTime());
     }
 
     return filtered.sort((a, b) => b.date - a.date);
   }, [transactions, searchQuery, selectedCategory, dateFrom, dateTo, filterType, categories]);
 
-  // Группировка по дате
   const groupedTransactions = useMemo(() => {
     return filteredTransactions.reduce((groups, transaction) => {
       const dateKey = new Date(transaction.date).toLocaleDateString('ru-RU', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
+        day: 'numeric', month: 'long', year: 'numeric',
       });
-      if (!groups[dateKey]) {
-        groups[dateKey] = [];
-      }
+      if (!groups[dateKey]) groups[dateKey] = [];
       groups[dateKey].push(transaction);
       return groups;
     }, {} as Record<string, Transaction[]>);
   }, [filteredTransactions]);
 
-  // Активные фильтры (для отображения бейджей)
-  const hasActiveFilters = searchQuery || selectedCategory || dateFrom || dateTo;
+  const hasActiveFilters = searchQuery || selectedCategory || dateFrom || dateTo || filterType !== 'all';
 
   const clearAllFilters = () => {
     setSearchQuery('');
@@ -109,21 +80,7 @@ export const TransactionHistory = () => {
     setFilterType('all');
   };
 
-  // Reset pagination when filters change
-  useEffect(() => {
-    setVisiblePages(1);
-  }, [searchQuery, selectedCategory, dateFrom, dateTo, filterType]);
-
-  // Закрытие datePicker при клике вне
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dateFilterRef.current && !dateFilterRef.current.contains(e.target as Node)) {
-        // datePicker закрывается нативно, но можно добавить доп. логику
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  useEffect(() => { setVisiblePages(1); }, [searchQuery, selectedCategory, dateFrom, dateTo, filterType]);
 
   return (
     <div className="pb-20 bg-background min-h-screen">
@@ -153,20 +110,16 @@ export const TransactionHistory = () => {
 
         {/* Filter Bar */}
         <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
-          {/* Кнопка открытия фильтров */}
           <button
-            onClick={() => setIsFilterOpen(!isFilterOpen)}
+            onClick={() => setIsFilterOpen(true)}
             className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap flex-shrink-0 transition-all ${
-              hasActiveFilters
-                ? 'bg-violet-600 text-white'
-                : 'bg-muted text-foreground'
+              hasActiveFilters ? 'bg-violet-600 text-white' : 'bg-muted text-foreground'
             }`}
           >
             <Filter className="w-4 h-4" />
             Фильтры
           </button>
 
-          {/* Активные фильтры — быстрые чипы */}
           {selectedCategory && (
             <button
               onClick={() => setSelectedCategory(null)}
@@ -186,123 +139,16 @@ export const TransactionHistory = () => {
               <X className="w-3 h-3" />
             </button>
           )}
-
-          {/* Clear all */}
           {hasActiveFilters && (
             <button
               onClick={clearAllFilters}
               className="px-3 py-2 text-muted-foreground rounded-full whitespace-nowrap flex-shrink-0 text-sm hover:text-foreground transition-colors"
             >
-              Сбросить всё
+              Сбросить
             </button>
           )}
         </div>
 
-        {/* Расширенные фильтры (раскрываются) */}
-        {isFilterOpen && (
-          <div className="mt-3 p-4 bg-muted rounded-xl space-y-4 animate-in">
-            {/* Тип транзакции */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">Тип операции</label>
-              <div className="flex gap-2">
-                {([
-                  { value: 'all' as const, label: 'Все' },
-                  { value: 'expense' as const, label: 'Расходы' },
-                  { value: 'income' as const, label: 'Доходы' },
-                ]).map(item => (
-                  <button
-                    key={item.value}
-                    onClick={() => {
-                      setFilterType(item.value);
-                      setSelectedCategory(null);
-                    }}
-                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
-                      filterType === item.value
-                        ? 'bg-violet-600 text-white'
-                        : 'bg-card border border-border'
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* По категории */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">Категория</label>
-              <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
-                <button
-                  onClick={() => setSelectedCategory(null)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                    !selectedCategory
-                      ? 'bg-violet-600 text-white'
-                      : 'bg-card border border-border'
-                  }`}
-                >
-                  Все
-                </button>
-                {filterCategories.map(cat => (
-                  <button
-                    key={cat.id}
-                    onClick={() => setSelectedCategory(cat.id)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                      selectedCategory === cat.id
-                        ? 'bg-violet-600 text-white'
-                        : 'bg-card border border-border'
-                    }`}
-                  >
-                    <div
-                      className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0"
-                      style={{ backgroundColor: cat.color + '30' }}
-                    >
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color }} />
-                    </div>
-                    <span className="truncate">{cat.name}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* По дате */}
-            <div ref={dateFilterRef}>
-              <label className="text-sm font-medium mb-2 block">Период</label>
-              <div className="flex gap-2">
-                <div className="flex-1 flex items-center gap-2 p-3 bg-card rounded-lg border border-border">
-                  <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                  <input
-                    type="date"
-                    value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
-                    className="flex-1 bg-transparent outline-none text-sm"
-                    placeholder="От"
-                  />
-                </div>
-                <span className="text-muted-foreground self-center">—</span>
-                <div className="flex-1 flex items-center gap-2 p-3 bg-card rounded-lg border border-border">
-                  <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                  <input
-                    type="date"
-                    value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
-                    className="flex-1 bg-transparent outline-none text-sm"
-                    placeholder="До"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Кнопка сброса */}
-            <button
-              onClick={() => { clearAllFilters(); setIsFilterOpen(false); }}
-              className="w-full py-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Сбросить все фильтры
-            </button>
-          </div>
-        )}
-
-        {/* Результат фильтрации */}
         {hasActiveFilters && (
           <div className="mt-2 text-sm text-muted-foreground">
             Найдено: {filteredTransactions.length} операций
@@ -313,10 +159,7 @@ export const TransactionHistory = () => {
       {/* Transaction List */}
       <div className="px-4 py-4">
         {Object.keys(groupedTransactions).length > 0 ? (() => {
-          // Flatten groups into array for pagination
           const groupEntries = Object.entries(groupedTransactions);
-
-          // Calculate how many groups to show based on PAGE_SIZE
           let shownGroups: [string, Transaction[]][] = [];
           let count = 0;
 
@@ -325,11 +168,8 @@ export const TransactionHistory = () => {
               shownGroups.push([date, txs]);
               count += txs.length;
             } else {
-              // Partial group: show only remaining slots
               const remaining = PAGE_SIZE * visiblePages - count;
-              if (remaining > 0) {
-                shownGroups.push([date, txs.slice(0, remaining)]);
-              }
+              if (remaining > 0) shownGroups.push([date, txs.slice(0, remaining)]);
               break;
             }
           }
@@ -343,11 +183,8 @@ export const TransactionHistory = () => {
                 <div key={date} className="mb-6">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-sm font-medium text-muted-foreground">{date}</h3>
-                    <span className="text-sm text-muted-foreground">
-                      {dayTransactions.length} операций
-                    </span>
+                    <span className="text-sm text-muted-foreground">{dayTransactions.length} операций</span>
                   </div>
-
                   <div className="bg-card rounded-2xl border border-border overflow-hidden">
                     {dayTransactions.map((transaction, index) => {
                       const category = categories.find(c => c.id === transaction.categoryId);
@@ -355,25 +192,17 @@ export const TransactionHistory = () => {
                       return (
                         <div
                           key={transaction.id}
-                          className={`flex items-center gap-3 p-4 ${
-                            index !== dayTransactions.length - 1 ? 'border-b border-border' : ''
-                          }`}
+                          className={`flex items-center gap-3 p-4 ${index !== dayTransactions.length - 1 ? 'border-b border-border' : ''}`}
                         >
                           <CategoryBadge categoryId={transaction.categoryId as string | undefined} size="md" />
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium truncate">
-                              {category?.name || 'Без категории'}
-                            </p>
+                            <p className="font-medium truncate">{category?.name || 'Без категории'}</p>
                             {transaction.comment && (
                               <p className="text-sm text-muted-foreground truncate">{transaction.comment}</p>
                             )}
                           </div>
                           <div className="text-right">
-                            <AmountDisplay
-                              amount={transaction.amount}
-                              type={transaction.type}
-                              size="md"
-                            />
+                            <AmountDisplay amount={transaction.amount} type={transaction.type} size="md" />
                             <p className="text-xs text-muted-foreground">{time}</p>
                           </div>
                         </div>
@@ -383,7 +212,6 @@ export const TransactionHistory = () => {
                 </div>
               ))}
 
-              {/* Load More Button */}
               {hasMore && (
                 <div className="flex justify-center py-4">
                   <button
@@ -417,6 +245,115 @@ export const TransactionHistory = () => {
           </div>
         )}
       </div>
+
+      {/* Filters BottomSheet */}
+      <BottomSheet
+        isOpen={isFilterOpen}
+        onClose={() => setIsFilterOpen(false)}
+        title="Фильтры"
+      >
+        <div className="flex flex-col pb-4">
+          {/* Тип операции */}
+          <div className="px-4 py-4">
+            <label className="text-sm font-medium mb-3 block">Тип операции</label>
+            <div className="flex gap-2 p-1 bg-muted rounded-xl">
+              {([
+                { value: 'all' as const, label: 'Все' },
+                { value: 'expense' as const, label: 'Расходы' },
+                { value: 'income' as const, label: 'Доходы' },
+              ]).map(item => (
+                <button
+                  key={item.value}
+                  onClick={() => { setFilterType(item.value); setSelectedCategory(null); }}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                    filterType === item.value
+                      ? 'bg-white dark:bg-card shadow-sm text-violet-600 dark:text-violet-400'
+                      : 'text-muted-foreground'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* По категории */}
+          <div className="px-4 py-4">
+            <label className="text-sm font-medium mb-3 block">Категория</label>
+            <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto p-2 bg-muted rounded-xl">
+              <button
+                onClick={() => setSelectedCategory(null)}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  !selectedCategory
+                    ? 'bg-white dark:bg-card shadow-sm text-violet-600 dark:text-violet-400'
+                    : 'text-muted-foreground hover:bg-accent'
+                }`}
+              >
+                Все
+              </button>
+              {filterCategories.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                    selectedCategory === cat.id
+                      ? 'bg-violet-100 dark:bg-violet-950 ring-2 ring-violet-600'
+                      : 'hover:bg-accent'
+                  }`}
+                >
+                  <div
+                    className="w-4 h-4 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: cat.color }}
+                  />
+                  <span className="truncate">{cat.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* По дате */}
+          <div className="px-4 py-4">
+            <label className="text-sm font-medium mb-3 block">Период</label>
+            <div className="flex gap-2">
+              <div className="flex-1 flex items-center gap-2 p-3 bg-muted rounded-xl">
+                <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="flex-1 bg-transparent outline-none text-sm"
+                />
+              </div>
+              <span className="text-muted-foreground self-center">—</span>
+              <div className="flex-1 flex items-center gap-2 p-3 bg-muted rounded-xl">
+                <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="flex-1 bg-transparent outline-none text-sm"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Кнопки */}
+          <div className="px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom)+4rem)] flex gap-3">
+            <button
+              onClick={() => { clearAllFilters(); setIsFilterOpen(false); }}
+              className="flex-1 py-3 bg-muted rounded-xl font-medium text-sm"
+            >
+              Сбросить
+            </button>
+            <button
+              onClick={() => setIsFilterOpen(false)}
+              className="flex-[2] py-3 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-xl font-semibold text-sm"
+            >
+              Применить
+            </button>
+          </div>
+        </div>
+      </BottomSheet>
     </div>
   );
 };
