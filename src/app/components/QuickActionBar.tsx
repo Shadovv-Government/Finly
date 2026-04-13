@@ -294,8 +294,8 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
               style={{
                 background: SHIMMER_BG,
                 backgroundSize: '300% 300%',
-                animation: 'qab-shimmer 2s ease infinite',
-                boxShadow: '0 0 14px rgba(139, 92, 246, 0.35)',
+                animation: 'qab-shimmer 1.2s ease infinite',
+                boxShadow: '0 0 20px rgba(139, 92, 246, 0.5)',
               }}
             >
               <div className="flex items-center gap-2 bg-violet-600 rounded-full px-3 h-12">
@@ -332,8 +332,8 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
               style={{
                 background: SHIMMER_BG,
                 backgroundSize: '300% 300%',
-                animation: 'qab-shimmer 2s ease infinite',
-                boxShadow: '0 0 14px rgba(139, 92, 246, 0.35)',
+                animation: 'qab-shimmer 1.2s ease infinite',
+                boxShadow: '0 0 20px rgba(139, 92, 246, 0.5)',
               }}
             >
               <div className="flex items-center gap-3 bg-card border border-violet-500 dark:border-violet-600 rounded-full px-4 h-12">
@@ -373,8 +373,8 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
               style={{
                 background: SHIMMER_BG,
                 backgroundSize: '300% 300%',
-                animation: 'qab-shimmer 2s ease infinite',
-                boxShadow: '0 0 14px rgba(139, 92, 246, 0.35)',
+                animation: 'qab-shimmer 1.2s ease infinite',
+                boxShadow: '0 0 20px rgba(139, 92, 246, 0.5)',
               }}
               onPointerDown={handleInputPointerDown}
               onPointerMove={handleInputPointerMove}
@@ -417,11 +417,15 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
                 <div className="w-2 h-2 bg-card border-b border-r border-border rotate-45 -mt-1" />
               </div>
 
-              {/* Violet pulsing rings */}
-              <div className="absolute inset-0 rounded-full bg-violet-400 opacity-25 animate-ping scale-150" />
+              {/* Pulse rings */}
+              <div className="absolute inset-0 rounded-full bg-violet-500 opacity-30 animate-ping scale-150" />
               <div
-                className="absolute inset-0 rounded-full bg-violet-300 opacity-20 animate-ping scale-125"
-                style={{ animationDelay: '0.25s' }}
+                className="absolute inset-0 rounded-full bg-violet-400 opacity-20 animate-ping scale-125"
+                style={{ animationDelay: '0.3s' }}
+              />
+              <div
+                className="absolute inset-0 rounded-full bg-indigo-400 opacity-15 animate-ping scale-175"
+                style={{ animationDelay: '0.6s' }}
               />
 
               <button
@@ -445,16 +449,7 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
         {/* ── ОБЫЧНЫЙ РЕЖИМ ── */}
         {!isRecording && (
           <>
-            {/* Shimmer gradient border on input */}
-            <div
-              className="flex-1 rounded-full p-px"
-              style={{
-                background: SHIMMER_BG,
-                backgroundSize: '300% 300%',
-                animation: 'qab-shimmer 4s ease infinite',
-                boxShadow: '0 0 14px rgba(139, 92, 246, 0.22)',
-              }}
-            >
+            <div className="flex-1 rounded-full border border-border">
               <div className="flex items-center gap-2 bg-card rounded-full px-4 h-[46px]">
                 <input
                   type="text"
