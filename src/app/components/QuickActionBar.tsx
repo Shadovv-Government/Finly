@@ -458,14 +458,7 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
         {/* ── ОБЫЧНЫЙ РЕЖИМ ── */}
         {!isRecording && (
           <>
-            <div
-              className="flex-1 rounded-full p-px"
-              style={{
-                background: SHIMMER_BG,
-                backgroundSize: '300% 300%',
-                animation: 'qab-shimmer 4s ease infinite',
-              }}
-            >
+            <div className="flex-1 rounded-full border border-violet-400 dark:border-violet-500">
               <div className="flex items-center gap-2 bg-card rounded-full px-4 h-[46px]">
                 <input
                   type="text"
