@@ -13,6 +13,7 @@ import { ComponentShowcase } from './screens/ComponentShowcase';
 import { Registration } from './screens/Registration';
 import { PrivacyPolicy } from './screens/PrivacyPolicy';
 import { TermsOfService } from './screens/TermsOfService';
+import { Recurring } from './screens/RecurringScreen';
 import { useAuth } from './contexts/AuthContext';
 import { LockScreen } from './screens/LockScreen';
 
@@ -59,6 +60,7 @@ export const router = createBrowserRouter([
       { path: 'settings', Component: Settings },
       { path: 'budgets', Component: Budgets },
       { path: 'goals', Component: Goals },
+      { path: 'recurring', Component: Recurring },
       { path: 'categories', Component: Categories },
       { path: 'ai-assistant', Component: AIAssistant },
       { path: 'components', Component: ComponentShowcase },
