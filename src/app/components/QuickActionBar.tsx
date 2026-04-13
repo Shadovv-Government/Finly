@@ -327,23 +327,15 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
         {/* ── ЗАЛОЧЕНО + ЗАПИСЬ ── */}
         {isRecording && isLocked && !isPaused && (
           <>
-            <div className="relative flex-1">
-              {/* Pulse rings */}
-              <div className="absolute inset-0 rounded-full bg-violet-500 opacity-20 animate-ping scale-110" />
-              <div
-                className="absolute inset-0 rounded-full bg-indigo-400 opacity-15 animate-ping scale-125"
-                style={{ animationDelay: '0.5s' }}
-              />
-
-              <div
-                className="relative rounded-full p-px"
-                style={{
-                  background: SHIMMER_BG,
-                  backgroundSize: '300% 300%',
-                  animation: 'qab-shimmer 2.5s ease infinite',
-                  boxShadow: '0 0 20px rgba(139, 92, 246, 0.5)',
-                }}
-              >
+            <div
+              className="flex-1 rounded-full p-px"
+              style={{
+                background: SHIMMER_BG,
+                backgroundSize: '300% 300%',
+                animation: 'qab-shimmer 2.5s ease infinite',
+                boxShadow: '0 0 20px rgba(139, 92, 246, 0.5)',
+              }}
+            >
               <div className="flex items-center gap-3 bg-card border border-violet-500 dark:border-violet-600 rounded-full px-4 h-12">
                 <div className="w-2 h-2 shrink-0 rounded-full bg-violet-500 animate-pulse" />
                 <span className="font-mono text-sm tabular-nums text-foreground">
@@ -356,7 +348,6 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
                   Отмена
                 </button>
               </div>
-            </div>
             </div>
 
             {/* Pause above Send */}
