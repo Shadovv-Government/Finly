@@ -1,10 +1,12 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Search, Filter, X, Calendar } from 'lucide-react';
+import { Search, Filter, X, Calendar, ChevronDown } from 'lucide-react';
 import { CategoryBadge } from '../components/CategoryBadge';
 import { AmountDisplay } from '../components/AmountDisplay';
 import { useTransactions } from '../hooks/useTransactions';
 import { useCategories } from '../hooks/useCategories';
 import { Transaction } from '../../db/types';
+
+const PAGE_SIZE = 50;
 
 export const TransactionHistory = () => {
   const { transactions } = useTransactions();
@@ -17,6 +19,9 @@ export const TransactionHistory = () => {
   const [dateTo, setDateTo] = useState<string>('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filterType, setFilterType] = useState<'all' | 'expense' | 'income'>('all');
+
+  // Pagination
+  const [visiblePages, setVisiblePages] = useState(1);
 
   // Ref для закрытия datePicker при клике вне
   const dateFilterRef = useRef<HTMLDivElement>(null);
@@ -103,6 +108,11 @@ export const TransactionHistory = () => {
     setDateTo('');
     setFilterType('all');
   };
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setVisiblePages(1);
+  }, [searchQuery, selectedCategory, dateFrom, dateTo, filterType]);
 
   // Закрытие datePicker при клике вне
   useEffect(() => {
@@ -302,51 +312,95 @@ export const TransactionHistory = () => {
 
       {/* Transaction List */}
       <div className="px-4 py-4">
-        {Object.keys(groupedTransactions).length > 0 ? (
-          Object.entries(groupedTransactions).map(([date, dayTransactions]) => (
-            <div key={date} className="mb-6">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-medium text-muted-foreground">{date}</h3>
-                <span className="text-sm text-muted-foreground">
-                  {dayTransactions.length} операций
-                </span>
-              </div>
+        {Object.keys(groupedTransactions).length > 0 ? (() => {
+          // Flatten groups into array for pagination
+          const groupEntries = Object.entries(groupedTransactions);
 
-              <div className="bg-card rounded-2xl border border-border overflow-hidden">
-                {dayTransactions.map((transaction, index) => {
-                  const category = categories.find(c => c.id === transaction.categoryId);
-                  const time = new Date(transaction.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-                  return (
-                    <div
-                      key={transaction.id}
-                      className={`flex items-center gap-3 p-4 ${
-                        index !== dayTransactions.length - 1 ? 'border-b border-border' : ''
-                      }`}
-                    >
-                      <CategoryBadge categoryId={transaction.categoryId as string | undefined} size="md" />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">
-                          {category?.name || 'Без категории'}
-                        </p>
-                        {transaction.comment && (
-                          <p className="text-sm text-muted-foreground truncate">{transaction.comment}</p>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <AmountDisplay
-                          amount={transaction.amount}
-                          type={transaction.type}
-                          size="md"
-                        />
-                        <p className="text-xs text-muted-foreground">{time}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))
-        ) : (
+          // Calculate how many groups to show based on PAGE_SIZE
+          let shownGroups: [string, Transaction[]][] = [];
+          let count = 0;
+
+          for (const [date, txs] of groupEntries) {
+            if (count + txs.length <= PAGE_SIZE * visiblePages) {
+              shownGroups.push([date, txs]);
+              count += txs.length;
+            } else {
+              // Partial group: show only remaining slots
+              const remaining = PAGE_SIZE * visiblePages - count;
+              if (remaining > 0) {
+                shownGroups.push([date, txs.slice(0, remaining)]);
+              }
+              break;
+            }
+          }
+
+          const shownCount = shownGroups.reduce((sum, [, txs]) => sum + txs.length, 0);
+          const hasMore = shownCount < filteredTransactions.length;
+
+          return (
+            <>
+              {shownGroups.map(([date, dayTransactions]) => (
+                <div key={date} className="mb-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-medium text-muted-foreground">{date}</h3>
+                    <span className="text-sm text-muted-foreground">
+                      {dayTransactions.length} операций
+                    </span>
+                  </div>
+
+                  <div className="bg-card rounded-2xl border border-border overflow-hidden">
+                    {dayTransactions.map((transaction, index) => {
+                      const category = categories.find(c => c.id === transaction.categoryId);
+                      const time = new Date(transaction.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                      return (
+                        <div
+                          key={transaction.id}
+                          className={`flex items-center gap-3 p-4 ${
+                            index !== dayTransactions.length - 1 ? 'border-b border-border' : ''
+                          }`}
+                        >
+                          <CategoryBadge categoryId={transaction.categoryId as string | undefined} size="md" />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">
+                              {category?.name || 'Без категории'}
+                            </p>
+                            {transaction.comment && (
+                              <p className="text-sm text-muted-foreground truncate">{transaction.comment}</p>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <AmountDisplay
+                              amount={transaction.amount}
+                              type={transaction.type}
+                              size="md"
+                            />
+                            <p className="text-xs text-muted-foreground">{time}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+
+              {/* Load More Button */}
+              {hasMore && (
+                <div className="flex justify-center py-4">
+                  <button
+                    onClick={() => setVisiblePages(p => p + 1)}
+                    className="flex items-center gap-2 px-6 py-3 bg-card border border-border rounded-xl font-medium text-foreground hover:bg-muted transition-colors"
+                  >
+                    <ChevronDown className="w-5 h-5" />
+                    Загрузить ещё
+                    <span className="text-muted-foreground text-sm">
+                      ({filteredTransactions.length - shownCount} из {filteredTransactions.length})
+                    </span>
+                  </button>
+                </div>
+              )}
+            </>
+          );
+        })() : (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <Search className="w-12 h-12 text-muted-foreground mb-4" />
             <p className="text-lg font-medium text-muted-foreground">
