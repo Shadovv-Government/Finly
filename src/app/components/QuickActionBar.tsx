@@ -10,7 +10,6 @@ interface QuickActionBarProps {
   onOpenForm: () => void;
 }
 
-// Декоративный waveform паттерн (имитация аудиодорожки)
 const WAVEFORM = [3, 6, 10, 16, 22, 18, 24, 20, 14, 18, 24, 20, 16, 10, 14, 20, 24, 18, 12, 16, 22, 18, 12, 7, 4];
 
 function formatTime(ms: number): string {
@@ -19,6 +18,9 @@ function formatTime(ms: number): string {
   const centiseconds = Math.floor((ms % 1000) / 10);
   return `${minutes}:${String(seconds).padStart(2, '0')},${String(centiseconds).padStart(2, '0')}`;
 }
+
+const VIOLET_GLOW = '0 0 20px rgba(139, 92, 246, 0.55)';
+const SHIMMER_BG = 'linear-gradient(270deg, #7c3aed, #a78bfa, #6366f1, #8b5cf6, #7c3aed)';
 
 export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) => {
   const [text, setText] = useState('');
@@ -45,7 +47,6 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
 
   const activePointerIdRef = useRef<number | null>(null);
   const lastDeltaYRef = useRef(0);
-  const permissionCachedRef = useRef(false);
 
   const swipeStartX = useRef(0);
   const swipeStartY = useRef(0);
@@ -58,12 +59,10 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
   const { notifyTransaction } = useNotifications();
   const { checkBudgets } = useBudgetNotifications();
 
-  // Восстанавливаем pointer capture после ре-рендера при старте записи
+  // Restore pointer capture after re-render when recording starts
   useEffect(() => {
     if (isRecording && !isLocked && buttonRef.current && activePointerIdRef.current !== null) {
-      try {
-        buttonRef.current.setPointerCapture(activePointerIdRef.current);
-      } catch (_) { /* pointer уже не активен */ }
+      try { buttonRef.current.setPointerCapture(activePointerIdRef.current); } catch (_) {}
     }
   }, [isRecording, isLocked]);
 
@@ -75,9 +74,7 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
   const startTimer = (fromMs = 0) => {
     clearInterval(timerRef.current);
     startTimeRef.current = Date.now() - fromMs;
-    timerRef.current = setInterval(() => {
-      setElapsed(Date.now() - startTimeRef.current);
-    }, 50);
+    timerRef.current = setInterval(() => setElapsed(Date.now() - startTimeRef.current), 50);
   };
 
   const stopTimer = () => {
@@ -95,19 +92,16 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
     r.interimResults = true;
     r.continuous = true;
     r.onresult = (e: any) => {
-      let transcript = '';
-      for (let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
-      setText(transcript);
+      let t = '';
+      for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
+      setText(t);
     };
     r.onerror = (e: any) => {
       if (e.error === 'no-speech' || e.error === 'aborted') return;
       stopRecording(false);
     };
-    // onend срабатывает при stop() — игнорируем если в залоченном режиме
     r.onend = () => {
-      if (isRecordingRef.current && !isLockedRef.current) {
-        setIsRecording(false);
-      }
+      if (isRecordingRef.current && !isLockedRef.current) setIsRecording(false);
     };
     return r;
   };
@@ -138,7 +132,7 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
 
   const handlePause = () => {
     if (isPaused) {
-      // Возобновить — создаём инстанс синхронно (в контексте жеста, иначе iOS блокирует)
+      // Resume synchronously — stay in gesture context so iOS allows mic access
       const r = createRecognition();
       if (!r) return;
       recognitionRef.current = r;
@@ -147,11 +141,9 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
       try {
         r.start();
       } catch (_) {
-        // Предыдущий инстанс ещё не закрылся — короткий ретрай
         setTimeout(() => { try { r.start(); } catch (_) {} }, 120);
       }
     } else {
-      // Пауза
       pausedElapsedRef.current = elapsed;
       recognitionRef.current?.stop();
       recognitionRef.current = null;
@@ -165,15 +157,12 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
   const handleSubmit = async (textOverride?: string) => {
     const t = (textOverride ?? text).trim();
     if (!t) return;
-
     const parsed = parseNaturalLanguage(t);
     if (!parsed) return;
-
     const match = await findBestMatch(t);
     const category = match
       ? categories.find(c => c.id === match.pattern.categoryId)
       : categories.find(c => c.type === parsed.type);
-
     await add({
       amount: parsed.amount,
       type: parsed.type,
@@ -183,7 +172,6 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
       currency: parsed.currency || 'RUB',
       rate: 1,
     });
-
     notifyTransaction(parsed.type, parsed.amount, category?.name ?? 'Без категории');
     await checkBudgets();
     setText('');
@@ -192,21 +180,13 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
   const handleSendLocked = () => {
     const captured = text;
     stopRecording(true);
-    // text уже зафиксирован в captured, вызываем с ним
     setTimeout(() => handleSubmit(captured), 0);
   };
 
-  // ── Mic gesture handlers ───────────────────────────────────────────────────
+  // ── Pointer handlers ───────────────────────────────────────────────────────
 
   const handlePointerDown = (e: React.PointerEvent) => {
     if (isLocked) return;
-    // Кэшируем разрешение микрофона при первом касании
-    if (!permissionCachedRef.current) {
-      permissionCachedRef.current = true;
-      navigator.mediaDevices?.getUserMedia({ audio: true })
-        .then(s => s.getTracks().forEach(t => t.stop()))
-        .catch(() => {});
-    }
     longPressFired.current = false;
     isHolding.current = true;
     pointerStartY.current = e.clientY;
@@ -217,7 +197,6 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
       if (isHolding.current) {
         longPressFired.current = true;
         startRecording();
-        // Если уже свайпнули вверх за время 250ms — сразу лочим
         if (lastDeltaYRef.current > 60) {
           isLockedRef.current = true;
           setIsLocked(true);
@@ -228,7 +207,7 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
 
   const handlePointerMove = (e: React.PointerEvent) => {
     const deltaY = pointerStartY.current - e.clientY;
-    lastDeltaYRef.current = deltaY; // всегда трекаем, даже до старта записи
+    lastDeltaYRef.current = deltaY;
     if (!isRecordingRef.current || isLockedRef.current) return;
     const progress = Math.max(0, Math.min(1, deltaY / 80));
     setLockProgress(progress);
@@ -283,16 +262,26 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
 
   const swipeProgress = Math.min(1, swipeOffset / SWIPE_THRESHOLD);
 
+  // ── Shared button style for pause/play (same shape as + button) ────────────
+
+  const pausePlayBtn = (onClick: () => void, icon: React.ReactNode) => (
+    <button
+      onClick={onClick}
+      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-12 h-12 shrink-0 rounded-full bg-card border border-border flex items-center justify-center shadow-md active:scale-90 transition-transform"
+    >
+      {icon}
+    </button>
+  );
+
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div className="fixed bottom-16 left-0 right-0 z-40 px-3 py-2 pointer-events-none">
       <div className="flex items-center gap-2 max-w-md mx-auto pointer-events-auto">
 
-        {/* ── ПАУЗНЫЙ РЕЖИМ (залочено + пауза) — Telegram-стиль ── */}
+        {/* ── ПАУЗНЫЙ РЕЖИМ (залочено + пауза) ── */}
         {isRecording && isLocked && isPaused && (
           <>
-            {/* Корзина слева */}
             <button
               onClick={() => stopRecording(false)}
               className="w-12 h-12 shrink-0 rounded-full bg-card border border-border flex items-center justify-center active:scale-90 transition-transform"
@@ -300,75 +289,59 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
               <Trash2 className="w-5 h-5 text-foreground" />
             </button>
 
-            {/* Синяя pill с waveform */}
             <div className="flex-1 flex items-center gap-2 bg-violet-600 rounded-full px-3 h-12">
-              <button
-                onClick={handlePause}
-                className="w-7 h-7 shrink-0 bg-white/25 rounded-full flex items-center justify-center active:scale-90 transition-transform"
-              >
-                <Play className="w-3.5 h-3.5 text-white translate-x-0.5" />
-              </button>
               <span className="text-white text-sm font-mono tabular-nums shrink-0">
                 {formatTime(elapsed)}
               </span>
-              {/* Waveform bars */}
               <div className="flex-1 flex items-center justify-between gap-px overflow-hidden">
                 {WAVEFORM.map((h, i) => (
-                  <div
-                    key={i}
-                    className="w-0.5 rounded-full bg-white/75 shrink-0"
-                    style={{ height: `${h}px` }}
-                  />
+                  <div key={i} className="w-0.5 rounded-full bg-white/75 shrink-0" style={{ height: `${h}px` }} />
                 ))}
               </div>
             </div>
 
-            {/* Кнопка отправки */}
-            <button
-              onClick={handleSendLocked}
-              className="w-12 h-12 shrink-0 rounded-full bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center shadow-lg active:scale-90 transition-transform"
-            >
-              <ArrowUp className="w-5 h-5 text-white" />
-            </button>
-          </>
-        )}
-
-        {/* ── ЗАЛОЧЕНО + ЗАПИСЬ (не пауза) ── */}
-        {isRecording && isLocked && !isPaused && (
-          <div className="flex-1 flex flex-col gap-1.5">
-            {/* Пауза — сверху по центру */}
-            <div className="flex justify-center">
-              <button
-                onClick={handlePause}
-                className="flex items-center gap-1.5 px-4 py-1 rounded-full bg-card border border-border text-sm font-medium active:scale-95 transition-transform"
-              >
-                <Pause className="w-3.5 h-3.5" />
-                Пауза
-              </button>
-            </div>
-
-            {/* Нижний ряд */}
-            <div className="flex items-center gap-2">
-              <div className="flex-1 flex items-center gap-3 bg-card border border-red-400 dark:border-red-600 rounded-full px-4 h-12">
-                <div className="w-2 h-2 shrink-0 rounded-full bg-red-500 animate-pulse" />
-                <span className="font-mono text-sm tabular-nums text-foreground">
-                  {formatTime(elapsed)}
-                </span>
-                <button
-                  onClick={() => stopRecording(false)}
-                  className="flex-1 text-right text-sm text-red-500 font-medium active:opacity-70"
-                >
-                  Отмена
-                </button>
-              </div>
+            {/* Play above Send */}
+            <div className="relative shrink-0">
+              {pausePlayBtn(handlePause, <Play className="w-5 h-5 translate-x-0.5" />)}
               <button
                 onClick={handleSendLocked}
-                className="w-12 h-12 shrink-0 rounded-full bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center shadow-lg active:scale-90 transition-transform"
+                className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center active:scale-90 transition-transform"
+                style={{ boxShadow: VIOLET_GLOW }}
               >
                 <ArrowUp className="w-5 h-5 text-white" />
               </button>
             </div>
-          </div>
+          </>
+        )}
+
+        {/* ── ЗАЛОЧЕНО + ЗАПИСЬ ── */}
+        {isRecording && isLocked && !isPaused && (
+          <>
+            <div className="flex-1 flex items-center gap-3 bg-card border border-violet-500 dark:border-violet-600 rounded-full px-4 h-12">
+              <div className="w-2 h-2 shrink-0 rounded-full bg-violet-500 animate-pulse" />
+              <span className="font-mono text-sm tabular-nums text-foreground">
+                {formatTime(elapsed)}
+              </span>
+              <button
+                onClick={() => stopRecording(false)}
+                className="flex-1 text-right text-sm text-violet-500 font-medium active:opacity-70"
+              >
+                Отмена
+              </button>
+            </div>
+
+            {/* Pause above Send */}
+            <div className="relative shrink-0">
+              {pausePlayBtn(handlePause, <Pause className="w-5 h-5" />)}
+              <button
+                onClick={handleSendLocked}
+                className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center active:scale-90 transition-transform"
+                style={{ boxShadow: VIOLET_GLOW }}
+              >
+                <ArrowUp className="w-5 h-5 text-white" />
+              </button>
+            </div>
+          </>
         )}
 
         {/* ── ЗАПИСЬ (зажато, не залочено) ── */}
@@ -383,13 +356,13 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
               onPointerCancel={handleInputPointerUp}
             >
               <div
-                className="flex items-center gap-3 bg-card border border-red-400 dark:border-red-600 rounded-full px-4 h-12"
+                className="flex items-center gap-3 bg-card border border-violet-400 dark:border-violet-500 rounded-full px-4 h-12"
                 style={{
                   transform: `translateX(-${swipeOffset}px)`,
                   transition: swipeOffset === 0 ? 'transform 0.2s ease' : 'none',
                 }}
               >
-                <div className="w-2 h-2 shrink-0 rounded-full bg-red-500 animate-pulse" />
+                <div className="w-2 h-2 shrink-0 rounded-full bg-violet-500 animate-pulse" />
                 <span className="font-mono text-sm tabular-nums text-foreground">
                   {formatTime(elapsed)}
                 </span>
@@ -402,9 +375,8 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
               </div>
             </div>
 
-            {/* Кнопка микрофона с лок-иконкой над ней */}
+            {/* Mic with lock badge */}
             <div className="relative shrink-0">
-              {/* Лок-иконка — видна сразу, поднимается при свайпе вверх */}
               <div
                 className="absolute bottom-full left-1/2 mb-2 flex flex-col items-center pointer-events-none"
                 style={{
@@ -416,14 +388,13 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
                   <Lock className="w-4 h-4 text-foreground" />
                   <ChevronUp className="w-3 h-3 text-muted-foreground" />
                 </div>
-                {/* Стрелка-хвостик */}
                 <div className="w-2 h-2 bg-card border-b border-r border-border rotate-45 -mt-1" />
               </div>
 
-              {/* Пульсирующие кольца */}
-              <div className="absolute inset-0 rounded-full bg-red-400 opacity-25 animate-ping scale-150" />
+              {/* Violet pulsing rings */}
+              <div className="absolute inset-0 rounded-full bg-violet-400 opacity-25 animate-ping scale-150" />
               <div
-                className="absolute inset-0 rounded-full bg-red-300 opacity-20 animate-ping scale-125"
+                className="absolute inset-0 rounded-full bg-violet-300 opacity-20 animate-ping scale-125"
                 style={{ animationDelay: '0.25s' }}
               />
 
@@ -433,8 +404,9 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
                 onClick={handleClick}
-                className="relative w-12 h-12 rounded-full flex items-center justify-center shadow-lg bg-gradient-to-br from-red-500 to-rose-600 text-white select-none touch-none active:scale-90 transition-transform"
+                className="relative w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br from-violet-600 to-indigo-700 text-white select-none touch-none active:scale-90 transition-transform"
                 style={{
+                  boxShadow: VIOLET_GLOW,
                   transform: lockProgress > 0 ? `scale(${1 + lockProgress * 0.12})` : undefined,
                 }}
               >
@@ -447,16 +419,27 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
         {/* ── ОБЫЧНЫЙ РЕЖИМ ── */}
         {!isRecording && (
           <>
-            <div className="flex-1 flex items-center gap-2 bg-card border border-violet-500 dark:border-violet-600 rounded-full px-4 h-12">
-              <input
-                type="text"
-                placeholder="Быстрый ввод..."
-                value={text}
-                onChange={e => setText(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-                className="flex-1 min-w-0 bg-transparent outline-none text-sm"
-                style={{ fontSize: '16px' }}
-              />
+            {/* Shimmer gradient border on input */}
+            <div
+              className="flex-1 rounded-full p-px"
+              style={{
+                background: SHIMMER_BG,
+                backgroundSize: '300% 300%',
+                animation: 'qab-shimmer 4s ease infinite',
+                boxShadow: '0 0 14px rgba(139, 92, 246, 0.22)',
+              }}
+            >
+              <div className="flex items-center gap-2 bg-card rounded-full px-4 h-[46px]">
+                <input
+                  type="text"
+                  placeholder="Быстрый ввод..."
+                  value={text}
+                  onChange={e => setText(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                  className="flex-1 min-w-0 bg-transparent outline-none text-sm"
+                  style={{ fontSize: '16px' }}
+                />
+              </div>
             </div>
 
             <div className="relative shrink-0">
@@ -466,7 +449,8 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
                 onClick={handleClick}
-                className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg bg-gradient-to-br from-violet-600 to-indigo-700 text-white select-none touch-none active:scale-90 transition-transform"
+                className="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br from-violet-600 to-indigo-700 text-white select-none touch-none active:scale-90 transition-transform"
+                style={{ boxShadow: VIOLET_GLOW }}
               >
                 {text.trim() ? <Sparkles className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
               </button>

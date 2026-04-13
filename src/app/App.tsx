@@ -22,6 +22,13 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [isLoading]);
 
+  // Prime microphone permission once at app start so it's cached before first use
+  useEffect(() => {
+    navigator.mediaDevices?.getUserMedia({ audio: true })
+      .then(s => s.getTracks().forEach(t => t.stop()))
+      .catch(() => {});
+  }, []);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
