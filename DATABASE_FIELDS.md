@@ -1,5 +1,9 @@
 # Поля базы данных — Finly
 
+> Версия актуальна на 2026-04-13. Схема: Dexie (IndexedDB), 3 версии.
+
+---
+
 ## transactions (Транзакции)
 
 **Описание:** Финансовые операции пользователя — доходы и расходы. Каждая запись представляет одну транзакцию (покупка, получение зарплаты и т.д.). Используется на всех экранах: лента операций, аналитика, бюджеты, цели.
@@ -9,13 +13,15 @@
 | id | number (auto-increment) | Уникальный идентификатор транзакции (первичный ключ) |
 | amount | number | Сумма транзакции (положительное число, знак определяется полем type) |
 | type | 'income' \| 'expense' | Тип операции: income — доход, expense — расход |
-| categoryId | string (FK → categories.id) | Ссылка на категорию, к которой относится транзакция |
+| categoryId | string (optional, FK → categories.id) | Ссылка на категорию (может быть пустым — категория «Другое») |
 | date | number (timestamp) | Дата и время транзакции (Unix timestamp в миллисекундах) |
 | comment | string (optional) | Комментарий пользователя к транзакции (например, «Обед в кафе») |
 | currency | string | Код валюты транзакции (RUB, USD, EUR и т.д.) |
 | rate | number | Курс валюты к базовой валюте приложения (для мульти-валютности) |
 | createdAt | number (timestamp) | Время создания записи в базе (Unix timestamp) |
 | templateId | number (optional, FK → recurringTemplates.id) | Если транзакция создана автоматически — ссылка на шаблон повторяющегося платежа |
+
+**Индексы:** `++id`, `date`, `categoryId`, `type`, `createdAt`
 
 ---
 
@@ -33,6 +39,8 @@
 | isSystem | boolean | Флаг системной категории: true — предустановлена, нельзя удалить |
 | parentId | string (optional, FK → categories.id) | Ссылка на родительскую категорию для создания подкатегорий (null = корневая) |
 
+**Индексы:** `id`, `type`, `isSystem`
+
 ---
 
 ## budgets (Бюджеты)
@@ -47,6 +55,8 @@
 | period | 'week' \| 'month' | Период действия бюджета: week — неделя, month — месяц |
 | startDate | number (timestamp) | Дата начала текущего периода (Unix timestamp) |
 | currency | string | Код валюты бюджета |
+
+**Индексы:** `++id`, `categoryId`, `period`, `startDate`
 
 ---
 
@@ -65,11 +75,13 @@
 | color | string (hex) | HEX-код цвета цели для отображения в UI |
 | isActive | boolean | Флаг активности: true — цель активна, false — архив/завершена |
 
+**Индексы:** `++id`, `isActive`, `deadline`
+
 ---
 
 ## recurringTemplates (Шаблоны повторяющихся платежей)
 
-**Описание:** Шаблоны для автоматического создания транзакций по расписанию. Используются для регулярных платежей (аренда, подписки, зарплата). Планировщик проверяет nextDate и создаёт транзакции автоматически.
+**Описание:** Шаблоны для автоматического создания транзакций по расписанию. Используются для регулярных платежей (аренда, подписки, зарплата). Планировщик проверяет nextDate и создаёт транзакции автоматически при старте приложения (с кулдауном 1 час).
 
 | Field | Type | Описание |
 |-------|------|----------|
@@ -82,26 +94,31 @@
 | isActive | boolean | Флаг активности: true — шаблон работает, false — отключён |
 | comment | string (optional) | Комментарий к шаблону (например, «Аренда квартиры») |
 
+**Индексы:** `++id`, `nextDate`, `isActive`
+
 ---
 
 ## settings (Настройки)
 
-**Описание:** Key-value хранилище настроек приложения. Каждая запись — одна настройка. Используется повсеместно для чтения конфигурации: тема оформления, валюта, состояние онбординга, PIN-код, биометрия.
+**Описание:** Key-value хранилище настроек приложения. Каждая запись — одна настройка. Используется повсеместно для чтения конфигурации: тема оформления, валюта, состояние онбординга, биометрия.
 
 | Field | Type | Описание |
 |-------|------|----------|
-| key | string | Ключ настройки (первичный ключ), например: theme, baseCurrency, onboardingComplete |
+| key | string | Ключ настройки (первичный ключ) |
 | value | any | Значение настройки (любой сериализуемый тип: string, number, boolean, object) |
+
+**Индексы:** `key`
 
 **Стандартные ключи:**
 
-| Key | Value | Описание |
-|-----|-------|----------|
-| theme | 'light' \| 'dark' \| 'system' | Тема оформления |
-| baseCurrency | 'RUB' | Базовая валюта приложения |
-| onboardingComplete | false \| true | Пройден ли первичный онбординг |
-| biometricEnabled | false \| true | Включена ли биометрическая аутентификация |
-| pinHash | string \| null | Хэш PIN-кода для блокировки |
+| Key | Тип значения | Описание |
+|-----|-------------|----------|
+| `theme` | `'light'` \| `'dark'` \| `'system'` | Тема оформления |
+| `baseCurrency` | `'RUB'` | Базовая валюта приложения |
+| `onboardingComplete` | `boolean` | Пройден ли первичный онбординг |
+| `biometric_enabled` | `boolean` | Включена ли биометрическая аутентификация |
+| `biometric_credential_id` | `string \| null` | ID WebAuthn-креденшала |
+| `biometric_last_active` | `number \| null` | Timestamp последней активной биометрии |
 
 ---
 
@@ -117,6 +134,8 @@
 | confidence | number (0–1) | Уверенность модели в корректности связи (0 = нет уверенности, 1 = полная уверенность) |
 | usageCount | number | Количество раз, когда паттерн успешно сработал (частота использования) |
 
+**Индексы:** `++id`, `pattern`, `categoryId`
+
 ---
 
 ## users (Пользователи)
@@ -129,24 +148,46 @@
 | name | string | Имя пользователя, отображаемое в приложении |
 | createdAt | number (timestamp) | Дата регистрации/создания аккаунта (Unix timestamp) |
 | deviceId | string (optional) | Идентификатор устройства (обычно navigator.userAgent) |
-| avatarColor | string (optional) | HEX-код цвета аватара пользователя |
+| avatarColor | string (optional) | CSS gradient цвет аватара (например, `'from-amber-400 to-pink-500'`) |
+
+**Индексы:** `id`, `createdAt`
 
 ---
 
 ## notifications (Уведомления)
 
-**Описание:** Система push-уведомлений приложения. Каждое уведомление имеет тип, заголовок, описание и статус прочтения. Используются для информирования о превышении бюджетов, достижении целей, предстоящих платежах, аномальных тратах и возможных дубликатах транзакций. Хранятся в базе с возможностью фильтрации по статусу и авто-удаления по expiresAt.
+**Описание:** Система уведомлений приложения. Каждое уведомление имеет тип, заголовок, описание и статус прочтения. Используются для информирования о превышении бюджетов, достижении целей, предстоящих платежах, аномальных тратах и возможных дубликатах транзакций. Хранятся в базе с возможностью фильтрации по статусу и авто-удаления по expiresAt.
 
 | Field | Type | Описание |
 |-------|------|----------|
 | id | number (auto-increment) | Уникальный идентификатор уведомления (первичный ключ) |
-| type | string | Тип уведомления: budget-overrun (бюджет превышен), budget-warning (бюджет почти исчерпан 80%+), goal-done (цель достигнута), goal-near (почти у цели 80%+), goal-deadline (дедлайн цели приближается/прошёл), recurring-due (платёж сегодня), recurring-upcoming (платёж через 1–3 дня), anomalous-expense (аномально крупная трата), duplicate-transaction (возможный дубликат) |
+| type | string | Тип уведомления: budget-overrun, budget-warning, goal-done, goal-near, goal-deadline, recurring-due, recurring-upcoming, anomalous-expense, duplicate-transaction |
 | title | string | Заголовок уведомления, отображаемый пользователю |
 | subtitle | string | Подробное описание — текст под заголовком |
 | icon | string | Название иконки Lucide для отображения рядом с уведомлением |
-| iconColor | string | CSS/Tailwind класс цвета иконки |
-| iconBg | string | CSS/Tailwind класс цвета фона бейджа иконки |
+| iconColor | string | CSS/Tailwind класс цвета иконки (например, `'text-green-500'`) |
+| iconBg | string | CSS/Tailwind класс цвета фона бейджа (например, `'bg-green-100 dark:bg-green-900/30'`) |
 | data | JSON (optional) | Дополнительные данные, специфичные для типа уведомления (categoryId, goalId, transactionId и т.д.) |
 | read | boolean | Статус прочтения: false — не прочитано, true — прочитано |
 | createdAt | number (timestamp) | Время создания уведомления (Unix timestamp) |
 | expiresAt | number (optional, timestamp) | Время автоматического удаления уведомления (Unix timestamp), null = бессрочно |
+
+**Индексы:** `++id`, `type`, `read`, `createdAt`, `expiresAt`
+
+---
+
+## Типы (TypeScript)
+
+```typescript
+type TransactionType = 'income' | 'expense';
+type PeriodType = 'week' | 'month';
+type RecurringInterval = 'daily' | 'weekly' | 'monthly' | 'yearly';
+```
+
+## Схема версионирования (Dexie)
+
+| Версия | Добавленные таблицы | Описание |
+|--------|-------------------|----------|
+| v1 | transactions, categories, budgets, goals, recurringTemplates, settings, aiPatterns | Базовая схема: все основные таблицы |
+| v2 | users | Профиль пользователя |
+| v3 | notifications | Система уведомлений с persist и статусом прочтения |
