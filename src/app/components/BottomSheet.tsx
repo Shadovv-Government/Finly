@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
+import { useSettings } from '../contexts/SettingsContext';
 
 interface BottomSheetProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
   title,
   side = 'bottom',
 }) => {
+  const { reducedMotion } = useSettings();
   const isTop = side === 'top';
   const sheetRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
@@ -112,7 +114,9 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
       {/* Backdrop */}
       <div
         className={`fixed inset-0 bg-black/50 z-[60] ${
-          closing ? 'animate-fade-out' : 'animate-fade-in'
+          reducedMotion
+            ? (closing ? 'animate-fade-out-fast' : 'animate-fade-in-fast')
+            : (closing ? 'animate-fade-out' : 'animate-fade-in')
         }`}
         onClick={onClose}
       />
@@ -123,8 +127,16 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
         className={`fixed left-0 right-0 bg-card z-[70]
                    max-h-[90vh] overflow-hidden flex flex-col
                    ${isTop
-                     ? `top-0 rounded-b-[2.5rem] ${closing ? 'animate-slide-up-out' : 'animate-slide-down-in'}`
-                     : `bottom-0 rounded-t-[2.5rem] safe-area-inset-bottom ${closing ? 'animate-slide-down' : 'animate-slide-up'}`
+                     ? `top-0 rounded-b-[2.5rem] ${
+                         reducedMotion
+                           ? (closing ? 'animate-slide-up-out-minimal' : 'animate-slide-down-in-minimal')
+                           : (closing ? 'animate-slide-up-out' : 'animate-slide-down-in')
+                       }`
+                     : `bottom-0 rounded-t-[2.5rem] safe-area-inset-bottom ${
+                         reducedMotion
+                           ? (closing ? 'animate-slide-down-minimal' : 'animate-slide-up-minimal')
+                           : (closing ? 'animate-slide-down' : 'animate-slide-up')
+                       }`
                    }`}
         onClick={(e) => e.stopPropagation()}
         onTouchMove={onDragMove}
@@ -198,11 +210,41 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
           100% { transform: translateY(-60%) scale(0.92); filter: blur(16px); opacity: 0; }
         }
 
+        /* === Упрощённые анимации (без blur и scale) === */
+        @keyframes slide-up-minimal {
+          0%   { transform: translateY(100%); opacity: 0; }
+          100% { transform: translateY(0);    opacity: 1; }
+        }
+
+        @keyframes slide-down-minimal {
+          0%   { transform: translateY(0);    opacity: 1; }
+          100% { transform: translateY(100%); opacity: 0; }
+        }
+
+        @keyframes slide-down-in-minimal {
+          0%   { transform: translateY(-100%); opacity: 0; }
+          100% { transform: translateY(0);     opacity: 1; }
+        }
+
+        @keyframes slide-up-out-minimal {
+          0%   { transform: translateY(0);     opacity: 1; }
+          100% { transform: translateY(-100%); opacity: 0; }
+        }
+
         @keyframes fade-in {
           from { opacity: 0; }
           to   { opacity: 1; }
         }
         @keyframes fade-out {
+          from { opacity: 1; }
+          to   { opacity: 0; }
+        }
+
+        @keyframes fade-in-fast {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
+        @keyframes fade-out-fast {
           from { opacity: 1; }
           to   { opacity: 0; }
         }
@@ -219,11 +261,31 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
         .animate-slide-up-out {
           animation: slide-up-out 0.22s cubic-bezier(0.4, 0, 1, 1) forwards;
         }
+
+        .animate-slide-up-minimal {
+          animation: slide-up-minimal 0.2s ease-out forwards;
+        }
+        .animate-slide-down-minimal {
+          animation: slide-down-minimal 0.15s ease-in forwards;
+        }
+        .animate-slide-down-in-minimal {
+          animation: slide-down-in-minimal 0.2s ease-out forwards;
+        }
+        .animate-slide-up-out-minimal {
+          animation: slide-up-out-minimal 0.15s ease-in forwards;
+        }
+
         .animate-fade-in {
           animation: fade-in 0.3s ease-out forwards;
         }
         .animate-fade-out {
           animation: fade-out 0.3s ease-in forwards;
+        }
+        .animate-fade-in-fast {
+          animation: fade-in-fast 0.1s ease-out forwards;
+        }
+        .animate-fade-out-fast {
+          animation: fade-out-fast 0.1s ease-in forwards;
         }
       `}</style>
     </>

@@ -1,5 +1,6 @@
-import { Sun, Moon, Monitor, ChevronRight, Download, Upload, Bell, Repeat, LogOut, Pencil, Fingerprint, AlertTriangle, Target, FileJson, FileSpreadsheet } from 'lucide-react';
+import { Sun, Moon, Monitor, ChevronRight, Download, Upload, Bell, Repeat, LogOut, Pencil, Fingerprint, AlertTriangle, Target, FileJson, FileSpreadsheet, Sparkles } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { useSettings } from '../contexts/SettingsContext';
 import { useAuth } from '../contexts/AuthContext';
 import { Switch } from '../components/ui/switch';
 import { Link } from 'react-router';
@@ -20,6 +21,7 @@ import { useNotifications } from '../hooks/useNotifications';
 
 export const Settings = () => {
   const { theme, setTheme } = useTheme();
+  const { reducedMotion, setReducedMotion } = useSettings();
   const { user, updateProfile, logout, biometric } = useAuth();
   const { notify } = useNotifications();
   const [biometricLoading, setBiometricLoading] = useState(false);
@@ -229,6 +231,28 @@ export const Settings = () => {
               </button>
             );
           })}
+        </div>
+      </div>
+
+      {/* Performance */}
+      <div className="px-4 py-4">
+        <h2 className="font-bold mb-3">Производительность</h2>
+        <div className="bg-card rounded-2xl border border-border overflow-hidden">
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950 flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-amber-600 dark:text-amber-500" />
+              </div>
+              <div>
+                <p className="font-medium">Минимум анимаций</p>
+                <p className="text-xs text-muted-foreground">Для слабых устройств</p>
+              </div>
+            </div>
+            <Switch
+              checked={reducedMotion}
+              onCheckedChange={setReducedMotion}
+            />
+          </div>
         </div>
       </div>
 
