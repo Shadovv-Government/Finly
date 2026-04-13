@@ -289,14 +289,24 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
               <Trash2 className="w-5 h-5 text-foreground" />
             </button>
 
-            <div className="flex-1 flex items-center gap-2 bg-violet-600 rounded-full px-3 h-12">
-              <span className="text-white text-sm font-mono tabular-nums shrink-0">
-                {formatTime(elapsed)}
-              </span>
-              <div className="flex-1 flex items-center justify-between gap-px overflow-hidden">
-                {WAVEFORM.map((h, i) => (
-                  <div key={i} className="w-0.5 rounded-full bg-white/75 shrink-0" style={{ height: `${h}px` }} />
-                ))}
+            <div
+              className="flex-1 rounded-full p-px"
+              style={{
+                background: SHIMMER_BG,
+                backgroundSize: '300% 300%',
+                animation: 'qab-shimmer 2s ease infinite',
+                boxShadow: '0 0 14px rgba(139, 92, 246, 0.35)',
+              }}
+            >
+              <div className="flex items-center gap-2 bg-violet-600 rounded-full px-3 h-12">
+                <span className="text-white text-sm font-mono tabular-nums shrink-0">
+                  {formatTime(elapsed)}
+                </span>
+                <div className="flex-1 flex items-center justify-between gap-px overflow-hidden">
+                  {WAVEFORM.map((h, i) => (
+                    <div key={i} className="w-0.5 rounded-full bg-white/75 shrink-0" style={{ height: `${h}px` }} />
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -317,17 +327,27 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
         {/* ── ЗАЛОЧЕНО + ЗАПИСЬ ── */}
         {isRecording && isLocked && !isPaused && (
           <>
-            <div className="flex-1 flex items-center gap-3 bg-card border border-violet-500 dark:border-violet-600 rounded-full px-4 h-12">
-              <div className="w-2 h-2 shrink-0 rounded-full bg-violet-500 animate-pulse" />
-              <span className="font-mono text-sm tabular-nums text-foreground">
-                {formatTime(elapsed)}
-              </span>
-              <button
-                onClick={() => stopRecording(false)}
-                className="flex-1 text-right text-sm text-violet-500 font-medium active:opacity-70"
-              >
-                Отмена
-              </button>
+            <div
+              className="flex-1 rounded-full p-px"
+              style={{
+                background: SHIMMER_BG,
+                backgroundSize: '300% 300%',
+                animation: 'qab-shimmer 2s ease infinite',
+                boxShadow: '0 0 14px rgba(139, 92, 246, 0.35)',
+              }}
+            >
+              <div className="flex items-center gap-3 bg-card border border-violet-500 dark:border-violet-600 rounded-full px-4 h-12">
+                <div className="w-2 h-2 shrink-0 rounded-full bg-violet-500 animate-pulse" />
+                <span className="font-mono text-sm tabular-nums text-foreground">
+                  {formatTime(elapsed)}
+                </span>
+                <button
+                  onClick={() => stopRecording(false)}
+                  className="flex-1 text-right text-sm text-violet-500 font-medium active:opacity-70"
+                >
+                  Отмена
+                </button>
+              </div>
             </div>
 
             {/* Pause above Send */}
@@ -349,14 +369,20 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
           <>
             <div
               ref={inputContainerRef}
-              className="flex-1 relative"
+              className="flex-1 relative rounded-full p-px"
+              style={{
+                background: SHIMMER_BG,
+                backgroundSize: '300% 300%',
+                animation: 'qab-shimmer 2s ease infinite',
+                boxShadow: '0 0 14px rgba(139, 92, 246, 0.35)',
+              }}
               onPointerDown={handleInputPointerDown}
               onPointerMove={handleInputPointerMove}
               onPointerUp={handleInputPointerUp}
               onPointerCancel={handleInputPointerUp}
             >
               <div
-                className="flex items-center gap-3 bg-card border border-violet-400 dark:border-violet-500 rounded-full px-4 h-12"
+                className="flex items-center gap-3 bg-card rounded-full px-4 h-12"
                 style={{
                   transform: `translateX(-${swipeOffset}px)`,
                   transition: swipeOffset === 0 ? 'transform 0.2s ease' : 'none',
