@@ -11,6 +11,7 @@ export const Budgets = () => {
   const [periodFilter, setPeriodFilter] = useState<'month' | 'week'>('month');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState<Budget | undefined>(undefined);
+  const [deletingBudgetId, setDeletingBudgetId] = useState<number | null>(null);
 
   const { budgets, add, update, remove } = useBudgets();
   const { categories } = useCategories();
@@ -59,10 +60,10 @@ export const Budgets = () => {
   };
 
   // Удалить бюджет
-  const handleDeleteBudget = async (budgetId: number) => {
-    if (window.confirm('Удалить этот бюджет?')) {
-      await remove(budgetId);
-    }
+  const handleDeleteConfirm = async () => {
+    if (deletingBudgetId === null) return;
+    await remove(deletingBudgetId);
+    setDeletingBudgetId(null);
   };
 
   // Получаем цвет прогресс-бара
@@ -179,7 +180,7 @@ export const Budgets = () => {
                     <Edit2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                   </button>
                   <button
-                    onClick={() => handleDeleteBudget(budget.id!)}
+                    onClick={() => setDeletingBudgetId(budget.id!)}
                     className="w-8 h-8 bg-red-100 dark:bg-red-950 rounded-lg flex items-center justify-center hover:bg-red-200 dark:hover:bg-red-900 transition-colors"
                   >
                     <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
@@ -239,6 +240,29 @@ export const Budgets = () => {
         onSubmit={handleSubmit}
         initialData={editingBudget}
       />
+
+      {deletingBudgetId !== null && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-2xl p-6 max-w-sm w-full">
+            <h3 className="text-lg font-bold mb-2">Удалить бюджет?</h3>
+            <p className="text-muted-foreground mb-6">Это действие нельзя отменить.</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeletingBudgetId(null)}
+                className="flex-1 py-3 bg-muted rounded-xl font-medium"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                className="flex-1 py-3 bg-red-600 text-white rounded-xl font-medium"
+              >
+                Удалить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

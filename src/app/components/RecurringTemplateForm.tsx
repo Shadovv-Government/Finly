@@ -126,9 +126,9 @@ export const RecurringTemplateForm: React.FC<RecurringTemplateFormProps> = ({
           <div className="flex gap-2 p-1 bg-muted rounded-xl">
             <button
               onClick={() => setType('expense')}
-              className={`flex-1 py-3 rounded-lg font-medium transition-colors ${
+              className={`flex-1 py-2 rounded-lg font-medium transition-all ${
                 type === 'expense'
-                  ? 'bg-white dark:bg-card shadow-sm text-red-600 dark:text-red-400'
+                  ? 'bg-red-600 text-white'
                   : 'text-muted-foreground'
               }`}
             >
@@ -136,9 +136,9 @@ export const RecurringTemplateForm: React.FC<RecurringTemplateFormProps> = ({
             </button>
             <button
               onClick={() => setType('income')}
-              className={`flex-1 py-3 rounded-lg font-medium transition-colors ${
+              className={`flex-1 py-2 rounded-lg font-medium transition-all ${
                 type === 'income'
-                  ? 'bg-white dark:bg-card shadow-sm text-green-600 dark:text-green-400'
+                  ? 'bg-green-600 text-white'
                   : 'text-muted-foreground'
               }`}
             >
@@ -202,15 +202,15 @@ export const RecurringTemplateForm: React.FC<RecurringTemplateFormProps> = ({
         {/* Интервал */}
         <div className="px-4 py-4">
           <label className="text-sm font-medium mb-3 block">Интервал</label>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-xl">
             {RECURRING_INTERVALS.map((int) => (
               <button
                 key={int}
                 onClick={() => setInterval(int)}
-                className={`flex items-center gap-2 py-3 px-4 rounded-xl font-medium transition-all ${
+                className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium transition-all ${
                   interval === int
-                    ? 'bg-violet-600 text-white'
-                    : 'bg-muted text-muted-foreground hover:bg-accent'
+                    ? 'bg-white dark:bg-card shadow-sm text-violet-600 dark:text-violet-400'
+                    : 'text-muted-foreground'
                 }`}
               >
                 <Clock className="w-4 h-4" />

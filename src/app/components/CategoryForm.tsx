@@ -159,23 +159,23 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
         {!initialData && (
           <div className="px-4 py-4">
             <label className="text-sm font-medium mb-3 block">Тип</label>
-            <div className="flex gap-3">
+            <div className="flex gap-2 p-1 bg-muted rounded-xl">
               <button
                 onClick={() => setSelectedType('expense')}
-                className={`flex-1 py-3 rounded-xl font-medium transition-colors ${
+                className={`flex-1 py-2 rounded-lg font-medium transition-all ${
                   selectedType === 'expense'
-                    ? 'bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400 border-2 border-red-600'
-                    : 'bg-muted text-muted-foreground border-2 border-transparent'
+                    ? 'bg-red-600 text-white'
+                    : 'text-muted-foreground'
                 }`}
               >
                 Расход
               </button>
               <button
                 onClick={() => setSelectedType('income')}
-                className={`flex-1 py-3 rounded-xl font-medium transition-colors ${
+                className={`flex-1 py-2 rounded-lg font-medium transition-all ${
                   selectedType === 'income'
-                    ? 'bg-green-100 dark:bg-green-950 text-green-600 dark:text-green-400 border-2 border-green-600'
-                    : 'bg-muted text-muted-foreground border-2 border-transparent'
+                    ? 'bg-green-600 text-white'
+                    : 'text-muted-foreground'
                 }`}
               >
                 Доход

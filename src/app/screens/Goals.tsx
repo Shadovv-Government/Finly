@@ -14,6 +14,7 @@ export const Goals = () => {
   const [isContributeOpen, setIsContributeOpen] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
   const [userBalance, setUserBalance] = useState<number>(0);
+  const [deletingGoal, setDeletingGoal] = useState<Goal | null>(null);
 
   const handleCreateGoal = async (goal: Omit<Goal, 'id'>) => {
     await createGoal(goal);
@@ -38,9 +39,13 @@ export const Goals = () => {
   };
 
   const handleDeleteGoal = (goal: Goal) => {
-    if (window.confirm(`Вы уверены, что хотите удалить цель "${goal.name}"?`)) {
-      removeGoal(goal.id!);
-    }
+    setDeletingGoal(goal);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingGoal) return;
+    await removeGoal(deletingGoal.id!);
+    setDeletingGoal(null);
   };
 
   const openEdit = (goal: Goal) => {
@@ -242,6 +247,31 @@ export const Goals = () => {
         onSubmit={handleEditGoal}
         initialData={selectedGoal || undefined}
       />
+
+      {deletingGoal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-2xl p-6 max-w-sm w-full">
+            <h3 className="text-lg font-bold mb-2">Удалить цель?</h3>
+            <p className="text-muted-foreground mb-6">
+              Вы уверены, что хотите удалить цель "{deletingGoal.name}"? Это действие нельзя отменить.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeletingGoal(null)}
+                className="flex-1 py-3 bg-muted rounded-xl font-medium"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                className="flex-1 py-3 bg-red-600 text-white rounded-xl font-medium"
+              >
+                Удалить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ContributeBottomSheet
         isOpen={isContributeOpen}

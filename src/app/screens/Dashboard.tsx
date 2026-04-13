@@ -245,7 +245,7 @@ export const Dashboard = () => {
       <div className="px-4 py-4">
         <div className="grid grid-cols-2 gap-3">
           <Link to="/budgets" className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3 hover:bg-muted transition-colors">
-            <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-950 flex items-center justify-center">
+            <div className="w-10 h-10 shrink-0 rounded-xl bg-red-100 dark:bg-red-950 flex items-center justify-center">
               <DollarSign className="w-5 h-5 text-red-600 dark:text-red-400" />
             </div>
             <div>
@@ -255,7 +255,7 @@ export const Dashboard = () => {
           </Link>
 
           <Link to="/goals" className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3 hover:bg-muted transition-colors">
-            <div className="w-10 h-10 rounded-xl bg-green-100 dark:bg-green-950 flex items-center justify-center">
+            <div className="w-10 h-10 shrink-0 rounded-xl bg-green-100 dark:bg-green-950 flex items-center justify-center">
               <Target className="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
             <div>
@@ -265,7 +265,7 @@ export const Dashboard = () => {
           </Link>
 
           <Link to="/categories" className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3 hover:bg-muted transition-colors">
-            <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-950 flex items-center justify-center">
+            <div className="w-10 h-10 shrink-0 rounded-xl bg-blue-100 dark:bg-blue-950 flex items-center justify-center">
               <Folder className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
@@ -275,7 +275,7 @@ export const Dashboard = () => {
           </Link>
 
           <Link to="/recurring" className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3 hover:bg-muted transition-colors">
-            <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-950 flex items-center justify-center">
+            <div className="w-10 h-10 shrink-0 rounded-xl bg-orange-100 dark:bg-orange-950 flex items-center justify-center">
               <Repeat2 className="w-5 h-5 text-orange-600 dark:text-orange-400" />
             </div>
             <div>
@@ -285,7 +285,7 @@ export const Dashboard = () => {
           </Link>
 
           <Link to="/ai-assistant" className="col-span-2 bg-card border border-border rounded-2xl p-4 flex items-center gap-3 hover:bg-muted transition-colors">
-            <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-950 flex items-center justify-center">
+            <div className="w-10 h-10 shrink-0 rounded-xl bg-violet-100 dark:bg-violet-950 flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-violet-600 dark:text-violet-400" />
             </div>
             <div>

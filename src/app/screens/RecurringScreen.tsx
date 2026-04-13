@@ -19,6 +19,7 @@ export const Recurring = () => {
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<RecurringTemplate | undefined>(undefined);
+  const [deletingTemplateId, setDeletingTemplateId] = useState<number | null>(null);
 
   const handleAdd = () => {
     setEditingTemplate(undefined);
@@ -38,10 +39,14 @@ export const Recurring = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (window.confirm('Удалить этот шаблон?')) {
-      await remove(id);
-    }
+  const handleDelete = (id: number) => {
+    setDeletingTemplateId(id);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (deletingTemplateId === null) return;
+    await remove(deletingTemplateId);
+    setDeletingTemplateId(null);
   };
 
   const handleToggleActive = async (id: number, isActive: boolean) => {
@@ -227,6 +232,29 @@ export const Recurring = () => {
           </div>
         );
       })()}
+
+      {deletingTemplateId !== null && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-2xl p-6 max-w-sm w-full">
+            <h3 className="text-lg font-bold mb-2">Удалить шаблон?</h3>
+            <p className="text-muted-foreground mb-6">Это действие нельзя отменить.</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeletingTemplateId(null)}
+                className="flex-1 py-3 bg-muted rounded-xl font-medium"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                className="flex-1 py-3 bg-red-600 text-white rounded-xl font-medium"
+              >
+                Удалить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Form */}
       <RecurringTemplateForm

@@ -117,17 +117,17 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
       {/* Category Grid */}
       <div className="px-4 py-4">
         <h3 className="text-sm font-medium mb-3">Категория</h3>
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto p-2 bg-muted rounded-xl">
           {filteredCategories.map(category => {
             const isSelected = formData.categoryId === category.id;
             return (
               <button
                 key={category.id}
                 onClick={() => setFormData(prev => ({ ...prev, categoryId: category.id }))}
-                className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all ${
+                className={`flex flex-col items-center gap-2 p-2 rounded-lg transition-all ${
                   isSelected
-                    ? 'ring-2 ring-violet-600'
-                    : 'bg-card border border-border'
+                    ? 'bg-violet-100 dark:bg-violet-950 ring-2 ring-violet-600'
+                    : 'hover:bg-accent'
                 }`}
               >
                 <div
