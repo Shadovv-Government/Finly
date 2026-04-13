@@ -62,7 +62,7 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
   // Restore pointer capture after re-render when recording starts
   useEffect(() => {
     if (isRecording && !isLocked && buttonRef.current && activePointerIdRef.current !== null) {
-      try { buttonRef.current.setPointerCapture(activePointerIdRef.current); } catch (_) {}
+      try { buttonRef.current.setPointerCapture(activePointerIdRef.current); } catch { /* ignore */ }
     }
   }, [isRecording, isLocked]);
 
@@ -140,8 +140,8 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
       setIsPaused(false);
       try {
         r.start();
-      } catch (_) {
-        setTimeout(() => { try { r.start(); } catch (_) {} }, 120);
+      } catch {
+        setTimeout(() => { try { r.start(); } catch { /* ignore */ } }, 120);
       }
     } else {
       pausedElapsedRef.current = elapsed;
