@@ -10,6 +10,14 @@ import {
   RecurringTemplate,
   AIPattern,
 } from './types';
+import {
+  validateTransaction,
+  validateCategory,
+  validateBudget,
+  validateGoal,
+  validateRecurringTemplate,
+  validateAIPattern,
+} from './validators';
 
 // Строго типизированные настройки
 export interface AppSettings {
@@ -51,6 +59,20 @@ export interface ImportResult {
   warnings: string[];
 }
 
+// Ключи биометрии не экспортируются — они привязаны к конкретному устройству
+const BIOMETRIC_SETTING_KEYS = new Set([
+  'biometric_enabled',
+  'biometric_credential_id',
+  'biometric_last_active',
+]);
+
+// Разрешённые ключи настроек при импорте
+const ALLOWED_SETTING_KEYS = new Set<string>([
+  'theme',
+  'baseCurrency',
+  'onboardingComplete',
+]);
+
 // ==================== Export ====================
 
 /**
@@ -83,7 +105,7 @@ export async function exportData(): Promise<ExportData> {
     budgets,
     goals,
     recurringTemplates,
-    settings,
+    settings: settings.filter(s => !BIOMETRIC_SETTING_KEYS.has(s.key)),
     aiPatterns,
   };
 }
@@ -199,6 +221,12 @@ export async function importData(
 
       for (const category of data.categories) {
         try {
+          const validation = validateCategory(category as Partial<Category>);
+          if (!validation.isValid) {
+            result.errors.push(`Invalid category "${category.name}": ${validation.errors.join('; ')}`);
+            continue;
+          }
+
           if (existingIds.has(category.id) && !mergeCategories) {
             result.warnings.push(`Category "${category.name}" already exists, skipped`);
             continue;
@@ -220,6 +248,12 @@ export async function importData(
     if (data.transactions?.length) {
       for (const transaction of data.transactions) {
         try {
+          const validation = validateTransaction(transaction as Partial<Transaction>);
+          if (!validation.isValid) {
+            result.errors.push(`Invalid transaction: ${validation.errors.join('; ')}`);
+            continue;
+          }
+
           // Проверяем категорию (если указана)
           if (transaction.categoryId) {
             const category = await db.categories.get(transaction.categoryId);
@@ -243,6 +277,11 @@ export async function importData(
     if (data.budgets?.length) {
       for (const budget of data.budgets) {
         try {
+          const validation = validateBudget(budget as Partial<Budget>);
+          if (!validation.isValid) {
+            result.errors.push(`Invalid budget: ${validation.errors.join('; ')}`);
+            continue;
+          }
           await db.budgets.add(budget);
           result.imported.budgets++;
         } catch (error) {
@@ -255,6 +294,11 @@ export async function importData(
     if (data.goals?.length) {
       for (const goal of data.goals) {
         try {
+          const validation = validateGoal(goal as Partial<Goal>);
+          if (!validation.isValid) {
+            result.errors.push(`Invalid goal: ${validation.errors.join('; ')}`);
+            continue;
+          }
           await db.goals.add(goal);
           result.imported.goals++;
         } catch (error) {
@@ -267,6 +311,11 @@ export async function importData(
     if (data.recurringTemplates?.length) {
       for (const template of data.recurringTemplates) {
         try {
+          const validation = validateRecurringTemplate(template as Partial<RecurringTemplate>);
+          if (!validation.isValid) {
+            result.errors.push(`Invalid recurring template: ${validation.errors.join('; ')}`);
+            continue;
+          }
           await db.recurringTemplates.add(template);
           result.imported.recurringTemplates++;
         } catch (error) {
@@ -275,10 +324,18 @@ export async function importData(
       }
     }
 
-    // Импортируем настройки
+    // Импортируем настройки (только разрешённые ключи, биометрия исключена)
     if (data.settings?.length) {
       for (const setting of data.settings) {
         try {
+          if (BIOMETRIC_SETTING_KEYS.has(setting.key)) {
+            result.warnings.push(`Biometric setting "${setting.key}" skipped (device-specific)`);
+            continue;
+          }
+          if (!ALLOWED_SETTING_KEYS.has(setting.key)) {
+            result.warnings.push(`Unknown setting "${setting.key}" skipped`);
+            continue;
+          }
           if (mergeSettings) {
             await db.settings.put(setting);
           } else {
@@ -298,6 +355,11 @@ export async function importData(
     if (data.aiPatterns?.length) {
       for (const pattern of data.aiPatterns) {
         try {
+          const validation = validateAIPattern(pattern as Partial<AIPattern>);
+          if (!validation.isValid) {
+            result.errors.push(`Invalid AI pattern: ${validation.errors.join('; ')}`);
+            continue;
+          }
           await db.aiPatterns.add(pattern);
           result.imported.aiPatterns++;
         } catch (error) {

@@ -23,6 +23,7 @@ import {
   MAX_PATTERN_LENGTH,
   MIN_AI_CONFIDENCE,
   MAX_AI_CONFIDENCE,
+  MAX_AI_USAGE_COUNT,
 } from '../app/constants';
 
 export interface ValidationResult {
@@ -445,6 +446,8 @@ export function validateAIPattern(
       errors.push('Usage count must be a number');
     } else if (data.usageCount < 0) {
       errors.push('Usage count cannot be negative');
+    } else if (data.usageCount > MAX_AI_USAGE_COUNT) {
+      errors.push(`Usage count exceeds maximum (${MAX_AI_USAGE_COUNT})`);
     }
   }
 

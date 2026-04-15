@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   getBalanceByPeriod,
   getExpensesByCategory,
@@ -78,7 +78,7 @@ export function useAnalytics(options: UseAnalyticsOptions = {}) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadAnalytics = async () => {
+  const loadAnalytics = useCallback(async () => {
     try {
       setLoading(true);
       const range = startDate && endDate
@@ -118,11 +118,11 @@ export function useAnalytics(options: UseAnalyticsOptions = {}) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [period, startDate, endDate]);
 
   useEffect(() => {
     loadAnalytics();
-  }, [period, startDate, endDate]);
+  }, [loadAnalytics]);
 
   return {
     balance,

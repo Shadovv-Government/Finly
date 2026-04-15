@@ -18,7 +18,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   // Process recurring payments on app start
   useEffect(() => {
     if (!isLoading) {
-      processRecurringIfNeeded();
+      processRecurringIfNeeded().catch(() => {});
     }
   }, [isLoading]);
 

@@ -107,6 +107,9 @@ export const MIN_AI_CONFIDENCE = 0.1;
 /** Максимальная уверенность паттерна */
 export const MAX_AI_CONFIDENCE = 1;
 
+/** Максимальное количество использований паттерна (ограничение для log-скоринга) */
+export const MAX_AI_USAGE_COUNT = 10_000;
+
 // ==================== Стоп-слова для AI ====================
 
 export const AI_STOP_WORDS = new Set([

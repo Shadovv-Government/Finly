@@ -17,7 +17,8 @@ interface ParsedResult {
 }
 
 function CategoryIcon({ name, className, color }: { name: string; className?: string; color?: string }) {
-  const IconComponent = (LucideIcons as any)[name] || LucideIcons.Wallet;
+  const icons = LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>>;
+  const IconComponent = Object.prototype.hasOwnProperty.call(icons, name) ? icons[name] : LucideIcons.Wallet;
   return <IconComponent className={className} style={{ color }} />;
 }
 

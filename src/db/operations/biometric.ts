@@ -23,7 +23,12 @@ export async function getBiometricSettings(): Promise<BiometricSettings> {
   };
 }
 
-export async function setBiometricSetting<T>(key: string, value: T): Promise<void> {
+type BiometricSettingKey =
+  | 'biometric_enabled'
+  | 'biometric_credential_id'
+  | 'biometric_last_active';
+
+export async function setBiometricSetting<T>(key: BiometricSettingKey, value: T): Promise<void> {
   await setSetting(key, value);
 }
 

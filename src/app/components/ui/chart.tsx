@@ -69,37 +69,57 @@ function ChartContainer({
   );
 }
 
+// Допускаем только валидные CSS color-значения: hex, rgb(), rgba(), hsl(), hsla(), именованные
+function sanitizeCssColor(value: string): string | null {
+  const trimmed = value.trim();
+  if (
+    /^#[0-9a-fA-F]{3,8}$/.test(trimmed) ||
+    /^rgba?\([^)]+\)$/.test(trimmed) ||
+    /^hsla?\([^)]+\)$/.test(trimmed) ||
+    /^[a-zA-Z]+$/.test(trimmed)
+  ) {
+    return trimmed;
+  }
+  return null;
+}
+
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
+  const styleRef = React.useRef<HTMLStyleElement>(null);
+
   const colorConfig = Object.entries(config).filter(
     ([, config]) => config.theme || config.color,
   );
+
+  React.useEffect(() => {
+    if (!styleRef.current || !colorConfig.length) return;
+
+    const css = Object.entries(THEMES)
+      .map(
+        ([theme, prefix]) => `
+${prefix} [data-chart=${id}] {
+${colorConfig
+  .map(([key, itemConfig]) => {
+    const rawColor =
+      itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
+      itemConfig.color;
+    const color = rawColor ? sanitizeCssColor(rawColor) : null;
+    return color ? `  --color-${key}: ${color};` : null;
+  })
+  .filter(Boolean)
+  .join("\n")}
+}
+`,
+      )
+      .join("\n");
+
+    styleRef.current.textContent = css;
+  });
 
   if (!colorConfig.length) {
     return null;
   }
 
-  return (
-    <style
-      dangerouslySetInnerHTML={{
-        __html: Object.entries(THEMES)
-          .map(
-            ([theme, prefix]) => `
-${prefix} [data-chart=${id}] {
-${colorConfig
-  .map(([key, itemConfig]) => {
-    const color =
-      itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
-      itemConfig.color;
-    return color ? `  --color-${key}: ${color};` : null;
-  })
-  .join("\n")}
-}
-`,
-          )
-          .join("\n"),
-      }}
-    />
-  );
+  return <style ref={styleRef} />;
 };
 
 const ChartTooltip = RechartsPrimitive.Tooltip;

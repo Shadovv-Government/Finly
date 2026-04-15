@@ -20,6 +20,8 @@ export const LockScreen = () => {
     } catch (err: unknown) {
       const newCount = failureCount + 1;
       setFailureCount(newCount);
+      const backoff = Math.min(5000 * Math.pow(2, newCount - 1), 120000);
+      setCooldownUntil(Date.now() + backoff);
       if (err instanceof Error && err.name === 'NotAllowedError') {
         setError('Биометрия отменена или недоступна');
       } else if (err instanceof Error && (err.name === 'NotFoundError' || err.name === 'InvalidStateError')) {
@@ -33,7 +35,16 @@ export const LockScreen = () => {
     }
   };
 
+  const [cooldownUntil, setCooldownUntil] = useState(0);
+
   const handleForceDisable = async () => {
+    if (Date.now() < cooldownUntil) return;
+
+    const confirmed = window.confirm(
+      'Отключить биометрическую защиту? Все финансовые данные станут доступны без подтверждения.'
+    );
+    if (!confirmed) return;
+
     await biometric.disable();
   };
 
