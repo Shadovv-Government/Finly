@@ -129,30 +129,43 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({ onClose }) => {
 
   const buildResult = async (text: string, fromVoice: boolean): Promise<ParsedResult | null> => {
     const parsed = parseNaturalLanguage(text);
-    if (!parsed) return null;
+    console.log(`[parser] input: "${text}"`);
+    if (!parsed) {
+      console.warn('[parser] amount не найден — транзакция не распознана');
+      return null;
+    }
+    console.log(`[parser] amount=${parsed.amount} type=${parsed.type} comment="${parsed.comment}" date=${parsed.date ? new Date(parsed.date).toLocaleDateString('ru-RU') : 'нет'} currency=${parsed.currency}`);
 
     let category: Category | undefined;
     let mlConfidence: number | undefined;
     let type = parsed.type;
 
-    const mlResult = mlReady ? classify(parsed.comment ?? text) : null;
+    const mlInput = parsed.comment ?? text;
+    console.log(`[ML] mlReady=${mlReady}, вход для classify: "${mlInput}"`);
+    const mlResult = mlReady ? classify(mlInput) : null;
     if (mlResult && mlResult.confidence > 0.4) {
       category = categories.find(c => c.name.toLowerCase() === mlResult.categoryName.toLowerCase());
       mlConfidence = mlResult.confidence;
+      console.log(`[parser] ML категория: "${mlResult.categoryName}" → в БД: ${category?.name ?? 'НЕ НАЙДЕНА'}`);
       if (parsed.type === 'expense' && mlResult.type === 'income') {
         const hasIncomeHint = /получил|получила|пришла|зп|зарплата|доход|подарок|возврат/i.test(text);
         if (!hasIncomeHint) type = mlResult.type;
       }
+    } else {
+      console.log(`[parser] ML не использован (mlResult=${JSON.stringify(mlResult)})`);
     }
 
     if (!category) {
       const match = await findBestMatch(text);
       if (match) {
         category = categories.find(c => c.id === match.pattern.categoryId);
+        console.log(`[parser] rule-based match: "${match.pattern.pattern}" → ${category?.name}`);
+      } else {
+        console.log('[parser] нет совпадений в rule-based — категория не определена');
       }
-      // Не берём первую категорию типа как fallback — оставляем undefined,
-      // чтобы пользователь видел незаполненную категорию и выбрал сам
     }
+
+    console.log(`[parser] итог: amount=${parsed.amount} type=${type} category=${category?.name ?? 'не задана'} mlConf=${mlConfidence ? (mlConfidence * 100).toFixed(0) + '%' : 'n/a'}`);
 
     return {
       amount: parsed.amount,

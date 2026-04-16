@@ -116,6 +116,13 @@ export function useMLModel() {
 
       try {
         const vec = tfidfTransform(text, cachedTFIDF);
+        const nonZero = vec.filter(v => v !== 0).length;
+        console.log(`[ML] input: "${text}" → non-zero features: ${nonZero}/${vec.length}`);
+
+        if (nonZero === 0) {
+          console.warn('[ML] вектор полностью нулевой — текст не содержит знакомых n-gram. Проверь vocab.');
+        }
+
         const input = cachedTF.tensor2d([Array.from(vec)]);
         // TF.js возвращает Tensor[] для multi-output моделей, не NamedTensorMap
         const raw = cachedModel.predict(input);
@@ -130,19 +137,22 @@ export function useMLModel() {
         catTensor.dispose();
         typeTensor?.dispose();
 
-      const catIdx = catProbs.indexOf(Math.max(...catProbs));
-      const categoryName = cachedClassMap[String(catIdx)] ?? '';
-      const type: 'income' | 'expense' = typeProb > 0.5 ? 'income' : 'expense';
-      const confidence = catProbs[catIdx];
+        const catIdx = catProbs.indexOf(Math.max(...catProbs));
+        const categoryName = cachedClassMap[String(catIdx)] ?? '';
+        const type: 'income' | 'expense' = typeProb > 0.5 ? 'income' : 'expense';
+        const confidence = catProbs[catIdx];
 
-      const top3 = catProbs
-        .map((p, i) => ({ categoryName: cachedClassMap![String(i)] ?? '', prob: p }))
-        .sort((a, b) => b.prob - a.prob)
-        .slice(0, 3);
+        const top3 = catProbs
+          .map((p, i) => ({ categoryName: cachedClassMap![String(i)] ?? '', prob: p }))
+          .sort((a, b) => b.prob - a.prob)
+          .slice(0, 3);
+
+        console.log(`[ML] результат: ${categoryName} (${(confidence * 100).toFixed(1)}%) | type: ${type} (${(typeProb * 100).toFixed(1)}%)`);
+        console.log('[ML] top-3:', top3.map(t => `${t.categoryName} ${(t.prob * 100).toFixed(1)}%`).join(', '));
 
         return { categoryName, type, confidence, top3 };
       } catch (e) {
-        console.error('[useMLModel] classify error:', e);
+        console.error('[ML] classify error:', e);
         return null;
       }
     },
