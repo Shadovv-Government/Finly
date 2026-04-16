@@ -114,16 +114,21 @@ export function useMLModel() {
     (text: string): MLClassifyResult | null => {
       if (!cachedTF || !cachedModel || !cachedTFIDF || !cachedClassMap) return null;
 
-      const vec = tfidfTransform(text, cachedTFIDF);
-      const input = cachedTF.tensor2d([Array.from(vec)]);
-      const output = cachedModel.predict(input) as unknown as Record<string, TFType.Tensor>;
+      try {
+        const vec = tfidfTransform(text, cachedTFIDF);
+        const input = cachedTF.tensor2d([Array.from(vec)]);
+        // TF.js возвращает Tensor[] для multi-output моделей, не NamedTensorMap
+        const raw = cachedModel.predict(input);
+        const outputs = (Array.isArray(raw) ? raw : [raw]) as TFType.Tensor[];
+        const catTensor  = outputs[0]; // category_output
+        const typeTensor = outputs[1]; // type_output
 
-      const catProbs = Array.from(output['category_output'].dataSync() as Float32Array);
-      const typeProb = output['type_output'].dataSync()[0];
+        const catProbs = Array.from(catTensor.dataSync() as Float32Array);
+        const typeProb = typeTensor.dataSync()[0];
 
-      input.dispose();
-      output['category_output'].dispose();
-      output['type_output'].dispose();
+        input.dispose();
+        catTensor.dispose();
+        typeTensor?.dispose();
 
       const catIdx = catProbs.indexOf(Math.max(...catProbs));
       const categoryName = cachedClassMap[String(catIdx)] ?? '';
@@ -135,7 +140,11 @@ export function useMLModel() {
         .sort((a, b) => b.prob - a.prob)
         .slice(0, 3);
 
-      return { categoryName, type, confidence, top3 };
+        return { categoryName, type, confidence, top3 };
+      } catch (e) {
+        console.error('[useMLModel] classify error:', e);
+        return null;
+      }
     },
     [ready], // eslint-disable-line react-hooks/exhaustive-deps
   );

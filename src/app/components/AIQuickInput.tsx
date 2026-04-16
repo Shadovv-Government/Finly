@@ -143,9 +143,11 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({ onClose }) => {
 
     if (!category) {
       const match = await findBestMatch(text);
-      category = match
-        ? categories.find(c => c.id === match.pattern.categoryId)
-        : categories.find(c => c.type === type);
+      if (match) {
+        category = categories.find(c => c.id === match.pattern.categoryId);
+      }
+      // Не берём первую категорию типа как fallback — оставляем undefined,
+      // чтобы пользователь видел незаполненную категорию и выбрал сам
     }
 
     return {
