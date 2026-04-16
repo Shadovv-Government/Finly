@@ -43,28 +43,29 @@ function charNgrams(text: string, n: number): string[] {
   return grams;
 }
 
-// ─── TF-IDF трансформ (реплика Python TfidfVectorizer) ──────────────────────
+// ─── TF-IDF трансформ — точная реплика sklearn TfidfVectorizer ───────────────
+// sklearn с sublinear_tf=True: tf = 1 + log(raw_count), затем умножить на idf,
+// затем L2-нормализация. НЕ делить count на длину документа — это ошибка
+// в JS-сниппете из ноутбука.
 function tfidfTransform(text: string, params: TFIDFParams): Float32Array {
   const { vocab, idf, ngram_range, max_features, sublinear_tf } = params;
   const [minN, maxN] = ngram_range;
   const counts: Record<string, number> = {};
-  let total = 0;
 
   for (let n = minN; n <= maxN; n++) {
     for (const gram of charNgrams(text.toLowerCase(), n)) {
       if (Object.prototype.hasOwnProperty.call(vocab, gram)) {
         counts[gram] = (counts[gram] ?? 0) + 1;
-        total++;
       }
     }
   }
-  if (total === 0) total = 1;
 
   const vector = new Float32Array(max_features);
   for (const [gram, cnt] of Object.entries(counts)) {
     const idx = vocab[gram];
     if (idx !== undefined) {
-      const tf = sublinear_tf ? Math.log(1 + cnt / total) : cnt / total;
+      // sklearn sublinear_tf: replace tf with 1 + log(tf), natural log
+      const tf = sublinear_tf ? 1 + Math.log(cnt) : cnt;
       vector[idx] = tf * idf[idx];
     }
   }

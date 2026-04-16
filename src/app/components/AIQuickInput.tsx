@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Mic, MicOff, Send, Sparkles, MessageSquare, Brain } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { parseNaturalLanguage, findBestMatch } from '../../db/ai';
@@ -8,6 +8,8 @@ import { useTransactions } from '../hooks/useTransactions';
 import { useNotifications } from '../hooks/useNotifications';
 import { useBudgetNotifications } from '../hooks/useBudgetNotifications';
 import { Category } from '../../db/types';
+
+const AUTO_SUBMIT_DELAY = 2; // секунды до автоотправки после голоса
 
 interface ParsedResult {
   amount: number;
@@ -36,8 +38,13 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({ onClose }) => {
   const [parsedResult, setParsedResult] = useState<ParsedResult | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [statusText, setStatusText] = useState('Нажмите для записи');
+  const [countdown, setCountdown] = useState<number | null>(null);
 
   const recognitionRef = useRef<any>(null);
+  const autoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pendingResultRef = useRef<ParsedResult | null>(null);
+
   const { categories } = useCategories();
   const { add } = useTransactions();
   const { notifyTransaction } = useNotifications();
@@ -47,35 +54,93 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({ onClose }) => {
   const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
   const hasVoice = !!SpeechRecognitionAPI;
 
-  const parseText = async (text: string) => {
-    const parsed = parseNaturalLanguage(text);
-    if (!parsed) {
-      setStatusText('Не удалось распознать. Попробуйте ещё раз.');
-      return;
+  // Очищаем таймеры при анмаунте
+  useEffect(() => {
+    return () => {
+      clearAutoSubmit();
+    };
+  }, []);
+
+  const clearAutoSubmit = () => {
+    if (autoTimerRef.current) { clearTimeout(autoTimerRef.current); autoTimerRef.current = null; }
+    if (countdownIntervalRef.current) { clearInterval(countdownIntervalRef.current); countdownIntervalRef.current = null; }
+    setCountdown(null);
+  };
+
+  // Сохранение транзакции (принимает result напрямую для авто-отправки)
+  const doSave = useCallback(async (result: ParsedResult) => {
+    clearAutoSubmit();
+    setIsAdding(true);
+    try {
+      const category = result.category ?? categories.find(c => c.type === result.type);
+      await add({
+        amount: result.amount,
+        type: result.type,
+        categoryId: category?.id ?? categories[0]?.id,
+        date: result.date ?? Date.now(),
+        comment: result.comment,
+        currency: result.currency,
+        rate: 1,
+      });
+      notifyTransaction(result.type, result.amount, category?.name ?? 'Без категории');
+      await checkBudgets();
+      onClose();
+    } catch {
+      setIsAdding(false);
     }
+  }, [categories, add, notifyTransaction, checkBudgets, onClose]);
+
+  const handleSave = () => {
+    if (parsedResult) doSave(parsedResult);
+  };
+
+  // Запускаем обратный отсчёт и авто-отправку после голосового ввода
+  const startAutoSubmit = (result: ParsedResult) => {
+    pendingResultRef.current = result;
+    setCountdown(AUTO_SUBMIT_DELAY);
+
+    countdownIntervalRef.current = setInterval(() => {
+      setCountdown(prev => {
+        if (prev === null || prev <= 1) {
+          clearInterval(countdownIntervalRef.current!);
+          countdownIntervalRef.current = null;
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    autoTimerRef.current = setTimeout(() => {
+      const res = pendingResultRef.current;
+      if (res) doSave(res);
+    }, AUTO_SUBMIT_DELAY * 1000);
+  };
+
+  const handleDiscard = () => {
+    clearAutoSubmit();
+    pendingResultRef.current = null;
+    setParsedResult(null);
+    setStatusText('Нажмите для записи');
+  };
+
+  const buildResult = async (text: string, fromVoice: boolean): Promise<ParsedResult | null> => {
+    const parsed = parseNaturalLanguage(text);
+    if (!parsed) return null;
 
     let category: Category | undefined;
     let mlConfidence: number | undefined;
     let type = parsed.type;
 
-    // Пробуем ML модель (если загружена)
     const mlResult = mlReady ? classify(parsed.comment ?? text) : null;
-
     if (mlResult && mlResult.confidence > 0.4) {
-      // Ищем категорию по имени (ML возвращает русское название)
-      category = categories.find(
-        c => c.name.toLowerCase() === mlResult.categoryName.toLowerCase(),
-      );
+      category = categories.find(c => c.name.toLowerCase() === mlResult.categoryName.toLowerCase());
       mlConfidence = mlResult.confidence;
-      // Тип из ML перекрывает keyword-detection только если нет явных ключевых слов
       if (parsed.type === 'expense' && mlResult.type === 'income') {
-        // Проверяем, были ли явные income-ключевые слова — если нет, доверяем ML
         const hasIncomeHint = /получил|получила|пришла|зп|зарплата|доход|подарок|возврат/i.test(text);
         if (!hasIncomeHint) type = mlResult.type;
       }
     }
 
-    // Fallback: rule-based паттерны из БД
     if (!category) {
       const match = await findBestMatch(text);
       category = match
@@ -83,7 +148,7 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({ onClose }) => {
         : categories.find(c => c.type === type);
     }
 
-    setParsedResult({
+    return {
       amount: parsed.amount,
       type,
       comment: parsed.comment,
@@ -91,7 +156,18 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({ onClose }) => {
       category,
       date: parsed.date,
       mlConfidence,
-    });
+      ...(fromVoice ? {} : {}),
+    };
+  };
+
+  const parseText = async (text: string, fromVoice = false) => {
+    const result = await buildResult(text, fromVoice);
+    if (!result) {
+      setStatusText('Не удалось распознать. Попробуйте ещё раз.');
+      return;
+    }
+    setParsedResult(result);
+    if (fromVoice) startAutoSubmit(result);
   };
 
   const startRecording = () => {
@@ -108,7 +184,7 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({ onClose }) => {
       setStatusText(transcript);
 
       if (e.results[e.results.length - 1].isFinal) {
-        parseText(transcript);
+        parseText(transcript, true);
         setIsRecording(false);
       }
     };
@@ -140,40 +216,12 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({ onClose }) => {
     if (!chatInput.trim()) return;
     const text = chatInput.trim();
     setChatInput('');
-    await parseText(text);
-  };
-
-  const handleSave = async () => {
-    if (!parsedResult) return;
-    setIsAdding(true);
-    try {
-      const category = parsedResult.category ?? categories.find(c => c.type === parsedResult.type);
-      await add({
-        amount: parsedResult.amount,
-        type: parsedResult.type,
-        categoryId: category?.id ?? categories[0]?.id,
-        date: parsedResult.date ?? Date.now(),
-        comment: parsedResult.comment,
-        currency: parsedResult.currency,
-        rate: 1,
-      });
-      notifyTransaction(parsedResult.type, parsedResult.amount, category?.name ?? 'Без категории');
-
-      // Проверяем бюджеты и отправляем push-уведомления
-      await checkBudgets();
-
-      onClose();
-    } catch {
-      setIsAdding(false);
-    }
-  };
-
-  const handleDiscard = () => {
-    setParsedResult(null);
-    setStatusText('Нажмите для записи');
+    await parseText(text, false);
   };
 
   const switchMode = (m: 'voice' | 'chat') => {
+    clearAutoSubmit();
+    pendingResultRef.current = null;
     setMode(m);
     setParsedResult(null);
     setStatusText('Нажмите для записи');
@@ -264,9 +312,13 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({ onClose }) => {
             <button
               onClick={handleSave}
               disabled={isAdding}
-              className="flex-1 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-xl text-sm font-semibold disabled:opacity-60"
+              className="flex-1 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-xl text-sm font-semibold disabled:opacity-60 transition-all"
             >
-              {isAdding ? 'Добавление...' : 'Добавить'}
+              {isAdding
+                ? 'Добавление...'
+                : countdown !== null
+                ? `Добавить (${countdown})`
+                : 'Добавить'}
             </button>
           </div>
         </div>

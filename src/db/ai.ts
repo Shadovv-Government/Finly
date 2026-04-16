@@ -133,13 +133,64 @@ export function parseNaturalLanguage(text: string): ParsedTransaction | null {
 // ─── Парсинг даты из текста ──────────────────────────────────────────────────
 
 const MONTHS: Record<string, number> = {
-  январ: 0, феврал: 1, март: 2, апрел: 3, май: 4, мая: 4,
-  июн: 5, июл: 6, август: 7, сентябр: 8, октябр: 9, ноябр: 10, декабр: 11,
+  январ: 0, янв: 0,
+  феврал: 1, фев: 1,
+  март: 2, мар: 2,
+  апрел: 3, апр: 3,
+  май: 4, мая: 4,
+  июн: 5,
+  июл: 6,
+  август: 7, авг: 7,
+  сентябр: 8, сен: 8,
+  октябр: 9, окт: 9,
+  ноябр: 10, ноя: 10,
+  декабр: 11, дек: 11,
 };
 
-// Общий паттерн для всех форм дат — используется при очистке комментария
-const DATE_PATTERN =
-  /\b(сегодня|вчера|позавчера|завтра|понедельник|вторник|сред[ау]|четверг|пятниц[ау]|суббот[ау]|воскресень[ея])\b|\b\d{1,2}[./]\d{1,2}(?:[./]\d{2,4})?\b|\b\d{1,2}\s+(?:январ|феврал|март|апрел|май|мая|июн|июл|август|сентябр|октябр|ноябр|декабр)\w*(?:\s+\d{4})?\b/gi;
+// Порядковые числительные 1-31 → число
+const ORDINALS: Record<string, number> = {
+  первого: 1, первое: 1, первому: 1,
+  второго: 2, второе: 2, второму: 2,
+  третьего: 3, третье: 3, третьему: 3,
+  четвёртого: 4, четвертого: 4, четвёртое: 4, четвертое: 4,
+  пятого: 5, пятое: 5,
+  шестого: 6, шестое: 6,
+  седьмого: 7, седьмое: 7,
+  восьмого: 8, восьмое: 8,
+  девятого: 9, девятое: 9,
+  десятого: 10, десятое: 10,
+  одиннадцатого: 11, одиннадцатое: 11,
+  двенадцатого: 12, двенадцатое: 12,
+  тринадцатого: 13, тринадцатое: 13,
+  четырнадцатого: 14, четырнадцатое: 14,
+  пятнадцатого: 15, пятнадцатое: 15,
+  шестнадцатого: 16, шестнадцатое: 16,
+  семнадцатого: 17, семнадцатое: 17,
+  восемнадцатого: 18, восемнадцатое: 18,
+  девятнадцатого: 19, девятнадцатое: 19,
+  двадцатого: 20, двадцатое: 20,
+  тридцатого: 30, тридцатое: 30,
+  тридцать: 30,
+};
+
+const MONTH_RE = '(?:январ|янв|феврал|фев|март|мар|апрел|апр|май|мая|июн|июл|август|авг|сентябр|сен|октябр|окт|ноябр|ноя|декабр|дек)';
+
+// Общий паттерн для очистки комментария от даты
+const DATE_PATTERN = new RegExp(
+  '\\b(?:сегодня|вчера|позавчера|завтра)\\b' +
+  '|\\b(?:в\\s+)?(?:прошл(?:ый|ую|ое)\\s+)?(?:понедельник|вторник|сред[ау]|четверг|пятниц[ау]|суббот[ау]|воскресень[ея])\\b' +
+  '|\\b\\d{1,2}[-./]\\d{1,2}(?:[-./]\\d{2,4})?\\b' +
+  `|\\b\\d{1,2}(?:-?го)?\\s+${MONTH_RE}\\w*(?:\\s+\\d{4})?\\b` +
+  `|\\b${MONTH_RE}\\w*\\s+\\d{1,2}(?:-?го)?\\b`,
+  'gi',
+);
+
+function matchMonth(s: string): number | undefined {
+  for (const [prefix, idx] of Object.entries(MONTHS)) {
+    if (s.startsWith(prefix)) return idx;
+  }
+  return undefined;
+}
 
 function parseDateFromText(text: string): number | undefined {
   const lower = text.toLowerCase();
@@ -151,18 +202,20 @@ function parseDateFromText(text: string): number | undefined {
   if (/\bпозавчера\b/.test(lower)) return startOfDay(addDays(now, -2)).getTime();
   if (/\bзавтра\b/.test(lower)) return startOfDay(addDays(now, 1)).getTime();
 
-  // День недели (последний прошедший)
+  // День недели (последний прошедший, в т.ч. "в пятницу", "в прошлую среду")
   const weekdays = ['воскресень', 'понедельник', 'вторник', 'сред', 'четверг', 'пятниц', 'суббот'];
   for (let i = 0; i < weekdays.length; i++) {
     if (lower.includes(weekdays[i])) {
+      const isPast = lower.includes('прошл');
       let diff = now.getDay() - i;
       if (diff <= 0) diff += 7;
+      if (isPast && diff < 7) diff += 7;
       return startOfDay(addDays(now, -diff)).getTime();
     }
   }
 
-  // ДД.ММ или ДД/ММ или ДД.ММ.ГГГГ
-  const dmMatch = text.match(/\b(\d{1,2})[./](\d{1,2})(?:[./](\d{2,4}))?\b/);
+  // ДД.ММ / ДД/ММ / ДД-ММ / ДД.ММ.ГГГГ
+  const dmMatch = lower.match(/\b(\d{1,2})[-./](\d{1,2})(?:[-./](\d{2,4}))?\b/);
   if (dmMatch) {
     const day = parseInt(dmMatch[1], 10);
     const month = parseInt(dmMatch[2], 10) - 1;
@@ -176,16 +229,29 @@ function parseDateFromText(text: string): number | undefined {
     }
   }
 
-  // "5 января" / "15 марта 2024"
-  const wordMatch = lower.match(
-    /\b(\d{1,2})\s+(январ|феврал|март|апрел|май|мая|июн|июл|август|сентябр|октябр|ноябр|декабр)\w*(?:\s+(\d{4}))?\b/,
+  // "5 января" / "15-го апреля" / "пятого марта" / "15 марта 2024"
+  const fwdMatch = lower.match(
+    new RegExp(`\\b(\\d{1,2}(?:-?го)?|${Object.keys(ORDINALS).join('|')})\\s+(${MONTH_RE})\\w*(?:\\s+(\\d{4}))?\\b`),
   );
-  if (wordMatch) {
-    const day = parseInt(wordMatch[1], 10);
-    const month = MONTHS[wordMatch[2]];
-    const year = wordMatch[3] ? parseInt(wordMatch[3], 10) : now.getFullYear();
-    if (month !== undefined && day >= 1 && day <= 31) {
+  if (fwdMatch) {
+    const dayRaw = fwdMatch[1].replace(/-?го$/, '');
+    const day = ORDINALS[dayRaw] ?? parseInt(dayRaw, 10);
+    const month = matchMonth(fwdMatch[2]);
+    const year = fwdMatch[3] ? parseInt(fwdMatch[3], 10) : now.getFullYear();
+    if (!isNaN(day) && month !== undefined && day >= 1 && day <= 31) {
       return new Date(year, month, day).getTime();
+    }
+  }
+
+  // Обратный порядок: "января 15" / "апреля 5-го"
+  const revMatch = lower.match(
+    new RegExp(`\\b(${MONTH_RE})\\w*\\s+(\\d{1,2})(?:-?го)?\\b`),
+  );
+  if (revMatch) {
+    const month = matchMonth(revMatch[1]);
+    const day = parseInt(revMatch[2], 10);
+    if (month !== undefined && day >= 1 && day <= 31) {
+      return new Date(now.getFullYear(), month, day).getTime();
     }
   }
 
