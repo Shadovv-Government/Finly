@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react';
-import { Mic, MicOff, Send, Sparkles, MessageSquare } from 'lucide-react';
+import { Mic, MicOff, Send, Sparkles, MessageSquare, Brain } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { parseNaturalLanguage, findBestMatch } from '../../db/ai';
+import { useMLModel } from '../hooks/useMLModel';
 import { useCategories } from '../hooks/useCategories';
 import { useTransactions } from '../hooks/useTransactions';
 import { useNotifications } from '../hooks/useNotifications';
@@ -14,6 +15,8 @@ interface ParsedResult {
   comment?: string;
   currency: string;
   category?: Category;
+  date?: number;
+  mlConfidence?: number;
 }
 
 function CategoryIcon({ name, className, color }: { name: string; className?: string; color?: string }) {
@@ -39,6 +42,7 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({ onClose }) => {
   const { add } = useTransactions();
   const { notifyTransaction } = useNotifications();
   const { checkBudgets } = useBudgetNotifications();
+  const { ready: mlReady, classify } = useMLModel();
 
   const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
   const hasVoice = !!SpeechRecognitionAPI;
@@ -50,17 +54,43 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({ onClose }) => {
       return;
     }
 
-    const match = await findBestMatch(text);
-    const category = match
-      ? categories.find(c => c.id === match.pattern.categoryId)
-      : categories.find(c => c.type === parsed.type);
+    let category: Category | undefined;
+    let mlConfidence: number | undefined;
+    let type = parsed.type;
+
+    // Пробуем ML модель (если загружена)
+    const mlResult = mlReady ? classify(parsed.comment ?? text) : null;
+
+    if (mlResult && mlResult.confidence > 0.4) {
+      // Ищем категорию по имени (ML возвращает русское название)
+      category = categories.find(
+        c => c.name.toLowerCase() === mlResult.categoryName.toLowerCase(),
+      );
+      mlConfidence = mlResult.confidence;
+      // Тип из ML перекрывает keyword-detection только если нет явных ключевых слов
+      if (parsed.type === 'expense' && mlResult.type === 'income') {
+        // Проверяем, были ли явные income-ключевые слова — если нет, доверяем ML
+        const hasIncomeHint = /получил|получила|пришла|зп|зарплата|доход|подарок|возврат/i.test(text);
+        if (!hasIncomeHint) type = mlResult.type;
+      }
+    }
+
+    // Fallback: rule-based паттерны из БД
+    if (!category) {
+      const match = await findBestMatch(text);
+      category = match
+        ? categories.find(c => c.id === match.pattern.categoryId)
+        : categories.find(c => c.type === type);
+    }
 
     setParsedResult({
       amount: parsed.amount,
-      type: parsed.type,
+      type,
       comment: parsed.comment,
       currency: parsed.currency || 'RUB',
       category,
+      date: parsed.date,
+      mlConfidence,
     });
   };
 
@@ -122,7 +152,7 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({ onClose }) => {
         amount: parsedResult.amount,
         type: parsedResult.type,
         categoryId: category?.id ?? categories[0]?.id,
-        date: Date.now(),
+        date: parsedResult.date ?? Date.now(),
         comment: parsedResult.comment,
         currency: parsedResult.currency,
         rate: 1,
@@ -180,6 +210,12 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({ onClose }) => {
           <div className="flex items-center gap-2 mb-3">
             <Sparkles className="w-4 h-4 text-violet-600" />
             <span className="text-sm font-medium text-violet-600">Распознано</span>
+            {parsedResult.mlConfidence !== undefined && (
+              <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
+                <Brain className="w-3 h-3" />
+                ML {Math.round(parsedResult.mlConfidence * 100)}%
+              </span>
+            )}
           </div>
           <div className="flex items-center justify-between mb-2">
             <span
@@ -204,8 +240,19 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({ onClose }) => {
               </div>
             )}
           </div>
-          {parsedResult.comment && (
-            <p className="text-sm text-muted-foreground mb-3">{parsedResult.comment}</p>
+          {(parsedResult.comment || parsedResult.date) && (
+            <div className="flex items-center justify-between gap-2 mb-1">
+              {parsedResult.comment && (
+                <p className="text-sm text-muted-foreground">{parsedResult.comment}</p>
+              )}
+              {parsedResult.date && (
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  {new Date(parsedResult.date).toLocaleDateString('ru-RU', {
+                    day: 'numeric', month: 'short',
+                  })}
+                </span>
+              )}
+            </div>
           )}
           <div className="flex gap-2 mt-3">
             <button

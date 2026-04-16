@@ -16,6 +16,7 @@ export interface ParsedTransaction {
   type: TransactionType;
   comment?: string;
   currency?: string;
+  date?: number; // timestamp, если распознана дата
 }
 
 // ==================== Pattern Matching ====================
@@ -110,10 +111,14 @@ export function parseNaturalLanguage(text: string): ParsedTransaction | null {
     type = 'expense';
   }
 
-  // Очищаем комментарий от суммы и валюты
+  // ─── Извлекаем дату ────────────────────────────────────────────────────────
+  const date = parseDateFromText(text);
+
+  // Очищаем комментарий от суммы, валюты и даты
   let comment = text
     .replace(amountPatterns[0], '')
     .replace(amountPatterns[1], '')
+    .replace(DATE_PATTERN, '')
     .trim();
 
   return {
@@ -121,7 +126,80 @@ export function parseNaturalLanguage(text: string): ParsedTransaction | null {
     type,
     comment: comment || undefined,
     currency,
+    date,
   };
+}
+
+// ─── Парсинг даты из текста ──────────────────────────────────────────────────
+
+const MONTHS: Record<string, number> = {
+  январ: 0, феврал: 1, март: 2, апрел: 3, май: 4, мая: 4,
+  июн: 5, июл: 6, август: 7, сентябр: 8, октябр: 9, ноябр: 10, декабр: 11,
+};
+
+// Общий паттерн для всех форм дат — используется при очистке комментария
+const DATE_PATTERN =
+  /\b(сегодня|вчера|позавчера|завтра|понедельник|вторник|сред[ау]|четверг|пятниц[ау]|суббот[ау]|воскресень[ея])\b|\b\d{1,2}[./]\d{1,2}(?:[./]\d{2,4})?\b|\b\d{1,2}\s+(?:январ|феврал|март|апрел|май|мая|июн|июл|август|сентябр|октябр|ноябр|декабр)\w*(?:\s+\d{4})?\b/gi;
+
+function parseDateFromText(text: string): number | undefined {
+  const lower = text.toLowerCase();
+  const now = new Date();
+
+  // Относительные слова
+  if (/\bсегодня\b/.test(lower)) return startOfDay(now).getTime();
+  if (/\bвчера\b/.test(lower)) return startOfDay(addDays(now, -1)).getTime();
+  if (/\bпозавчера\b/.test(lower)) return startOfDay(addDays(now, -2)).getTime();
+  if (/\bзавтра\b/.test(lower)) return startOfDay(addDays(now, 1)).getTime();
+
+  // День недели (последний прошедший)
+  const weekdays = ['воскресень', 'понедельник', 'вторник', 'сред', 'четверг', 'пятниц', 'суббот'];
+  for (let i = 0; i < weekdays.length; i++) {
+    if (lower.includes(weekdays[i])) {
+      let diff = now.getDay() - i;
+      if (diff <= 0) diff += 7;
+      return startOfDay(addDays(now, -diff)).getTime();
+    }
+  }
+
+  // ДД.ММ или ДД/ММ или ДД.ММ.ГГГГ
+  const dmMatch = text.match(/\b(\d{1,2})[./](\d{1,2})(?:[./](\d{2,4}))?\b/);
+  if (dmMatch) {
+    const day = parseInt(dmMatch[1], 10);
+    const month = parseInt(dmMatch[2], 10) - 1;
+    let year = now.getFullYear();
+    if (dmMatch[3]) {
+      year = parseInt(dmMatch[3], 10);
+      if (year < 100) year += 2000;
+    }
+    if (day >= 1 && day <= 31 && month >= 0 && month <= 11) {
+      return new Date(year, month, day).getTime();
+    }
+  }
+
+  // "5 января" / "15 марта 2024"
+  const wordMatch = lower.match(
+    /\b(\d{1,2})\s+(январ|феврал|март|апрел|май|мая|июн|июл|август|сентябр|октябр|ноябр|декабр)\w*(?:\s+(\d{4}))?\b/,
+  );
+  if (wordMatch) {
+    const day = parseInt(wordMatch[1], 10);
+    const month = MONTHS[wordMatch[2]];
+    const year = wordMatch[3] ? parseInt(wordMatch[3], 10) : now.getFullYear();
+    if (month !== undefined && day >= 1 && day <= 31) {
+      return new Date(year, month, day).getTime();
+    }
+  }
+
+  return undefined;
+}
+
+function startOfDay(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function addDays(d: Date, n: number): Date {
+  const r = new Date(d);
+  r.setDate(r.getDate() + n);
+  return r;
 }
 
 // ==================== AI Suggestions ====================
