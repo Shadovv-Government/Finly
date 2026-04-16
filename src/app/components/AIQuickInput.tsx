@@ -72,7 +72,11 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({ onClose }) => {
     clearAutoSubmit();
     setIsAdding(true);
     try {
-      const category = result.category ?? categories.find(c => c.type === result.type);
+      // Приоритет: ML/паттерн → "Другое" нужного типа → первая категория типа
+      const category =
+        result.category ??
+        categories.find(c => c.name === 'Другое' && c.type === result.type) ??
+        categories.find(c => c.type === result.type);
       await add({
         amount: result.amount,
         type: result.type,
