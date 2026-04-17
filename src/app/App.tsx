@@ -5,20 +5,29 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Toaster } from './components/ui/sonner';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { router } from './routes';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { processRecurringIfNeeded } from './utils/recurringProcessor';
 import { useReducedMotion } from './hooks/useReducedMotion';
 
+const AUTH_TIMEOUT_MS = 8000;
+
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isLoading } = useAuth();
+  const [timedOut, setTimedOut] = useState(false);
 
-  // Apply reduced motion setting
   useReducedMotion();
 
-  // Process recurring payments on app start
+  useEffect(() => {
+    if (!isLoading) return;
+    const id = setTimeout(() => setTimedOut(true), AUTH_TIMEOUT_MS);
+    return () => clearTimeout(id);
+  }, [isLoading]);
+
   useEffect(() => {
     if (!isLoading) {
-      processRecurringIfNeeded().catch(() => {});
+      processRecurringIfNeeded().catch((err: unknown) => {
+        console.error('[recurring] failed:', err);
+      });
     }
   }, [isLoading]);
 
@@ -29,7 +38,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
       .catch(() => {});
   }, []);
 
-  if (isLoading) {
+  if (isLoading && !timedOut) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-muted-foreground">Загрузка...</div>

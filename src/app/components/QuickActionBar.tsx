@@ -62,6 +62,15 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
   const { checkBudgets } = useBudgetNotifications();
   const { classify } = useMLModel();
 
+  useEffect(() => {
+    return () => {
+      clearInterval(timerRef.current);
+      clearTimeout(longPressTimer.current);
+      recognitionRef.current?.stop();
+      recognitionRef.current = null;
+    };
+  }, []);
+
   // Restore pointer capture after re-render when recording starts
   useEffect(() => {
     if (isRecording && !isLocked && buttonRef.current && activePointerIdRef.current !== null) {

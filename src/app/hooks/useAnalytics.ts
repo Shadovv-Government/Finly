@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   getBalanceByPeriod,
   getExpensesByCategory,
@@ -77,8 +77,10 @@ export function useAnalytics(options: UseAnalyticsOptions = {}) {
   const [freeBalance, setFreeBalance] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const cancelledRef = useRef(false);
 
   const loadAnalytics = useCallback(async () => {
+    cancelledRef.current = false;
     try {
       setLoading(true);
       const range = startDate && endDate
@@ -104,6 +106,7 @@ export function useAnalytics(options: UseAnalyticsOptions = {}) {
         getBalanceWithSavings(),
       ]);
 
+      if (cancelledRef.current) return;
       setBalance(balanceData);
       setExpensesByCategory(expensesData);
       setIncomeByCategory(incomeData);
@@ -114,14 +117,17 @@ export function useAnalytics(options: UseAnalyticsOptions = {}) {
       setFreeBalance(balanceWithSavingsData.freeBalance);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load analytics');
+      if (!cancelledRef.current) {
+        setError(err instanceof Error ? err.message : 'Failed to load analytics');
+      }
     } finally {
-      setLoading(false);
+      if (!cancelledRef.current) setLoading(false);
     }
   }, [period, startDate, endDate]);
 
   useEffect(() => {
     loadAnalytics();
+    return () => { cancelledRef.current = true; };
   }, [loadAnalytics]);
 
   return {

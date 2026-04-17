@@ -7,7 +7,8 @@ import { useBudgetNotifications } from '../hooks/useBudgetNotifications';
 import { useTransactionForm } from '../hooks/useTransactionForm';
 
 function CategoryIcon({ name, className, color }: { name: string; className?: string; color?: string }) {
-  const IconComponent = (LucideIcons as any)[name] || LucideIcons.Wallet;
+  const icons = LucideIcons as Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>>;
+  const IconComponent = icons[name] ?? LucideIcons.Wallet;
   return <IconComponent className={className} style={{ color }} />;
 }
 
