@@ -72,15 +72,32 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({ onClose }) => {
     clearAutoSubmit();
     setIsAdding(true);
     try {
-      // Приоритет: ML/паттерн → "Другое" нужного типа → первая категория типа
+      // Приоритет: ML/паттерн → "Другое" по системному ID → "Другое" по имени.
+      // Раньше последний fallback брал ПЕРВУЮ категорию типа — а в seed.ts это
+      // cat_food (Еда), из-за чего любая нераспознанная трата уходила в Еду.
+      const fallbackId = result.type === 'expense' ? 'cat_other_expense' : 'inc_other';
       const category =
         result.category ??
-        categories.find(c => c.name === 'Другое' && c.type === result.type) ??
-        categories.find(c => c.type === result.type);
+        categories.find(c => c.id === fallbackId) ??
+        categories.find(c => c.name === 'Другое' && c.type === result.type);
+
+      // Диагностика: видим в консоли, КАКОЙ слой fallback сработал
+      // console.log('[doSave] result.category=', result.category?.name,
+      //             '| fallback to:', category?.name, '(' + category?.id + ')',
+      //             '| categoriesLoaded=', categories.length);
+
+      // Защита: если ни ML, ни system fallback не дали категорию — НЕ сохраняем
+      // в первую попавшуюся (раньше так все молча уходило в "Еда").
+      if (!category) {
+        // console.error('[doSave] категория не определена и нет cat_other_expense/inc_other в БД. Очистите IndexedDB → FinlyDB чтобы пересеять.');
+        setIsAdding(false);
+        return;
+      }
+
       await add({
         amount: result.amount,
         type: result.type,
-        categoryId: category?.id ?? categories[0]?.id,
+        categoryId: category.id,
         date: result.date ?? Date.now(),
         comment: result.comment,
         currency: result.currency,

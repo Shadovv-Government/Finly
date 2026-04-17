@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { Plus, Mic, Sparkles, ArrowUp, Pause, Play, Lock, ChevronUp, Trash2 } from 'lucide-react';
 import { parseNaturalLanguage, findBestMatch } from '../../db/ai';
+import { useMLModel } from '../hooks/useMLModel';
 import { useCategories } from '../hooks/useCategories';
 import { useTransactions } from '../hooks/useTransactions';
 import { useNotifications } from '../hooks/useNotifications';
@@ -59,6 +60,7 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
   const { add } = useTransactions();
   const { notifyTransaction } = useNotifications();
   const { checkBudgets } = useBudgetNotifications();
+  const { classify } = useMLModel();
 
   // Restore pointer capture after re-render when recording starts
   useEffect(() => {
@@ -160,14 +162,34 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
     if (!t) return;
     const parsed = parseNaturalLanguage(t);
     if (!parsed) return;
-    const match = await findBestMatch(t);
-    const category = match
-      ? categories.find(c => c.id === match.pattern.categoryId)
-      : categories.find(c => c.type === parsed.type);
+    // 1) ML-классификация
+    const mlInput = parsed.comment ?? t;
+    const mlResult = classify(mlInput);
+    let category = mlResult && mlResult.confidence > 0.4
+      ? categories.find(c => c.name.toLowerCase() === mlResult.categoryName.toLowerCase())
+      : undefined;
+
+    // 2) Rule-based fallback по AI-паттернам из БД
+    if (!category) {
+      const match = await findBestMatch(t);
+      if (match) category = categories.find(c => c.id === match.pattern.categoryId);
+    }
+
+    // 3) Системный fallback — «Другое» по ID (не первый элемент массива!)
+    // Раньше тут было categories.find(c => c.type === parsed.type) →
+    // categories[0] → всегда cat_food ("Еда"). Исправлено.
+    if (!category) {
+      const fallbackId = parsed.type === 'expense' ? 'cat_other_expense' : 'inc_other';
+      category = categories.find(c => c.id === fallbackId)
+        ?? categories.find(c => c.name === 'Другое' && c.type === parsed.type);
+    }
+
+    // console.log(`[QuickBar] "${t}" → ML:${mlResult?.categoryName}(${mlResult ? Math.round(mlResult.confidence * 100) + '%' : 'n/a'}) → итог:${category?.name ?? 'не найдена'}`);
+
     await add({
       amount: parsed.amount,
       type: parsed.type,
-      categoryId: category?.id ?? categories[0]?.id,
+      categoryId: category?.id ?? (parsed.type === 'expense' ? 'cat_other_expense' : 'inc_other'),
       date: Date.now(),
       comment: parsed.comment,
       currency: parsed.currency || 'RUB',
