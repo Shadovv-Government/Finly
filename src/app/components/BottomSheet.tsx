@@ -38,12 +38,14 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
     }
   }, [isOpen]);
 
+  const CLOSE_ANIM_MS = 220; // совпадает с длительностью slide-down анимации (0.22s)
+
   const triggerClose = () => {
     setClosing(true);
     setTimeout(() => {
       setVisible(false);
       setClosing(false);
-    }, 380); // должно совпадать с длительностью slide-down анимации
+    }, CLOSE_ANIM_MS);
   };
 
   useEffect(() => {

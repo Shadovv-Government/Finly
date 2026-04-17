@@ -5,7 +5,10 @@ import App from "./app/App.tsx";
 import "./styles/index.css";
 import { seedDatabase } from './db/seed';
 
-createRoot(document.getElementById("root")!).render(
+const rootElement = document.getElementById("root");
+if (!rootElement) throw new Error("Root element #root not found in DOM");
+
+createRoot(rootElement).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>
