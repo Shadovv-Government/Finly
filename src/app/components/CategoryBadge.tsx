@@ -1,5 +1,6 @@
-import * as Icons from 'lucide-react';
 import { useCategories } from '../hooks/useCategories';
+import { CircleHelp, Wallet } from 'lucide-react';
+import { getLucideIcon } from '../utils/lucideIcons';
 
 interface CategoryBadgeProps {
   categoryId?: string;
@@ -30,12 +31,12 @@ export const CategoryBadge: React.FC<CategoryBadgeProps> = ({
   if (!category) {
     return (
       <div className={`${containerSizes[size]} rounded-xl flex items-center justify-center bg-gray-100 dark:bg-gray-800`}>
-        <Icons.HelpCircle className={`${iconSizes[size]} text-gray-400`} />
+        <CircleHelp className={`${iconSizes[size]} text-gray-400`} />
       </div>
     );
   }
 
-  const IconComponent = (Icons[category.icon as keyof typeof Icons] as React.ElementType) || Icons.Wallet;
+  const IconComponent = getLucideIcon(category.icon, Wallet);
 
   return (
     <div className="flex items-center gap-2">

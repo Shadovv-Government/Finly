@@ -18,6 +18,19 @@ import {
 } from './categories';
 import { validateCategory } from '../validators';
 
+vi.mock('../db', () => ({
+  db: {
+    categories: {
+      add: vi.fn(),
+      get: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      toArray: vi.fn(),
+      where: vi.fn(),
+    },
+  },
+}));
+
 // Мок для валидаторов
 vi.mock('../validators', () => ({
   validateCategory: vi.fn(),
@@ -170,7 +183,9 @@ describe('categories operations', () => {
       ];
 
       const mockChain = {
-        equals: vi.fn().mockResolvedValue(categories),
+        equals: vi.fn().mockReturnValue({
+          toArray: vi.fn().mockResolvedValue(categories),
+        }),
       };
       (db.categories.where as Mocked<any>).mockReturnValue(mockChain as any);
 
@@ -194,7 +209,9 @@ describe('categories operations', () => {
       ];
 
       const mockChain = {
-        equals: vi.fn().mockResolvedValue(categories),
+        equals: vi.fn().mockReturnValue({
+          toArray: vi.fn().mockResolvedValue(categories),
+        }),
       };
       (db.categories.where as Mocked<any>).mockReturnValue(mockChain as any);
 
@@ -220,7 +237,9 @@ describe('categories operations', () => {
       ];
 
       const mockChain = {
-        equals: vi.fn().mockResolvedValue(categories),
+        equals: vi.fn().mockReturnValue({
+          toArray: vi.fn().mockResolvedValue(categories),
+        }),
       };
       (db.categories.where as Mocked<any>).mockReturnValue(mockChain as any);
 
@@ -245,7 +264,9 @@ describe('categories operations', () => {
       ];
 
       const mockChain = {
-        equals: vi.fn().mockResolvedValue(categories),
+        equals: vi.fn().mockReturnValue({
+          toArray: vi.fn().mockResolvedValue(categories),
+        }),
       };
       (db.categories.where as Mocked<any>).mockReturnValue(mockChain as any);
 

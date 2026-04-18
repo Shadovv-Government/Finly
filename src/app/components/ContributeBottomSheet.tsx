@@ -20,7 +20,7 @@ export const ContributeBottomSheet: React.FC<ContributeBottomSheetProps> = ({
   targetAmount,
   userBalance,
 }) => {
-  const { notifyTransaction } = useNotifications();
+  const { notify, notifyTransaction } = useNotifications();
   const [amount, setAmount] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -39,10 +39,12 @@ export const ContributeBottomSheet: React.FC<ContributeBottomSheetProps> = ({
   const handleSubmit = async () => {
     const numAmount = parseFloat(amount);
     if (!amount || numAmount <= 0) {
+      notify('Проверьте сумму', 'Сумма пополнения должна быть больше нуля');
       return;
     }
 
     if (numAmount > effectiveBalance) {
+      notify('Недостаточно средств', 'Сумма пополнения превышает доступный баланс');
       return;
     }
 
@@ -60,7 +62,7 @@ export const ContributeBottomSheet: React.FC<ContributeBottomSheetProps> = ({
       setAmount('');
       onClose();
     } catch (error) {
-      // toast.error('Ошибка при пополнении цели');
+      notify('Не удалось пополнить цель', 'Попробуйте ещё раз');
     } finally {
       setIsSubmitting(false);
     }
@@ -93,13 +95,13 @@ export const ContributeBottomSheet: React.FC<ContributeBottomSheetProps> = ({
         {/* Ввод суммы */}
         <div className="px-4 py-6">
           <input
+            aria-label="Сумма пополнения"
             type="tel"
             inputMode="decimal"
             placeholder="0"
             value={formatAmountInput(amount)}
             onChange={handleAmountChange}
-            className="w-full text-4xl font-bold text-center bg-transparent outline-none"
-            autoFocus
+            className="w-full text-4xl font-bold text-center bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-lg"
           />
           <p className="text-center text-muted-foreground mt-2">₽</p>
         </div>

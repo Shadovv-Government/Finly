@@ -1,7 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import { Plus, Mic, Sparkles, ArrowUp, Pause, Play, Lock, ChevronUp, Trash2 } from 'lucide-react';
 import { parseNaturalLanguage, findBestMatch } from '../../db/ai';
-import { useMLModel } from '../hooks/useMLModel';
 import { useCategories } from '../hooks/useCategories';
 import { useTransactions } from '../hooks/useTransactions';
 import { useNotifications } from '../hooks/useNotifications';
@@ -60,7 +59,6 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
   const { add } = useTransactions();
   const { notifyTransaction } = useNotifications();
   const { checkBudgets } = useBudgetNotifications();
-  const { classify } = useMLModel();
 
   useEffect(() => {
     return () => {
@@ -173,7 +171,9 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
     if (!parsed) return;
     // 1) ML-классификация
     const mlInput = parsed.comment ?? t;
-    const mlResult = classify(mlInput);
+    const mlModule = await import('../hooks/useMLModel');
+    await mlModule.ensureMLModelReady();
+    const mlResult = mlModule.classifyWithMLModel(mlInput);
     let category = mlResult && mlResult.confidence > 0.4
       ? categories.find(c => c.name.toLowerCase() === mlResult.categoryName.toLowerCase())
       : undefined;

@@ -1,24 +1,19 @@
+import type { ComponentType, ReactNode } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { Layout } from './Layout';
-import { Dashboard } from './screens/Dashboard';
-import { TransactionHistory } from './screens/TransactionHistory';
-import { Analytics } from './screens/Analytics';
-import { Settings } from './screens/Settings';
-import { Budgets } from './screens/Budgets';
-import { Goals } from './screens/Goals';
-import { Categories } from './screens/Categories';
-import { AIAssistant } from './screens/AIAssistant';
-import { Onboarding } from './screens/Onboarding';
-import { ComponentShowcase } from './screens/ComponentShowcase';
-import { Registration } from './screens/Registration';
-import { PrivacyPolicy } from './screens/PrivacyPolicy';
-import { TermsOfService } from './screens/TermsOfService';
-import { Recurring } from './screens/RecurringScreen';
 import { useAuth } from './contexts/AuthContext';
 import { LockScreen } from './screens/LockScreen';
 
+const lazyRoute = <T extends Record<string, ComponentType<any>>>(
+  loader: () => Promise<T>,
+  exportName: keyof T,
+) => async () => {
+  const mod = await loader();
+  return { Component: mod[exportName] };
+};
+
 // Protected route wrapper
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function ProtectedRoute({ children }: { children: ReactNode }) {
   const { user, biometric } = useAuth();
   if (!user) {
     return <Navigate to="/register" replace />;
@@ -32,19 +27,19 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 export const router = createBrowserRouter([
   {
     path: '/onboarding',
-    Component: Onboarding,
+    lazy: lazyRoute(() => import('./screens/Onboarding'), 'Onboarding'),
   },
   {
     path: '/register',
-    Component: Registration,
+    lazy: lazyRoute(() => import('./screens/Registration'), 'Registration'),
   },
   {
     path: '/privacy',
-    Component: PrivacyPolicy,
+    lazy: lazyRoute(() => import('./screens/PrivacyPolicy'), 'PrivacyPolicy'),
   },
   {
     path: '/terms',
-    Component: TermsOfService,
+    lazy: lazyRoute(() => import('./screens/TermsOfService'), 'TermsOfService'),
   },
   {
     path: '/',
@@ -54,16 +49,16 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
-      { index: true, Component: Dashboard },
-      { path: 'history', Component: TransactionHistory },
-      { path: 'analytics', Component: Analytics },
-      { path: 'settings', Component: Settings },
-      { path: 'budgets', Component: Budgets },
-      { path: 'goals', Component: Goals },
-      { path: 'recurring', Component: Recurring },
-      { path: 'categories', Component: Categories },
-      { path: 'ai-assistant', Component: AIAssistant },
-      { path: 'components', Component: ComponentShowcase },
+      { index: true, lazy: lazyRoute(() => import('./screens/Dashboard'), 'Dashboard') },
+      { path: 'history', lazy: lazyRoute(() => import('./screens/TransactionHistory'), 'TransactionHistory') },
+      { path: 'analytics', lazy: lazyRoute(() => import('./screens/Analytics'), 'Analytics') },
+      { path: 'settings', lazy: lazyRoute(() => import('./screens/Settings'), 'Settings') },
+      { path: 'budgets', lazy: lazyRoute(() => import('./screens/Budgets'), 'Budgets') },
+      { path: 'goals', lazy: lazyRoute(() => import('./screens/Goals'), 'Goals') },
+      { path: 'recurring', lazy: lazyRoute(() => import('./screens/RecurringScreen'), 'Recurring') },
+      { path: 'categories', lazy: lazyRoute(() => import('./screens/Categories'), 'Categories') },
+      { path: 'ai-assistant', lazy: lazyRoute(() => import('./screens/AIAssistant'), 'AIAssistant') },
+      { path: 'components', lazy: lazyRoute(() => import('./screens/ComponentShowcase'), 'ComponentShowcase') },
     ],
   },
 ]);

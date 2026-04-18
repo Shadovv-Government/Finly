@@ -334,11 +334,12 @@ describe('withRetry', () => {
     const fn = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
     
     const promise = withRetry(fn, 3, 100);
+    const rejection = expect(promise).rejects.toThrow('Failed to fetch');
     
     // Продвигаем таймеры для всех retry (100ms + 200ms + 400ms)
     await vi.advanceTimersByTimeAsync(1000);
     
-    await expect(promise).rejects.toThrow('Failed to fetch');
+    await rejection;
     expect(fn).toHaveBeenCalledTimes(3);
   });
 
@@ -346,6 +347,7 @@ describe('withRetry', () => {
     const fn = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
     
     const promise = withRetry(fn, 3, 100);
+    const settledPromise = promise.catch(() => {});
     
     // Первая retry через 100ms
     await vi.advanceTimersByTimeAsync(100);
@@ -356,6 +358,6 @@ describe('withRetry', () => {
     expect(fn).toHaveBeenCalledTimes(3);
     
     // Подавляем ошибку
-    await promise.catch(() => {});
+    await settledPromise;
   });
 });

@@ -17,6 +17,19 @@ import {
 } from './transactions';
 import { validateTransaction } from '../validators';
 
+vi.mock('../db', () => ({
+  db: {
+    transactions: {
+      add: vi.fn(),
+      get: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      where: vi.fn(),
+      orderBy: vi.fn(),
+    },
+  },
+}));
+
 // Мок для валидаторов
 vi.mock('../validators', () => ({
   validateTransaction: vi.fn(),
@@ -149,9 +162,7 @@ describe('transactions operations', () => {
 
       const mockChain = {
         between: vi.fn().mockReturnValue({
-          reverse: vi.fn().mockReturnValue({
-            sortBy: vi.fn().mockResolvedValue(transactions),
-          }),
+          toArray: vi.fn().mockResolvedValue(transactions),
         }),
       };
       (db.transactions.where as Mocked<any>).mockReturnValue(mockChain as any);
@@ -180,7 +191,9 @@ describe('transactions operations', () => {
       ];
 
       const mockChain = {
-        equals: vi.fn().mockResolvedValue(transactions),
+        equals: vi.fn().mockReturnValue({
+          toArray: vi.fn().mockResolvedValue(transactions),
+        }),
       };
       (db.transactions.where as Mocked<any>).mockReturnValue(mockChain as any);
 
@@ -207,14 +220,11 @@ describe('transactions operations', () => {
         },
       ];
 
-      const mockChain = {
-        orderBy: vi.fn().mockReturnValue({
-          reverse: vi.fn().mockReturnValue({
-            toArray: vi.fn().mockResolvedValue(transactions),
-          }),
+      (db.transactions.orderBy as Mocked<any>).mockReturnValue({
+        reverse: vi.fn().mockReturnValue({
+          toArray: vi.fn().mockResolvedValue(transactions),
         }),
-      };
-      (db.transactions.orderBy as Mocked<any>).mockReturnValue(mockChain as any);
+      });
 
       const result = await getAllTransactions();
 

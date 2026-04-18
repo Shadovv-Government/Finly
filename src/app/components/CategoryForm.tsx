@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import * as Icons from 'lucide-react';
 import { Category } from '../../db/types';
 import { BottomSheet } from './BottomSheet';
 import { useNotifications } from '../hooks/useNotifications';
+import { ShoppingCart } from 'lucide-react';
+import { getLucideIcon } from '../utils/lucideIcons';
 
 interface CategoryFormProps {
   isOpen: boolean;
@@ -119,7 +120,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
   };
 
   const IconPreview = () => {
-    const IconComponent = (Icons[selectedIcon as keyof typeof Icons] as React.ElementType) || Icons.ShoppingCart;
+    const IconComponent = getLucideIcon(selectedIcon, ShoppingCart);
     return (
       <IconComponent className="w-8 h-8" style={{ color: selectedColor }} />
     );
@@ -189,7 +190,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
           <label className="text-sm font-medium mb-3 block">Иконка</label>
           <div className="grid grid-cols-6 gap-2 max-h-40 overflow-y-auto p-2 bg-muted rounded-xl">
             {ICON_LIST.map((iconName) => {
-              const IconComponent = (Icons[iconName as keyof typeof Icons] as React.ElementType) || Icons.ShoppingCart;
+              const IconComponent = getLucideIcon(iconName, ShoppingCart);
               return (
                 <button
                   key={iconName}

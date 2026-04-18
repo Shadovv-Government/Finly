@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Clock } from 'lucide-react';
-import * as Icons from 'lucide-react';
+import { Wallet } from 'lucide-react';
 import { RecurringTemplate, RecurringInterval } from '../../db/types';
 import { BottomSheet } from './BottomSheet';
 import { useNotifications } from '../hooks/useNotifications';
 import { useCategories } from '../hooks/useCategories';
 import { RECURRING_INTERVALS } from '../constants';
-import { formatAmountInput, parseAmountInput } from '../utils/formatCurrency';
+import {
+  formatAmountInput,
+  formatDateInputValue,
+  parseAmountInput,
+} from '../utils/formatCurrency';
+import { getLucideIcon } from '../utils/lucideIcons';
 
 interface RecurringTemplateFormProps {
   isOpen: boolean;
@@ -47,7 +52,7 @@ export const RecurringTemplateForm: React.FC<RecurringTemplateFormProps> = ({
       setAmount(initialData.amount.toString());
       setType(initialData.type);
       setInterval(initialData.interval);
-      setFirstDate(new Date(initialData.nextDate).toISOString().split('T')[0]);
+      setFirstDate(formatDateInputValue(initialData.nextDate));
       setComment(initialData.comment || '');
       setIsActive(initialData.isActive);
     } else {
@@ -55,7 +60,7 @@ export const RecurringTemplateForm: React.FC<RecurringTemplateFormProps> = ({
       setAmount('');
       setType('expense');
       setInterval('monthly');
-      setFirstDate(new Date().toISOString().split('T')[0]);
+      setFirstDate(formatDateInputValue(new Date()));
       setComment('');
       setIsActive(true);
     }
@@ -151,12 +156,13 @@ export const RecurringTemplateForm: React.FC<RecurringTemplateFormProps> = ({
         <div className="px-4 py-4">
           <label className="text-sm font-medium mb-2 block">Сумма</label>
           <input
+            aria-label="Сумма"
             type="tel"
             inputMode="decimal"
             placeholder="0"
             value={formatAmountInput(amount)}
             onChange={handleAmountChange}
-            className="w-full text-3xl font-bold text-center bg-transparent outline-none py-4"
+            className="w-full text-3xl font-bold text-center bg-transparent py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-lg"
           />
           <p className="text-center text-muted-foreground mt-2">₽</p>
         </div>
@@ -168,7 +174,7 @@ export const RecurringTemplateForm: React.FC<RecurringTemplateFormProps> = ({
             {categories
               .filter(c => c.type === type)
               .map((category) => {
-                const IconComponent = (Icons[category.icon as keyof typeof Icons] as React.ElementType) || Icons.Wallet;
+                const IconComponent = getLucideIcon(category.icon, Wallet);
                 const isSelected = selectedCategoryId === category.id;
 
                 return (
@@ -226,10 +232,11 @@ export const RecurringTemplateForm: React.FC<RecurringTemplateFormProps> = ({
           <div className="flex items-center gap-3 p-4 bg-muted rounded-xl">
             <Calendar className="w-5 h-5 text-muted-foreground" />
             <input
+              aria-label="Дата первого платежа"
               type="date"
               value={firstDate}
               onChange={(e) => setFirstDate(e.target.value)}
-              className="flex-1 bg-transparent outline-none"
+              className="flex-1 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-md"
             />
           </div>
         </div>
@@ -238,11 +245,12 @@ export const RecurringTemplateForm: React.FC<RecurringTemplateFormProps> = ({
         <div className="px-4 py-4">
           <label className="text-sm font-medium mb-2 block">Комментарий (необязательно)</label>
           <input
+            aria-label="Комментарий"
             type="text"
             placeholder="Например: Аренда квартиры"
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            className="w-full px-4 py-3 bg-muted rounded-xl outline-none focus:ring-2 focus:ring-violet-600"
+            className="w-full px-4 py-3 bg-muted rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600"
           />
         </div>
 

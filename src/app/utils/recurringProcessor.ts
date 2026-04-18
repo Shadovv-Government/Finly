@@ -24,9 +24,7 @@ export async function processRecurringIfNeeded(): Promise<void> {
 
     const result = await processDueTemplates();
 
-    if (result.processed > 0) {
-      localStorage.setItem(LAST_PROCESSED_KEY, now.toString());
-    }
+    localStorage.setItem(LAST_PROCESSED_KEY, now.toString());
 
     if (result.errors.length > 0) {
       for (const err of result.errors) {

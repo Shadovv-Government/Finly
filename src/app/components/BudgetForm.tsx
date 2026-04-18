@@ -3,8 +3,9 @@ import { Budget } from '../../db/types';
 import { BottomSheet } from './BottomSheet';
 import { useNotifications } from '../hooks/useNotifications';
 import { useCategories } from '../hooks/useCategories';
-import * as Icons from 'lucide-react';
+import { Wallet } from 'lucide-react';
 import { formatAmountInput, parseAmountInput } from '../utils/formatCurrency';
+import { getLucideIcon } from '../utils/lucideIcons';
 
 interface BudgetFormProps {
   isOpen: boolean;
@@ -100,7 +101,7 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({
           <label className="text-sm font-medium mb-3 block">Категория</label>
           <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto p-2 bg-muted rounded-xl">
             {expenseCategories.map((category) => {
-              const IconComponent = (Icons[category.icon as keyof typeof Icons] as React.ElementType) || Icons.Wallet;
+              const IconComponent = getLucideIcon(category.icon, Wallet);
               const isSelected = selectedCategoryId === category.id;
               
               return (

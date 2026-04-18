@@ -79,6 +79,7 @@ export class DatabaseError extends AppError {
   constructor(message: string, originalError?: Error) {
     super(message, AppErrorType.DATABASE, 'DATABASE_ERROR', {
       originalMessage: originalError?.message,
+      originalStack: originalError?.stack,
     });
     this.name = 'DatabaseError';
   }

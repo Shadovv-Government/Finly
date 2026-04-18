@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Mic, MicOff, Send, Sparkles, MessageSquare, Brain } from 'lucide-react';
-import * as LucideIcons from 'lucide-react';
+import { Mic, MicOff, Send, Sparkles, MessageSquare, Brain, Wallet } from 'lucide-react';
 import { parseNaturalLanguage, findBestMatch } from '../../db/ai';
 import { useMLModel } from '../hooks/useMLModel';
 import { useCategories } from '../hooks/useCategories';
@@ -8,6 +7,8 @@ import { useTransactions } from '../hooks/useTransactions';
 import { useNotifications } from '../hooks/useNotifications';
 import { useBudgetNotifications } from '../hooks/useBudgetNotifications';
 import { Category } from '../../db/types';
+import { formatDateInputValue } from '../utils/formatCurrency';
+import { getLucideIcon } from '../utils/lucideIcons';
 
 const AUTO_SUBMIT_DELAY = 2; // секунды до автоотправки после голоса
 
@@ -22,8 +23,7 @@ interface ParsedResult {
 }
 
 function CategoryIcon({ name, className, color }: { name: string; className?: string; color?: string }) {
-  const icons = LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>>;
-  const IconComponent = Object.prototype.hasOwnProperty.call(icons, name) ? icons[name] : LucideIcons.Wallet;
+  const IconComponent = getLucideIcon(name, Wallet);
   return <IconComponent className={className} style={{ color }} />;
 }
 
@@ -47,7 +47,7 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({ onClose }) => {
 
   const { categories } = useCategories();
   const { add } = useTransactions();
-  const { notifyTransaction } = useNotifications();
+  const { notify, notifyTransaction } = useNotifications();
   const { checkBudgets } = useBudgetNotifications();
   const { ready: mlReady, classify } = useMLModel();
 
@@ -89,7 +89,7 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({ onClose }) => {
       // Защита: если ни ML, ни system fallback не дали категорию — НЕ сохраняем
       // в первую попавшуюся (раньше так все молча уходило в "Еда").
       if (!category) {
-        // console.error('[doSave] категория не определена и нет cat_other_expense/inc_other в БД. Очистите IndexedDB → FinlyDB чтобы пересеять.');
+        notify('Категория не определена', 'Попробуйте уточнить описание операции');
         setIsAdding(false);
         return;
       }
@@ -107,9 +107,10 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({ onClose }) => {
       await checkBudgets();
       onClose();
     } catch {
+      notify('Не удалось сохранить операцию', 'Попробуйте ещё раз');
       setIsAdding(false);
     }
-  }, [categories, add, notifyTransaction, checkBudgets, onClose]);
+  }, [categories, add, notify, notifyTransaction, checkBudgets, onClose]);
 
   const handleSave = () => {
     if (parsedResult) doSave(parsedResult);
@@ -146,43 +147,31 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({ onClose }) => {
 
   const buildResult = async (text: string, fromVoice: boolean): Promise<ParsedResult | null> => {
     const parsed = parseNaturalLanguage(text);
-    console.log(`[parser] input: "${text}"`);
     if (!parsed) {
-      console.warn('[parser] amount не найден — транзакция не распознана');
       return null;
     }
-    console.log(`[parser] amount=${parsed.amount} type=${parsed.type} comment="${parsed.comment}" date=${parsed.date ? new Date(parsed.date).toLocaleDateString('ru-RU') : 'нет'} currency=${parsed.currency}`);
 
     let category: Category | undefined;
     let mlConfidence: number | undefined;
     let type = parsed.type;
 
     const mlInput = parsed.comment ?? text;
-    console.log(`[ML] mlReady=${mlReady}, вход для classify: "${mlInput}"`);
     const mlResult = mlReady ? classify(mlInput) : null;
     if (mlResult && mlResult.confidence > 0.4) {
       category = categories.find(c => c.name.toLowerCase() === mlResult.categoryName.toLowerCase());
       mlConfidence = mlResult.confidence;
-      console.log(`[parser] ML категория: "${mlResult.categoryName}" → в БД: ${category?.name ?? 'НЕ НАЙДЕНА'}`);
       if (parsed.type === 'expense' && mlResult.type === 'income') {
         const hasIncomeHint = /получил|получила|пришла|зп|зарплата|доход|подарок|возврат/i.test(text);
         if (!hasIncomeHint) type = mlResult.type;
       }
-    } else {
-      console.log(`[parser] ML не использован (mlResult=${JSON.stringify(mlResult)})`);
     }
 
     if (!category) {
       const match = await findBestMatch(text);
       if (match) {
         category = categories.find(c => c.id === match.pattern.categoryId);
-        console.log(`[parser] rule-based match: "${match.pattern.pattern}" → ${category?.name}`);
-      } else {
-        console.log('[parser] нет совпадений в rule-based — категория не определена');
       }
     }
-
-    console.log(`[parser] итог: amount=${parsed.amount} type=${type} category=${category?.name ?? 'не задана'} mlConf=${mlConfidence ? (mlConfidence * 100).toFixed(0) + '%' : 'n/a'}`);
 
     return {
       amount: parsed.amount,
@@ -331,9 +320,7 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({ onClose }) => {
               )}
               {parsedResult.date && (
                 <span className="text-xs text-muted-foreground whitespace-nowrap">
-                  {new Date(parsedResult.date).toLocaleDateString('ru-RU', {
-                    day: 'numeric', month: 'short',
-                  })}
+                  {formatDateInputValue(parsedResult.date)}
                 </span>
               )}
             </div>
@@ -375,6 +362,7 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({ onClose }) => {
             )}
             <button
               onClick={handleMicPress}
+              aria-label={isRecording ? 'Остановить запись' : 'Начать запись'}
               className={`relative w-24 h-24 rounded-full flex items-center justify-center shadow-xl transition-all duration-200 active:scale-95 ${
                 isRecording
                   ? 'bg-gradient-to-br from-red-500 to-rose-600'
@@ -402,16 +390,17 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({ onClose }) => {
           </p>
           <div className="relative">
             <input
+              aria-label="Описание операции"
               type="text"
-              placeholder="кофе 450 рублей в Старбаксе..."
+              placeholder="кофе 450 рублей в Старбаксе…"
               value={chatInput}
               onChange={e => setChatInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleChatSend()}
-              autoFocus
-              className="w-full px-4 py-3 pr-12 bg-muted rounded-xl outline-none focus:ring-2 focus:ring-violet-600 text-sm"
+              className="w-full px-4 py-3 pr-12 bg-muted rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 text-sm"
             />
             <button
               onClick={handleChatSend}
+              aria-label="Отправить описание"
               disabled={!chatInput.trim()}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-violet-600 disabled:text-muted-foreground transition-colors"
             >

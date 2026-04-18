@@ -12,6 +12,7 @@ import {
   BalanceSummary,
 } from '../../db/analytics';
 import { MS_PER_DAY } from '../constants';
+import { subscribeToTransactionsChanged } from '../utils/dataEvents';
 
 export type PeriodType = 'day' | 'week' | 'month' | 'custom';
 
@@ -128,6 +129,12 @@ export function useAnalytics(options: UseAnalyticsOptions = {}) {
   useEffect(() => {
     loadAnalytics();
     return () => { cancelledRef.current = true; };
+  }, [loadAnalytics]);
+
+  useEffect(() => {
+    return subscribeToTransactionsChanged(() => {
+      loadAnalytics();
+    });
   }, [loadAnalytics]);
 
   return {

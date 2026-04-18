@@ -1,16 +1,21 @@
 import { useState } from 'react';
-import { X, Calendar, MessageSquare, Mic, Sparkles } from 'lucide-react';
-import * as LucideIcons from 'lucide-react';
+import { X, Calendar, MessageSquare, Mic, Sparkles, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { useCategories } from '../hooks/useCategories';
 import { useTransactions } from '../hooks/useTransactions';
 import { useBudgetNotifications } from '../hooks/useBudgetNotifications';
 import { parseNaturalLanguage, findBestMatch } from '../../db/ai';
-import { formatAmountInput, parseAmountInput } from '../utils/formatCurrency';
+import {
+  formatAmountInput,
+  formatDateInputValue,
+  parseAmountInput,
+  parseDateInputValue,
+} from '../utils/formatCurrency';
+import { getLucideIcon } from '../utils/lucideIcons';
 
 function CategoryIcon({ name, className, color }: { name: string; className?: string; color?: string }) {
-  const IconComponent = (LucideIcons as any)[name] || LucideIcons.Wallet;
+  const IconComponent = getLucideIcon(name, Wallet);
   return <IconComponent className={className} style={{ color }} />;
 }
 
@@ -132,6 +137,7 @@ export const AddTransaction = () => {
       <div className="px-4 py-4 flex items-center justify-between border-b border-border bg-card">
         <h1 className="text-lg font-bold">Новая операция</h1>
         <button
+          aria-label="Закрыть экран добавления операции"
           onClick={() => navigate('/')}
           className="w-8 h-8 rounded-full bg-muted flex items-center justify-center"
         >
@@ -144,23 +150,25 @@ export const AddTransaction = () => {
         <div className="px-4 py-4 bg-card border-b border-border">
           <div className="relative">
             <input
+              aria-label="Быстрый ввод операции"
               type="text"
-              placeholder="кофе 450 рублей в Старбаксе"
+              placeholder="кофе 450 рублей в Старбаксе…"
               value={quickInput}
               onChange={(e) => setQuickInput(e.target.value)}
               onKeyDown={handleQuickInputKeyDown}
-              className="w-full px-4 py-3 pr-24 bg-muted rounded-xl outline-none focus:ring-2 focus:ring-violet-600"
+              className="w-full px-4 py-3 pr-24 bg-muted rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600"
             />
             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
               <button 
                 onClick={handleQuickInputProcess}
+                aria-label="Распознать быстрый ввод"
                 disabled={isProcessingQuickInput || !quickInput.trim()}
                 className="text-violet-600 hover:text-violet-700 disabled:text-muted-foreground transition-colors"
                 title="Распознать"
               >
                 <Sparkles className="w-5 h-5" />
               </button>
-              <button className="text-muted-foreground">
+              <button aria-label="Голосовой ввод скоро будет доступен" className="text-muted-foreground">
                 <Mic className="w-5 h-5" />
               </button>
             </div>
@@ -196,13 +204,13 @@ export const AddTransaction = () => {
         {/* Amount Input */}
         <div className="px-4 py-6">
           <input
+            aria-label="Сумма"
             type="tel"
             inputMode="decimal"
             placeholder="0"
             value={formatAmountInput(amount)}
             onChange={handleAmountChange}
-            className="w-full text-4xl font-bold text-center bg-transparent outline-none"
-            autoFocus
+            className="w-full text-4xl font-bold text-center bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-lg"
           />
           <p className="text-center text-muted-foreground mt-2">₽</p>
         </div>
@@ -243,20 +251,22 @@ export const AddTransaction = () => {
           <div className="flex items-center gap-3 p-4 bg-card rounded-xl border border-border">
             <Calendar className="w-5 h-5 text-muted-foreground" />
             <input
+              aria-label="Дата операции"
               type="date"
-              value={selectedDate.toISOString().split('T')[0]}
-              onChange={(e) => setSelectedDate(new Date(e.target.value))}
-              className="flex-1 bg-transparent outline-none"
+              value={formatDateInputValue(selectedDate)}
+              onChange={(e) => setSelectedDate(parseDateInputValue(e.target.value))}
+              className="flex-1 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-md"
             />
           </div>
           <div className="flex items-center gap-3 p-4 bg-card rounded-xl border border-border">
             <MessageSquare className="w-5 h-5 text-muted-foreground" />
             <input
+              aria-label="Комментарий"
               type="text"
               placeholder="Комментарий"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              className="flex-1 bg-transparent outline-none"
+              className="flex-1 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-md"
             />
           </div>
         </div>

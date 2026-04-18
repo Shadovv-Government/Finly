@@ -20,6 +20,10 @@ vi.mock('../hooks/useNotifications', () => ({
   useNotifications: vi.fn(),
 }));
 
+vi.mock('../hooks/useBudgetNotifications', () => ({
+  useBudgetNotifications: vi.fn(),
+}));
+
 vi.mock('../hooks/useTransactionForm', () => ({
   useTransactionForm: vi.fn(),
 }));
@@ -27,6 +31,7 @@ vi.mock('../hooks/useTransactionForm', () => ({
 import { useCategories } from '../hooks/useCategories';
 import { useTransactions } from '../hooks/useTransactions';
 import { useNotifications } from '../hooks/useNotifications';
+import { useBudgetNotifications } from '../hooks/useBudgetNotifications';
 import { useTransactionForm } from '../hooks/useTransactionForm';
 
 const mockCategories = [
@@ -53,7 +58,12 @@ describe('AddTransactionForm', () => {
     });
 
     (useNotifications as any).mockReturnValue({
+      notify: vi.fn(),
       notifyTransaction: vi.fn(),
+    });
+
+    (useBudgetNotifications as any).mockReturnValue({
+      checkBudgets: vi.fn().mockResolvedValue(undefined),
     });
 
     (useTransactionForm as any).mockReturnValue({
@@ -269,7 +279,7 @@ describe('AddTransactionForm', () => {
           { id: 'cat_other_expense', name: 'Другое', type: 'expense', icon: 'HelpCircle', color: '#9E9E9E', isSystem: true },
         ],
       });
-      (useNotifications as any).mockReturnValue({ notifyTransaction: mockNotifyTransaction });
+      (useNotifications as any).mockReturnValue({ notify: vi.fn(), notifyTransaction: mockNotifyTransaction });
       (useTransactionForm as any).mockReturnValue({
         formData: {
           amount: '1000',
@@ -307,7 +317,7 @@ describe('AddTransactionForm', () => {
       const mockAdd = vi.fn().mockResolvedValue(1);
       const mockNotifyTransaction = vi.fn();
       (useTransactions as any).mockReturnValue({ add: mockAdd });
-      (useNotifications as any).mockReturnValue({ notifyTransaction: mockNotifyTransaction });
+      (useNotifications as any).mockReturnValue({ notify: vi.fn(), notifyTransaction: mockNotifyTransaction });
       (useTransactionForm as any).mockReturnValue({
         formData: {
           amount: '1000',
@@ -341,6 +351,7 @@ describe('AddTransactionForm', () => {
     it('должен обрабатывать ошибку при сохранении', async () => {
       const mockAdd = vi.fn().mockRejectedValue(new Error('Failed'));
       (useTransactions as any).mockReturnValue({ add: mockAdd });
+      (useNotifications as any).mockReturnValue({ notify: vi.fn(), notifyTransaction: vi.fn() });
       (useTransactionForm as any).mockReturnValue({
         formData: {
           amount: '1000',

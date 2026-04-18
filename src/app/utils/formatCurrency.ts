@@ -68,3 +68,23 @@ export function handleAmountInputChange(value: string): string {
   }
   return value;
 }
+
+/**
+ * Форматирует timestamp/Date в локальное значение для input[type="date"] без UTC-сдвига.
+ */
+export function formatDateInputValue(value: number | Date): string {
+  const date = value instanceof Date ? value : new Date(value);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Парсит значение input[type="date"] в локальную дату на полночь.
+ */
+export function parseDateInputValue(value: string): Date {
+  const [year, month, day] = value.split('-').map(Number);
+  return new Date(year, (month || 1) - 1, day || 1);
+}

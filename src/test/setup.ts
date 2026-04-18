@@ -44,45 +44,56 @@ Object.defineProperty(global, 'indexedDB', {
 
 // Мок для Dexie
 vi.mock('dexie', () => {
-  const Dexie = vi.fn().mockImplementation(() => ({
-    version: vi.fn().mockReturnThis(),
-    stores: vi.fn().mockReturnThis(),
-    open: vi.fn(() => Promise.resolve()),
-    close: vi.fn(),
+  const createTable = () => ({
+    add: vi.fn(() => Promise.resolve(1)),
+    get: vi.fn(() => Promise.resolve(undefined)),
+    getAll: vi.fn(() => Promise.resolve([])),
+    update: vi.fn(() => Promise.resolve(true)),
     delete: vi.fn(() => Promise.resolve()),
-    transactions: {
-      add: vi.fn(() => Promise.resolve(1)),
-      get: vi.fn(() => Promise.resolve(undefined)),
-      getAll: vi.fn(() => Promise.resolve([])),
-      update: vi.fn(() => Promise.resolve(true)),
-      delete: vi.fn(() => Promise.resolve()),
-      put: vi.fn(() => Promise.resolve(1)),
-      count: vi.fn(() => Promise.resolve(0)),
-      clear: vi.fn(() => Promise.resolve()),
-      where: vi.fn(() => ({
-        equals: vi.fn(() => ({
-          toArray: vi.fn(() => Promise.resolve([])),
-          first: vi.fn(() => Promise.resolve(undefined)),
-        })),
-        between: vi.fn(() => ({
-          reverse: vi.fn(() => ({
-            sortBy: vi.fn(() => Promise.resolve([])),
-          })),
-        })),
+    put: vi.fn(() => Promise.resolve(1)),
+    count: vi.fn(() => Promise.resolve(0)),
+    clear: vi.fn(() => Promise.resolve()),
+    toArray: vi.fn(() => Promise.resolve([])),
+    filter: vi.fn(() => ({
+      toArray: vi.fn(() => Promise.resolve([])),
+    })),
+    where: vi.fn(() => ({
+      equals: vi.fn(() => ({
+        toArray: vi.fn(() => Promise.resolve([])),
+        first: vi.fn(() => Promise.resolve(undefined)),
       })),
-      orderBy: vi.fn(() => ({
-        reverse: vi.fn(() => ({
-          sortBy: vi.fn(() => Promise.resolve([])),
-          toArray: vi.fn(() => Promise.resolve([])),
-        })),
+      between: vi.fn(() => ({
+        toArray: vi.fn(() => Promise.resolve([])),
       })),
-    },
-    table: vi.fn(() => ({
-      toCollection: vi.fn(() => ({
+      above: vi.fn(() => ({
         toArray: vi.fn(() => Promise.resolve([])),
       })),
     })),
-  }));
+    orderBy: vi.fn(() => ({
+      reverse: vi.fn(() => ({
+        toArray: vi.fn(() => Promise.resolve([])),
+      })),
+    })),
+  });
+
+  class Dexie {
+    transactions = createTable();
+    categories = createTable();
+    budgets = createTable();
+    goals = createTable();
+    recurringTemplates = createTable();
+    settings = createTable();
+    aiPatterns = createTable();
+    users = createTable();
+    notifications = createTable();
+
+    version = vi.fn().mockReturnThis();
+    stores = vi.fn().mockReturnThis();
+    open = vi.fn(() => Promise.resolve());
+    close = vi.fn();
+    delete = vi.fn(() => Promise.resolve());
+    table = vi.fn(() => createTable());
+  }
   
   return {
     default: Dexie,

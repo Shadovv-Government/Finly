@@ -3,7 +3,11 @@ import { Calendar } from 'lucide-react';
 import { Goal } from '../../db/types';
 import { BottomSheet } from './BottomSheet';
 import { useNotifications } from '../hooks/useNotifications';
-import { formatAmountInput, parseAmountInput } from '../utils/formatCurrency';
+import {
+  formatAmountInput,
+  formatDateInputValue,
+  parseAmountInput,
+} from '../utils/formatCurrency';
 
 interface GoalFormProps {
   isOpen: boolean;
@@ -44,7 +48,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({
       setName(initialData.name);
       setTargetAmount(initialData.targetAmount.toString());
       setCurrentAmount(initialData.currentAmount.toString());
-      setDeadline(initialData.deadline ? new Date(initialData.deadline).toISOString().split('T')[0] : '');
+      setDeadline(initialData.deadline ? formatDateInputValue(initialData.deadline) : '');
       setSelectedColor(initialData.color);
       setIsActive(initialData.isActive);
     } else {
@@ -71,16 +75,19 @@ export const GoalForm: React.FC<GoalFormProps> = ({
 
   const handleSubmit = async () => {
     if (!name.trim()) {
+      notify('Укажите название цели', 'Название должно содержать минимум 1 символ');
       return;
     }
 
     const target = parseFloat(targetAmount);
     if (!targetAmount || target <= 0) {
+      notify('Проверьте целевую сумму', 'Сумма должна быть больше нуля');
       return;
     }
 
     const current = parseFloat(currentAmount) || 0;
     if (current > target) {
+      notify('Текущая сумма больше цели', 'Уменьшите накопленную сумму или увеличьте цель');
       return;
     }
 
@@ -101,7 +108,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({
 
       onClose();
     } catch (error) {
-      // toast.error('Ошибка при сохранении цели');
+      notify('Не удалось сохранить цель', 'Попробуйте ещё раз');
     } finally {
       setIsSubmitting(false);
     }
@@ -118,11 +125,12 @@ export const GoalForm: React.FC<GoalFormProps> = ({
         <div className="px-4 py-4">
           <label className="text-sm font-medium mb-2 block">Название</label>
           <input
+            aria-label="Название цели"
             type="text"
             placeholder="Например: Новый автомобиль"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full px-4 py-3 bg-muted rounded-xl outline-none focus:ring-2 focus:ring-violet-600"
+            className="w-full px-4 py-3 bg-muted rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600"
           />
         </div>
 
@@ -130,12 +138,13 @@ export const GoalForm: React.FC<GoalFormProps> = ({
         <div className="px-4 py-4">
           <label className="text-sm font-medium mb-2 block">Целевая сумма</label>
           <input
+            aria-label="Целевая сумма"
             type="tel"
             inputMode="decimal"
             placeholder="0"
             value={formatAmountInput(targetAmount)}
             onChange={(e) => handleAmountChange(e, setTargetAmount)}
-            className="w-full text-3xl font-bold text-center bg-transparent outline-none"
+            className="w-full text-3xl font-bold text-center bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-lg"
           />
           <p className="text-center text-muted-foreground mt-2">₽</p>
         </div>
@@ -144,12 +153,13 @@ export const GoalForm: React.FC<GoalFormProps> = ({
         <div className="px-4 py-4">
           <label className="text-sm font-medium mb-2 block">Уже накоплено</label>
           <input
+            aria-label="Уже накоплено"
             type="tel"
             inputMode="decimal"
             placeholder="0"
             value={formatAmountInput(currentAmount)}
             onChange={(e) => handleAmountChange(e, setCurrentAmount)}
-            className="w-full px-4 py-3 bg-muted rounded-xl outline-none focus:ring-2 focus:ring-violet-600"
+            className="w-full px-4 py-3 bg-muted rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600"
           />
         </div>
 
@@ -159,10 +169,11 @@ export const GoalForm: React.FC<GoalFormProps> = ({
           <div className="flex items-center gap-3 p-4 bg-muted rounded-xl">
             <Calendar className="w-5 h-5 text-muted-foreground" />
             <input
+              aria-label="Срок цели"
               type="date"
               value={deadline}
               onChange={(e) => setDeadline(e.target.value)}
-              className="flex-1 bg-transparent outline-none"
+              className="flex-1 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-md"
             />
           </div>
         </div>
@@ -175,6 +186,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({
               <button
                 key={color}
                 onClick={() => setSelectedColor(color)}
+                aria-label={`Выбрать цвет ${color}`}
                 className={`w-10 h-10 rounded-full transition-transform ${
                   selectedColor === color ? 'ring-2 ring-offset-2 ring-violet-600 scale-110' : ''
                 }`}

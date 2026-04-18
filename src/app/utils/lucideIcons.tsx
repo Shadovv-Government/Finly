@@ -1,0 +1,85 @@
+import type { ComponentType, CSSProperties } from 'react';
+import {
+  Award,
+  Banknote,
+  Book,
+  Briefcase,
+  Bus,
+  Camera,
+  Car,
+  CircleHelp,
+  Cloud,
+  Coffee,
+  Coins,
+  Dumbbell,
+  Film,
+  Gamepad2,
+  Gift,
+  GraduationCap,
+  Headphones,
+  Heart,
+  Home,
+  Monitor,
+  Music,
+  PartyPopper,
+  Plane,
+  Shirt,
+  ShoppingBag,
+  ShoppingBasket,
+  ShoppingCart,
+  Smartphone,
+  Star,
+  Target,
+  TrendingUp,
+  Utensils,
+  Wallet,
+  Zap,
+} from 'lucide-react';
+
+export type LucideIconComponent = ComponentType<{
+  className?: string;
+  style?: CSSProperties;
+}>;
+
+export const lucideIconMap: Record<string, LucideIconComponent> = {
+  Award,
+  Banknote,
+  Book,
+  Briefcase,
+  Bus,
+  Camera,
+  Car,
+  CircleHelp,
+  Cloud,
+  Coffee,
+  Coins,
+  Dumbbell,
+  Film,
+  Gamepad2,
+  Gift,
+  GraduationCap,
+  Headphones,
+  Heart,
+  Home,
+  Monitor,
+  Music,
+  PartyPopper,
+  Plane,
+  Shirt,
+  ShoppingBag,
+  ShoppingBasket,
+  ShoppingCart,
+  Smartphone,
+  Star,
+  Target,
+  TrendingUp,
+  Utensils,
+  Wallet,
+  Zap,
+  HelpCircle: CircleHelp,
+};
+
+export function getLucideIcon(name?: string, fallback: LucideIconComponent = Wallet): LucideIconComponent {
+  if (!name) return fallback;
+  return lucideIconMap[name] ?? fallback;
+}

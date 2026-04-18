@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Transaction } from '../../db/types';
 import { getAllTransactions, addTransaction, updateTransaction, deleteTransaction, getTransactionsByPeriod } from '../../db/operations';
 import { AppError, DatabaseError, logError, formatErrorForUser } from '../utils/errorHandler';
+import { emitTransactionsChanged, subscribeToTransactionsChanged } from '../utils/dataEvents';
 
 export interface UseTransactionsOptions {
   period?: 'day' | 'week' | 'month' | 'custom';
@@ -41,9 +42,16 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
     loadTransactions();
   }, [period, startDate, endDate, loadTransactions]);
 
+  useEffect(() => {
+    return subscribeToTransactionsChanged(() => {
+      loadTransactions();
+    });
+  }, [loadTransactions]);
+
   const add = useCallback(async (transaction: Omit<Transaction, 'id' | 'createdAt'>) => {
     try {
       const id = await addTransaction(transaction);
+      emitTransactionsChanged();
       await loadTransactions();
       return id;
     } catch (err) {
@@ -56,6 +64,7 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
   const update = useCallback(async (id: number, updates: Partial<Transaction>) => {
     try {
       await updateTransaction(id, updates);
+      emitTransactionsChanged();
       await loadTransactions();
     } catch (err) {
       const appError = err instanceof AppError ? err : new DatabaseError('Не удалось обновить транзакцию', err as Error);
@@ -67,6 +76,7 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
   const remove = useCallback(async (id: number) => {
     try {
       await deleteTransaction(id);
+      emitTransactionsChanged();
       await loadTransactions();
     } catch (err) {
       const appError = err instanceof AppError ? err : new DatabaseError('Не удалось удалить транзакцию', err as Error);

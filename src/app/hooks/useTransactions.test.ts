@@ -144,7 +144,7 @@ describe('useTransactions', () => {
       });
 
       expect(addTransaction).toHaveBeenCalledWith(newTransaction);
-      expect(getAllTransactions).toHaveBeenCalledTimes(2); // initial + after add
+      expect(getAllTransactions).toHaveBeenCalledTimes(3); // initial + event sync + after add
     });
 
     it('должен бросать ошибку при неудачном добавлении', async () => {
@@ -191,7 +191,7 @@ describe('useTransactions', () => {
       });
 
       expect(updateTransaction).toHaveBeenCalledWith(1, { amount: 1500 });
-      expect(getAllTransactions).toHaveBeenCalledTimes(2);
+      expect(getAllTransactions).toHaveBeenCalledTimes(3);
     });
 
     it('должен бросать ошибку при неудачном обновлении', async () => {
@@ -228,7 +228,7 @@ describe('useTransactions', () => {
       });
 
       expect(deleteTransaction).toHaveBeenCalledWith(1);
-      expect(getAllTransactions).toHaveBeenCalledTimes(2);
+      expect(getAllTransactions).toHaveBeenCalledTimes(3);
     });
 
     it('должен бросать ошибку при неудачном удалении', async () => {

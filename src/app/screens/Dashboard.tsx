@@ -22,6 +22,7 @@ import { AddTransactionForm } from '../components/AddTransactionForm';
 import { QuickActionBar } from '../components/QuickActionBar';
 import { NotificationsPanel } from '../components/NotificationsPanel';
 import { MS_PER_MONTH, MS_PER_WEEK } from '../constants';
+import { formatDateInputValue, parseDateInputValue } from '../utils/formatCurrency';
 
 export const Dashboard = () => {
   const [period, setPeriod] = useState<PeriodType>('month');
@@ -122,6 +123,7 @@ export const Dashboard = () => {
           </div>
           <div className="flex items-center gap-3">
             <button
+              aria-label="Открыть уведомления"
               onClick={() => setIsNotificationsOpen(true)}
               className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center relative"
             >
@@ -131,6 +133,7 @@ export const Dashboard = () => {
               )}
             </button>
             <button
+              aria-label="Выбрать аватар"
               onClick={handleAvatarClick}
               className={`w-10 h-10 rounded-full bg-gradient-to-br ${user?.avatarColor || 'from-amber-400 to-pink-500'} flex items-center justify-center font-bold relative group`}
             >
@@ -389,10 +392,11 @@ export const Dashboard = () => {
               <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
                 <Calendar className="w-5 h-5 text-muted-foreground" />
                 <input
+                  aria-label="Дата начала периода"
                   type="date"
-                  value={customStartDate.toISOString().split('T')[0]}
-                  onChange={(e) => setCustomStartDate(new Date(e.target.value))}
-                  className="flex-1 bg-transparent outline-none"
+                  value={formatDateInputValue(customStartDate)}
+                  onChange={(e) => setCustomStartDate(parseDateInputValue(e.target.value))}
+                  className="flex-1 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-md"
                 />
               </div>
             </div>
@@ -401,10 +405,11 @@ export const Dashboard = () => {
               <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
                 <Calendar className="w-5 h-5 text-muted-foreground" />
                 <input
+                  aria-label="Дата окончания периода"
                   type="date"
-                  value={customEndDate.toISOString().split('T')[0]}
-                  onChange={(e) => setCustomEndDate(new Date(e.target.value))}
-                  className="flex-1 bg-transparent outline-none"
+                  value={formatDateInputValue(customEndDate)}
+                  onChange={(e) => setCustomEndDate(parseDateInputValue(e.target.value))}
+                  className="flex-1 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-md"
                 />
               </div>
             </div>

@@ -1,10 +1,11 @@
 import { Plus, Edit2, Trash2 } from 'lucide-react';
-import * as Icons from 'lucide-react';
+import { Wallet } from 'lucide-react';
 import { useCategories } from '../hooks/useCategories';
 import { useState } from 'react';
 import { Category } from '../../db/types';
 import { CategoryForm } from '../components/CategoryForm';
 import { useNotifications } from '../hooks/useNotifications';
+import { getLucideIcon } from '../utils/lucideIcons';
 
 export const Categories = () => {
   const { categories, add, update, remove } = useCategories();
@@ -88,7 +89,7 @@ export const Categories = () => {
           {categories
             .filter(c => c.type === 'expense')
             .map(category => {
-              const IconComponent = (Icons[category.icon as keyof typeof Icons] as React.ElementType) || Icons.Wallet;
+              const IconComponent = getLucideIcon(category.icon, Wallet);
               return (
                 <div
                   key={category.id}
@@ -151,7 +152,7 @@ export const Categories = () => {
           {categories
             .filter(c => c.type === 'income')
             .map(category => {
-              const IconComponent = (Icons[category.icon as keyof typeof Icons] as React.ElementType) || Icons.Wallet;
+              const IconComponent = getLucideIcon(category.icon, Wallet);
               return (
                 <div
                   key={category.id}

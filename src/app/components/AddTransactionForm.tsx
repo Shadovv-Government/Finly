@@ -1,14 +1,15 @@
 import { Calendar, MessageSquare } from 'lucide-react';
-import * as LucideIcons from 'lucide-react';
+import { Wallet } from 'lucide-react';
 import { useCategories } from '../hooks/useCategories';
 import { useTransactions } from '../hooks/useTransactions';
 import { useNotifications } from '../hooks/useNotifications';
 import { useBudgetNotifications } from '../hooks/useBudgetNotifications';
 import { useTransactionForm } from '../hooks/useTransactionForm';
+import { formatDateInputValue, parseDateInputValue } from '../utils/formatCurrency';
+import { getLucideIcon } from '../utils/lucideIcons';
 
 function CategoryIcon({ name, className, color }: { name: string; className?: string; color?: string }) {
-  const icons = LucideIcons as Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>>;
-  const IconComponent = icons[name] ?? LucideIcons.Wallet;
+  const IconComponent = getLucideIcon(name, Wallet);
   return <IconComponent className={className} style={{ color }} />;
 }
 
@@ -19,7 +20,7 @@ interface AddTransactionFormProps {
 export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose }) => {
   const { categories } = useCategories();
   const { add } = useTransactions();
-  const { notifyTransaction } = useNotifications();
+  const { notify, notifyTransaction } = useNotifications();
   const { checkBudgets } = useBudgetNotifications();
   const {
     formData,
@@ -32,6 +33,7 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
 
   const handleSave = async () => {
     if (!formData.amount) {
+      notify('Укажите сумму', 'Добавьте сумму операции перед сохранением');
       return;
     }
 
@@ -47,6 +49,7 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
     }
 
     if (!categoryId) {
+      notify('Категория не найдена', 'Выберите категорию или проверьте список категорий');
       return;
     }
 
@@ -69,7 +72,7 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
 
       onClose();
     } catch (error) {
-      // Обработка ошибки
+      notify('Не удалось сохранить операцию', 'Попробуйте ещё раз');
     }
   };
 
@@ -104,13 +107,13 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
       {/* Amount Input */}
       <div className="px-4 py-6">
         <input
+          aria-label="Сумма"
           type="tel"
           inputMode="decimal"
           placeholder="0"
           value={formatAmount(formData.amount)}
           onChange={handleAmountChange}
-          className="w-full text-4xl font-bold text-center bg-transparent outline-none"
-          autoFocus
+          className="w-full text-4xl font-bold text-center bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-lg"
         />
         <p className="text-center text-muted-foreground mt-2">₽</p>
       </div>
@@ -151,20 +154,22 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
         <div className="flex items-center gap-3 p-4 bg-card rounded-xl border border-border">
           <Calendar className="w-5 h-5 text-muted-foreground" />
           <input
+            aria-label="Дата операции"
             type="date"
-            value={formData.date.toISOString().split('T')[0]}
-            onChange={(e) => setFormData(prev => ({ ...prev, date: new Date(e.target.value) }))}
-            className="flex-1 bg-transparent outline-none"
+            value={formatDateInputValue(formData.date)}
+            onChange={(e) => setFormData(prev => ({ ...prev, date: parseDateInputValue(e.target.value) }))}
+            className="flex-1 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-md"
           />
         </div>
         <div className="flex items-center gap-3 p-4 bg-card rounded-xl border border-border">
           <MessageSquare className="w-5 h-5 text-muted-foreground" />
           <input
+            aria-label="Комментарий"
             type="text"
             placeholder="Комментарий"
             value={formData.comment}
             onChange={(e) => setFormData(prev => ({ ...prev, comment: e.target.value }))}
-            className="flex-1 bg-transparent outline-none"
+            className="flex-1 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-md"
           />
         </div>
       </div>
