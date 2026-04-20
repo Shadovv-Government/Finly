@@ -49,6 +49,7 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
   const didAutoStartVoiceRef = useRef(false);
   const liveTranscriptRef = useRef('');
   const shouldProcessOnEndRef = useRef(false);
+  const hasProcessedTranscriptRef = useRef(false);
 
   const { categories } = useCategories();
   const { add } = useTransactions();
@@ -183,10 +184,18 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
     }
   };
 
+  const processVoiceTranscript = useCallback((transcript: string) => {
+    const normalizedTranscript = transcript.trim();
+    if (!normalizedTranscript || hasProcessedTranscriptRef.current) return;
+    hasProcessedTranscriptRef.current = true;
+    parseText(normalizedTranscript, true);
+  }, []);
+
   const startRecording = useCallback(() => {
     if (!hasVoice) return;
     liveTranscriptRef.current = '';
     shouldProcessOnEndRef.current = false;
+    hasProcessedTranscriptRef.current = false;
     const recognition = new SpeechRecognitionAPI();
     recognition.lang = 'ru-RU';
     recognition.interimResults = true;
@@ -201,7 +210,7 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
 
       if (e.results[e.results.length - 1].isFinal) {
         shouldProcessOnEndRef.current = false;
-        parseText(transcript, true);
+        processVoiceTranscript(transcript);
         setIsRecording(false);
       }
     };
@@ -223,20 +232,24 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
         return;
       }
 
-      parseText(transcript, true);
+      processVoiceTranscript(transcript);
     };
 
     recognitionRef.current = recognition;
     recognition.start();
     setIsRecording(true);
     setStatusText('Слушаю...');
-  }, [SpeechRecognitionAPI, hasVoice]);
+  }, [SpeechRecognitionAPI, hasVoice, processVoiceTranscript]);
 
   const stopRecording = () => {
-    shouldProcessOnEndRef.current = true;
+    const transcript = liveTranscriptRef.current.trim();
+    shouldProcessOnEndRef.current = !transcript;
     recognitionRef.current?.stop();
     setIsRecording(false);
     setStatusText('Обработка записи...');
+    if (transcript) {
+      processVoiceTranscript(transcript);
+    }
   };
 
   useEffect(() => {

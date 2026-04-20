@@ -16,7 +16,8 @@ export const Layout = () => {
   const [quickInputSessionKey, setQuickInputSessionKey] = useState(0);
   const [quickInputAutoStartVoice, setQuickInputAutoStartVoice] = useState(false);
   const [quickInputTab, setQuickInputTab] = useState<QuickInputTab>('ai');
-  const [quickInputContentHeight, setQuickInputContentHeight] = useState<number | null>(null);
+  const [aiPaneHeight, setAiPaneHeight] = useState(0);
+  const [manualPaneHeight, setManualPaneHeight] = useState(0);
   const aiPaneRef = useRef<HTMLDivElement>(null);
   const manualPaneRef = useRef<HTMLDivElement>(null);
 
@@ -29,29 +30,37 @@ export const Layout = () => {
 
   useEffect(() => {
     if (!isQuickInputOpen) {
-      setQuickInputContentHeight(null);
+      setAiPaneHeight(0);
+      setManualPaneHeight(0);
       return;
     }
 
-    const updateHeight = () => {
-      const activePane = quickInputTab === 'ai' ? aiPaneRef.current : manualPaneRef.current;
-      if (!activePane) return;
-      setQuickInputContentHeight(activePane.getBoundingClientRect().height);
+    const updateHeights = () => {
+      if (aiPaneRef.current) {
+        setAiPaneHeight(aiPaneRef.current.getBoundingClientRect().height);
+      }
+
+      if (manualPaneRef.current) {
+        setManualPaneHeight(manualPaneRef.current.getBoundingClientRect().height);
+      }
     };
 
-    updateHeight();
+    updateHeights();
 
     if (typeof ResizeObserver === 'undefined') return;
 
     const resizeObserver = new ResizeObserver(() => {
-      updateHeight();
+      updateHeights();
     });
 
     if (aiPaneRef.current) resizeObserver.observe(aiPaneRef.current);
     if (manualPaneRef.current) resizeObserver.observe(manualPaneRef.current);
 
     return () => resizeObserver.disconnect();
-  }, [isQuickInputOpen, quickInputSessionKey, quickInputTab]);
+  }, [isQuickInputOpen, quickInputSessionKey]);
+
+  const stableQuickInputHeight =
+    Math.max(aiPaneHeight, manualPaneHeight) || undefined;
 
   return (
     <div className="min-h-screen bg-background">
@@ -97,18 +106,18 @@ export const Layout = () => {
           </div>
 
           <div
-            className="overflow-hidden transition-[height] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
-            style={quickInputContentHeight ? { height: `${quickInputContentHeight}px` } : undefined}
+            className="relative overflow-hidden transition-[height] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+            style={stableQuickInputHeight ? { height: `${stableQuickInputHeight}px` } : undefined}
           >
-            <AnimatePresence initial={false} mode="sync">
+            <AnimatePresence mode="wait" initial={false}>
               {quickInputTab === 'ai' ? (
                 <motion.div
-                  key="quick-input-ai"
-                  ref={aiPaneRef}
-                  initial={{ opacity: 0, y: 12 }}
+                  key="quick-input-ai-visible"
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                  className="relative"
                 >
                   <AIQuickInput
                     onClose={() => setIsQuickInputOpen(false)}
@@ -117,17 +126,29 @@ export const Layout = () => {
                 </motion.div>
               ) : (
                 <motion.div
-                  key="quick-input-manual"
-                  ref={manualPaneRef}
-                  initial={{ opacity: 0, y: 12 }}
+                  key="quick-input-manual-visible"
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                  className="relative"
                 >
                   <AddTransactionForm onClose={() => setIsQuickInputOpen(false)} />
                 </motion.div>
               )}
             </AnimatePresence>
+
+            <div className="absolute inset-0 -z-10 pointer-events-none opacity-0 overflow-hidden">
+              <div ref={aiPaneRef}>
+                <AIQuickInput
+                  onClose={() => setIsQuickInputOpen(false)}
+                  autoStartVoice={quickInputAutoStartVoice}
+                />
+              </div>
+              <div ref={manualPaneRef}>
+                <AddTransactionForm onClose={() => setIsQuickInputOpen(false)} />
+              </div>
+            </div>
           </div>
         </div>
       </BottomSheet>
