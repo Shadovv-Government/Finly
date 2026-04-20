@@ -189,7 +189,7 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
     if (!normalizedTranscript || hasProcessedTranscriptRef.current) return;
     hasProcessedTranscriptRef.current = true;
     parseText(normalizedTranscript, true);
-  }, []);
+  }, [parseText]);
 
   const startRecording = useCallback(() => {
     if (!hasVoice) return;
@@ -216,11 +216,13 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
     };
 
     recognition.onerror = () => {
+      recognitionRef.current = null;
       setIsRecording(false);
       setStatusText('Ошибка. Попробуйте ещё раз.');
     };
 
     recognition.onend = () => {
+      recognitionRef.current = null;
       setIsRecording(false);
 
       if (!shouldProcessOnEndRef.current) return;
@@ -242,14 +244,10 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
   }, [SpeechRecognitionAPI, hasVoice, processVoiceTranscript]);
 
   const stopRecording = () => {
-    const transcript = liveTranscriptRef.current.trim();
-    shouldProcessOnEndRef.current = !transcript;
+    shouldProcessOnEndRef.current = true;
     recognitionRef.current?.stop();
     setIsRecording(false);
     setStatusText('Обработка записи...');
-    if (transcript) {
-      processVoiceTranscript(transcript);
-    }
   };
 
   useEffect(() => {

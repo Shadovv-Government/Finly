@@ -8,6 +8,7 @@ import { AddTransactionForm } from './components/AddTransactionForm';
 type QuickInputTab = 'ai' | 'manual';
 
 export const Layout = () => {
+  const SHEET_SWITCH_DELAY_MS = 240;
   const location = useLocation();
   const hideNavOnPaths = ['/onboarding'];
   const showNav = !hideNavOnPaths.includes(location.pathname);
@@ -15,45 +16,46 @@ export const Layout = () => {
   const [quickInputSessionKey, setQuickInputSessionKey] = useState(0);
   const [quickInputAutoStartVoice, setQuickInputAutoStartVoice] = useState(false);
   const [quickInputTab, setQuickInputTab] = useState<QuickInputTab>('ai');
-  const [displayedQuickInputTab, setDisplayedQuickInputTab] = useState<QuickInputTab>('ai');
-  const [isTabExiting, setIsTabExiting] = useState(false);
-  const [isTabEntering, setIsTabEntering] = useState(false);
-  const tabSwitchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const tabEnterTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sheetSwitchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const openQuickInput = (autoStartVoice: boolean) => {
     setQuickInputAutoStartVoice(autoStartVoice);
     setQuickInputTab('ai');
-    setDisplayedQuickInputTab('ai');
-    setIsTabExiting(false);
-    setIsTabEntering(false);
     setQuickInputSessionKey(prev => prev + 1);
     setIsQuickInputOpen(true);
   };
 
+  const closeQuickInput = () => {
+    if (sheetSwitchTimerRef.current) {
+      clearTimeout(sheetSwitchTimerRef.current);
+      sheetSwitchTimerRef.current = null;
+    }
+    setIsQuickInputOpen(false);
+  };
+
   const handleQuickInputTabChange = (nextTab: QuickInputTab) => {
-    if (nextTab === quickInputTab || isTabExiting || isTabEntering) return;
-    setQuickInputTab(nextTab);
-    setIsTabExiting(true);
+    if (nextTab === quickInputTab) return;
 
-    if (tabSwitchTimerRef.current) clearTimeout(tabSwitchTimerRef.current);
-    if (tabEnterTimerRef.current) clearTimeout(tabEnterTimerRef.current);
+    if (sheetSwitchTimerRef.current) {
+      clearTimeout(sheetSwitchTimerRef.current);
+    }
 
-    tabSwitchTimerRef.current = setTimeout(() => {
-      setDisplayedQuickInputTab(nextTab);
-      setIsTabExiting(false);
-      setIsTabEntering(true);
+    setQuickInputAutoStartVoice(false);
+    setIsQuickInputOpen(false);
 
-      tabEnterTimerRef.current = setTimeout(() => {
-        setIsTabEntering(false);
-      }, 220);
-    }, 160);
+    sheetSwitchTimerRef.current = setTimeout(() => {
+      setQuickInputTab(nextTab);
+      setQuickInputSessionKey(prev => prev + 1);
+      setIsQuickInputOpen(true);
+      sheetSwitchTimerRef.current = null;
+    }, SHEET_SWITCH_DELAY_MS);
   };
 
   useEffect(() => {
     return () => {
-      if (tabSwitchTimerRef.current) clearTimeout(tabSwitchTimerRef.current);
-      if (tabEnterTimerRef.current) clearTimeout(tabEnterTimerRef.current);
+      if (sheetSwitchTimerRef.current) {
+        clearTimeout(sheetSwitchTimerRef.current);
+      }
     };
   }, []);
 
@@ -69,7 +71,7 @@ export const Layout = () => {
 
       <BottomSheet
         isOpen={isQuickInputOpen}
-        onClose={() => setIsQuickInputOpen(false)}
+        onClose={closeQuickInput}
         title="Быстрый ввод"
       >
         <div key={quickInputSessionKey} className="pb-4">
@@ -100,26 +102,14 @@ export const Layout = () => {
             </div>
           </div>
 
-          <div className="relative overflow-hidden">
-            <div
-              className={`${
-                isTabExiting
-                  ? 'animate-slide-down-minimal'
-                  : isTabEntering
-                  ? 'animate-slide-up-minimal'
-                  : ''
-              }`}
-            >
-              {displayedQuickInputTab === 'ai' ? (
-                <AIQuickInput
-                  onClose={() => setIsQuickInputOpen(false)}
-                  autoStartVoice={quickInputAutoStartVoice}
-                />
-              ) : (
-                <AddTransactionForm onClose={() => setIsQuickInputOpen(false)} />
-              )}
-            </div>
-          </div>
+          {quickInputTab === 'ai' ? (
+            <AIQuickInput
+              onClose={closeQuickInput}
+              autoStartVoice={quickInputAutoStartVoice}
+            />
+          ) : (
+            <AddTransactionForm onClose={closeQuickInput} />
+          )}
         </div>
       </BottomSheet>
     </div>
