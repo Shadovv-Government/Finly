@@ -10,7 +10,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg'],
+      includeAssets: ['icon.png'],
       manifest: {
         name: 'Finly — Управление личными финансами',
         short_name: 'Finly',
@@ -23,15 +23,15 @@ export default defineConfig({
         orientation: 'portrait',
         icons: [
           {
-            src: 'favicon.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
+            src: 'icon.png',
+            sizes: '2048x2048',
+            type: 'image/png',
             purpose: 'any'
           },
           {
-            src: 'favicon.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
+            src: 'icon.png',
+            sizes: '2048x2048',
+            type: 'image/png',
             purpose: 'maskable'
           }
         ]

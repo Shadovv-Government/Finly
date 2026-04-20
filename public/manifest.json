@@ -9,15 +9,15 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/icon.png",
+      "sizes": "2048x2048",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/icon.png",
+      "sizes": "2048x2048",
+      "type": "image/png",
       "purpose": "maskable"
     }
   ],
@@ -29,14 +29,14 @@
       "short_name": "Расход",
       "description": "Добавить новую транзакцию расхода",
       "url": "/add?type=expense",
-      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+      "icons": [{ "src": "/icon.png", "sizes": "2048x2048", "type": "image/png" }]
     },
     {
       "name": "Добавить доход",
       "short_name": "Доход",
       "description": "Добавить новую транзакцию дохода",
       "url": "/add?type=income",
-      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+      "icons": [{ "src": "/icon.png", "sizes": "2048x2048", "type": "image/png" }]
     }
   ]
 }

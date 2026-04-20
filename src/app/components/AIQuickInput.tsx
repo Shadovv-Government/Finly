@@ -10,8 +10,6 @@ import { Category } from '../../db/types';
 import { formatDateInputValue } from '../utils/formatCurrency';
 import { getLucideIcon } from '../utils/lucideIcons';
 
-const AUTO_SUBMIT_DELAY = 2; // секунды до автоотправки после голоса
-
 interface ParsedResult {
   amount: number;
   type: 'income' | 'expense';
@@ -121,27 +119,6 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
   };
 
   // Запускаем обратный отсчёт и авто-отправку после голосового ввода
-  const startAutoSubmit = (result: ParsedResult) => {
-    pendingResultRef.current = result;
-    setCountdown(AUTO_SUBMIT_DELAY);
-
-    countdownIntervalRef.current = setInterval(() => {
-      setCountdown(prev => {
-        if (prev === null || prev <= 1) {
-          clearInterval(countdownIntervalRef.current!);
-          countdownIntervalRef.current = null;
-          return null;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    autoTimerRef.current = setTimeout(() => {
-      const res = pendingResultRef.current;
-      if (res) doSave(res);
-    }, AUTO_SUBMIT_DELAY * 1000);
-  };
-
   const handleDiscard = () => {
     clearAutoSubmit();
     pendingResultRef.current = null;
@@ -196,7 +173,11 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
       return;
     }
     setParsedResult(result);
-    if (fromVoice) startAutoSubmit(result);
+    if (fromVoice) {
+      clearAutoSubmit();
+      pendingResultRef.current = result;
+      setStatusText('Проверьте результат и нажмите "Добавить"');
+    }
   };
 
   const startRecording = useCallback(() => {
