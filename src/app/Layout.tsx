@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
 import { Outlet, useLocation } from 'react-router';
 import { BottomNav } from './components/BottomNav';
 import { BottomSheet } from './components/BottomSheet';
@@ -16,51 +15,47 @@ export const Layout = () => {
   const [quickInputSessionKey, setQuickInputSessionKey] = useState(0);
   const [quickInputAutoStartVoice, setQuickInputAutoStartVoice] = useState(false);
   const [quickInputTab, setQuickInputTab] = useState<QuickInputTab>('ai');
-  const [aiPaneHeight, setAiPaneHeight] = useState(0);
-  const [manualPaneHeight, setManualPaneHeight] = useState(0);
-  const aiPaneRef = useRef<HTMLDivElement>(null);
-  const manualPaneRef = useRef<HTMLDivElement>(null);
+  const [displayedQuickInputTab, setDisplayedQuickInputTab] = useState<QuickInputTab>('ai');
+  const [isTabExiting, setIsTabExiting] = useState(false);
+  const [isTabEntering, setIsTabEntering] = useState(false);
+  const tabSwitchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tabEnterTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const openQuickInput = (autoStartVoice: boolean) => {
     setQuickInputAutoStartVoice(autoStartVoice);
     setQuickInputTab('ai');
+    setDisplayedQuickInputTab('ai');
+    setIsTabExiting(false);
+    setIsTabEntering(false);
     setQuickInputSessionKey(prev => prev + 1);
     setIsQuickInputOpen(true);
   };
 
+  const handleQuickInputTabChange = (nextTab: QuickInputTab) => {
+    if (nextTab === quickInputTab || isTabExiting || isTabEntering) return;
+    setQuickInputTab(nextTab);
+    setIsTabExiting(true);
+
+    if (tabSwitchTimerRef.current) clearTimeout(tabSwitchTimerRef.current);
+    if (tabEnterTimerRef.current) clearTimeout(tabEnterTimerRef.current);
+
+    tabSwitchTimerRef.current = setTimeout(() => {
+      setDisplayedQuickInputTab(nextTab);
+      setIsTabExiting(false);
+      setIsTabEntering(true);
+
+      tabEnterTimerRef.current = setTimeout(() => {
+        setIsTabEntering(false);
+      }, 220);
+    }, 160);
+  };
+
   useEffect(() => {
-    if (!isQuickInputOpen) {
-      setAiPaneHeight(0);
-      setManualPaneHeight(0);
-      return;
-    }
-
-    const updateHeights = () => {
-      if (aiPaneRef.current) {
-        setAiPaneHeight(aiPaneRef.current.getBoundingClientRect().height);
-      }
-
-      if (manualPaneRef.current) {
-        setManualPaneHeight(manualPaneRef.current.getBoundingClientRect().height);
-      }
+    return () => {
+      if (tabSwitchTimerRef.current) clearTimeout(tabSwitchTimerRef.current);
+      if (tabEnterTimerRef.current) clearTimeout(tabEnterTimerRef.current);
     };
-
-    updateHeights();
-
-    if (typeof ResizeObserver === 'undefined') return;
-
-    const resizeObserver = new ResizeObserver(() => {
-      updateHeights();
-    });
-
-    if (aiPaneRef.current) resizeObserver.observe(aiPaneRef.current);
-    if (manualPaneRef.current) resizeObserver.observe(manualPaneRef.current);
-
-    return () => resizeObserver.disconnect();
-  }, [isQuickInputOpen, quickInputSessionKey]);
-
-  const stableQuickInputHeight =
-    Math.max(aiPaneHeight, manualPaneHeight) || undefined;
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -82,7 +77,7 @@ export const Layout = () => {
             <div className="flex gap-1 rounded-xl bg-muted p-1">
               <button
                 type="button"
-                onClick={() => setQuickInputTab('ai')}
+                onClick={() => handleQuickInputTabChange('ai')}
                 className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all ${
                   quickInputTab === 'ai'
                     ? 'bg-card text-primary shadow-sm'
@@ -93,7 +88,7 @@ export const Layout = () => {
               </button>
               <button
                 type="button"
-                onClick={() => setQuickInputTab('manual')}
+                onClick={() => handleQuickInputTabChange('manual')}
                 className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all ${
                   quickInputTab === 'manual'
                     ? 'bg-card text-primary shadow-sm'
@@ -105,49 +100,24 @@ export const Layout = () => {
             </div>
           </div>
 
-          <div
-            className="relative overflow-hidden transition-[height] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
-            style={stableQuickInputHeight ? { height: `${stableQuickInputHeight}px` } : undefined}
-          >
-            <AnimatePresence mode="wait" initial={false}>
-              {quickInputTab === 'ai' ? (
-                <motion.div
-                  key="quick-input-ai-visible"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                  className="relative"
-                >
-                  <AIQuickInput
-                    onClose={() => setIsQuickInputOpen(false)}
-                    autoStartVoice={quickInputAutoStartVoice}
-                  />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="quick-input-manual-visible"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                  className="relative"
-                >
-                  <AddTransactionForm onClose={() => setIsQuickInputOpen(false)} />
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <div className="absolute inset-0 -z-10 pointer-events-none opacity-0 overflow-hidden">
-              <div ref={aiPaneRef}>
+          <div className="relative overflow-hidden">
+            <div
+              className={`${
+                isTabExiting
+                  ? 'animate-slide-down-minimal'
+                  : isTabEntering
+                  ? 'animate-slide-up-minimal'
+                  : ''
+              }`}
+            >
+              {displayedQuickInputTab === 'ai' ? (
                 <AIQuickInput
                   onClose={() => setIsQuickInputOpen(false)}
                   autoStartVoice={quickInputAutoStartVoice}
                 />
-              </div>
-              <div ref={manualPaneRef}>
+              ) : (
                 <AddTransactionForm onClose={() => setIsQuickInputOpen(false)} />
-              </div>
+              )}
             </div>
           </div>
         </div>
