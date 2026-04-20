@@ -46,6 +46,7 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
   const autoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pendingResultRef = useRef<ParsedResult | null>(null);
+  const didAutoStartVoiceRef = useRef(false);
 
   const { categories } = useCategories();
   const { add } = useTransactions();
@@ -215,13 +216,15 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
   const stopRecording = () => {
     recognitionRef.current?.stop();
     setIsRecording(false);
+    setStatusText('Обработка записи...');
   };
 
   useEffect(() => {
-    if (!autoStartVoice || !hasVoice || isRecording) return;
+    if (!autoStartVoice || !hasVoice || didAutoStartVoiceRef.current) return;
+    didAutoStartVoiceRef.current = true;
     setMode('voice');
     startRecording();
-  }, [autoStartVoice, hasVoice, isRecording, startRecording]);
+  }, [autoStartVoice, hasVoice, startRecording]);
 
   const handleMicPress = () => {
     if (isRecording) stopRecording();
@@ -370,6 +373,15 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
           <p className="text-sm text-muted-foreground text-center max-w-[220px] min-h-[40px]">
             {hasVoice ? statusText : 'Голосовой ввод не поддерживается в этом браузере'}
           </p>
+          {isRecording && (
+            <button
+              type="button"
+              onClick={stopRecording}
+              className="px-4 py-2 rounded-xl bg-card border border-border text-sm font-medium text-foreground"
+            >
+              Завершить ввод
+            </button>
+          )}
         </div>
       )}
 
