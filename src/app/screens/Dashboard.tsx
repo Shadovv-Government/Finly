@@ -17,9 +17,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../components/ui/dialog';
-import { BottomSheet } from '../components/BottomSheet';
-import { AddTransactionForm } from '../components/AddTransactionForm';
-import { QuickActionBar } from '../components/QuickActionBar';
 import { NotificationsPanel } from '../components/NotificationsPanel';
 import { MS_PER_MONTH, MS_PER_WEEK } from '../constants';
 import { formatDateInputValue, parseDateInputValue } from '../utils/formatCurrency';
@@ -41,7 +38,6 @@ export const Dashboard = () => {
   const { hasUnread, notifications: panelNotifications, markAllRead, clearRead } = useNotificationPanel();
   const { checkBudgets } = useBudgetNotifications();
   const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
-  const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
   // Проверка бюджетов при загрузке и при возврате на вкладку
@@ -345,18 +341,6 @@ export const Dashboard = () => {
           )}
         </div>
       </div>
-
-      {/* Quick Action Bar — text input + voice/add button */}
-      <QuickActionBar onOpenForm={() => setIsAddSheetOpen(true)} />
-
-      {/* Add Transaction Bottom Sheet */}
-      <BottomSheet
-        isOpen={isAddSheetOpen}
-        onClose={() => setIsAddSheetOpen(false)}
-        title="Новая операция"
-      >
-        <AddTransactionForm onClose={() => setIsAddSheetOpen(false)} />
-      </BottomSheet>
 
       {/* Avatar Selection Dialog */}
       <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>

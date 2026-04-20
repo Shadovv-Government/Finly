@@ -29,9 +29,13 @@ function CategoryIcon({ name, className, color }: { name: string; className?: st
 
 interface AIQuickInputProps {
   onClose: () => void;
+  autoStartVoice?: boolean;
 }
 
-export const AIQuickInput: React.FC<AIQuickInputProps> = ({ onClose }) => {
+export const AIQuickInput: React.FC<AIQuickInputProps> = ({
+  onClose,
+  autoStartVoice = false,
+}) => {
   const [mode, setMode] = useState<'voice' | 'chat'>('voice');
   const [isRecording, setIsRecording] = useState(false);
   const [chatInput, setChatInput] = useState('');
@@ -195,7 +199,7 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({ onClose }) => {
     if (fromVoice) startAutoSubmit(result);
   };
 
-  const startRecording = () => {
+  const startRecording = useCallback(() => {
     if (!hasVoice) return;
     const recognition = new SpeechRecognitionAPI();
     recognition.lang = 'ru-RU';
@@ -225,12 +229,18 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({ onClose }) => {
     recognition.start();
     setIsRecording(true);
     setStatusText('Слушаю...');
-  };
+  }, [SpeechRecognitionAPI, hasVoice]);
 
   const stopRecording = () => {
     recognitionRef.current?.stop();
     setIsRecording(false);
   };
+
+  useEffect(() => {
+    if (!autoStartVoice || !hasVoice || isRecording) return;
+    setMode('voice');
+    startRecording();
+  }, [autoStartVoice, hasVoice, isRecording, startRecording]);
 
   const handleMicPress = () => {
     if (isRecording) stopRecording();
