@@ -47,6 +47,8 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
   const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pendingResultRef = useRef<ParsedResult | null>(null);
   const didAutoStartVoiceRef = useRef(false);
+  const liveTranscriptRef = useRef('');
+  const shouldProcessOnEndRef = useRef(false);
 
   const { categories } = useCategories();
   const { add } = useTransactions();
@@ -183,6 +185,8 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
 
   const startRecording = useCallback(() => {
     if (!hasVoice) return;
+    liveTranscriptRef.current = '';
+    shouldProcessOnEndRef.current = false;
     const recognition = new SpeechRecognitionAPI();
     recognition.lang = 'ru-RU';
     recognition.interimResults = true;
@@ -192,9 +196,11 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
       const transcript = Array.from(e.results)
         .map((r: any) => r[0].transcript)
         .join('');
+      liveTranscriptRef.current = transcript;
       setStatusText(transcript);
 
       if (e.results[e.results.length - 1].isFinal) {
+        shouldProcessOnEndRef.current = false;
         parseText(transcript, true);
         setIsRecording(false);
       }
@@ -205,7 +211,20 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
       setStatusText('Ошибка. Попробуйте ещё раз.');
     };
 
-    recognition.onend = () => setIsRecording(false);
+    recognition.onend = () => {
+      setIsRecording(false);
+
+      if (!shouldProcessOnEndRef.current) return;
+
+      shouldProcessOnEndRef.current = false;
+      const transcript = liveTranscriptRef.current.trim();
+      if (!transcript) {
+        setStatusText('Не удалось распознать. Попробуйте ещё раз.');
+        return;
+      }
+
+      parseText(transcript, true);
+    };
 
     recognitionRef.current = recognition;
     recognition.start();
@@ -214,6 +233,7 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
   }, [SpeechRecognitionAPI, hasVoice]);
 
   const stopRecording = () => {
+    shouldProcessOnEndRef.current = true;
     recognitionRef.current?.stop();
     setIsRecording(false);
     setStatusText('Обработка записи...');
@@ -373,15 +393,6 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
           <p className="text-sm text-muted-foreground text-center max-w-[220px] min-h-[40px]">
             {hasVoice ? statusText : 'Голосовой ввод не поддерживается в этом браузере'}
           </p>
-          {isRecording && (
-            <button
-              type="button"
-              onClick={stopRecording}
-              className="px-4 py-2 rounded-xl bg-card border border-border text-sm font-medium text-foreground"
-            >
-              Завершить ввод
-            </button>
-          )}
         </div>
       )}
 
