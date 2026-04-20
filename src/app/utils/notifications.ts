@@ -54,8 +54,8 @@ export function sendNotification(options: NotificationOptions): void {
 
   const notification = new Notification(title, {
     body,
-    icon: icon || '/pwa-192x192.svg',
-    badge: badge || '/pwa-192x192.svg',
+    icon: icon || '/favicon.svg',
+    badge: badge || '/favicon.svg',
     tag: tag || 'finly-notification',
     requireInteraction: requireInteraction || false,
   });

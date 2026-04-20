@@ -65,22 +65,25 @@ export async function findBestMatch(comment: string): Promise<AIMatch | null> {
  * Возвращает структурированные данные
  */
 export function parseNaturalLanguage(text: string): ParsedTransaction | null {
-  // Паттерны для извлечения суммы
+  // Паттерны для извлечения суммы (от специфичного к общему)
   const amountPatterns = [
-    /(\d+(?:[.,]\d+)?)\s*(?:руб(?:лей|ля|лю)?|₽|rub|r|usd|\$|eur|€)/i,
-    /(\d+(?:[.,]\d+)?)\s*(?:тыс(?:яч)?|k|к)/i,
+    /(\d+(?:[.,]\d+)?)\s*(?:рублей|рубля|рублю|руб\.?|р\.?(?=\s|$)|₽|rub|r(?=\s|$)|usd|\$|eur|€)/i,
+    /(\d+(?:[.,]\d+)?)\s*(?:тыс(?:яч(?:и|у)?)?|k|к)/i,
+    /(\d+(?:[.,]\d+)?)/,
   ];
 
   let amount = 0;
   let currency = 'RUB';
   let type: TransactionType = 'expense';
+  let matchedPatternIdx = -1;
 
   // Извлекаем сумму
-  for (const pattern of amountPatterns) {
-    const match = text.match(pattern);
+  for (let i = 0; i < amountPatterns.length; i++) {
+    const match = text.match(amountPatterns[i]);
     if (match) {
       amount = parseFloat(match[1].replace(',', '.'));
-      
+      matchedPatternIdx = i;
+
       // Проверяем масштаб (тысячи)
       if (match[0].toLowerCase().includes('тыс') || match[0].toLowerCase().includes('k')) {
         amount *= 1000;
@@ -115,11 +118,10 @@ export function parseNaturalLanguage(text: string): ParsedTransaction | null {
   const date = parseDateFromText(text);
 
   // Очищаем комментарий от суммы, валюты и даты
-  let comment = text
-    .replace(amountPatterns[0], '')
-    .replace(amountPatterns[1], '')
-    .replace(DATE_PATTERN, '')
-    .trim();
+  let comment = text;
+  if (matchedPatternIdx >= 0) comment = comment.replace(amountPatterns[matchedPatternIdx], '');
+  if (matchedPatternIdx !== 1) comment = comment.replace(amountPatterns[1], '');
+  comment = comment.replace(DATE_PATTERN, '').trim();
 
   return {
     amount,

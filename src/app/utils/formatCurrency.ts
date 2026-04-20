@@ -43,7 +43,9 @@ export function formatAmountInput(value: string): string {
  * @returns Чистая строка для парсинга (например, "1000")
  */
 export function parseAmountInput(value: string): string {
-  return value.replace(/\s/g, '');
+  return value
+    .replace(/\s*(рублей|рубля|рублю|руб\.?|р\.?|₽|rub|r|usd|\$|eur|€)\s*$/i, '')
+    .replace(/\s/g, '');
 }
 
 /**
@@ -52,8 +54,7 @@ export function parseAmountInput(value: string): string {
  * @returns Число или NaN если не удалось распарсить
  */
 export function parseAmountToNumber(value: string): number {
-  const cleaned = value.replace(/\s/g, '');
-  return parseFloat(cleaned) || 0;
+  return parseFloat(parseAmountInput(value)) || 0;
 }
 
 /**
