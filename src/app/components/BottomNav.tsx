@@ -49,9 +49,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 safe-area-inset-bottom">
-      <div className="relative mx-auto max-w-md px-3 pb-2">
-        <div className="relative h-20 rounded-t-[2rem] border border-border bg-card/95 shadow-[0_-8px_30px_rgba(15,23,42,0.08)] backdrop-blur supports-[backdrop-filter]:bg-card/85">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none">
+      <div className="relative mx-auto max-w-md px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="relative h-20 rounded-[2rem] border border-border bg-card/95 shadow-[0_18px_40px_rgba(15,23,42,0.18)] backdrop-blur supports-[backdrop-filter]:bg-card/85 pointer-events-auto">
           <div className="grid h-full grid-cols-5 items-end px-2 pb-2">
             {navItems.slice(0, 2).map(({ path, icon: Icon, label }) => {
               const isActive = location.pathname === path;
