@@ -118,7 +118,8 @@ export function useMLModel({ autoLoad = true }: UseMLModelOptions = {}) {
       const r = await clf.classify(text, amount, date);
       if (r.category === 'Uncategorized') return null;
       return mapResult(r);
-    } catch {
+    } catch (e) {
+      console.error('[classify] error:', e);
       return null;
     }
   }, []);

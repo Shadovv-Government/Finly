@@ -389,10 +389,12 @@ async function mcDropoutPredict(
       const tIn = tf.tensor2d(textVec, [1, D]);
       const nIn = tf.tensor2d(numVec,  [1, N]);
       // training=true keeps Dropout active → epistemic uncertainty
-      const out = model.predict([tIn, nIn], { training: true } as tf.ModelPredictConfig) as unknown as Record<string, tf.Tensor>;
-      const catLogits = (out['category_output'] ?? out['category_output/BiasAdd']).squeeze([0]);
+      // TF.js returns Tensor[] for multi-output models, not a named object
+      const raw = model.predict([tIn, nIn], { training: true } as tf.ModelPredictConfig);
+      const out = (Array.isArray(raw) ? raw : [raw]) as tf.Tensor[];
+      const catLogits = out[0].squeeze([0]);   // category_output
       const catProbs  = tf.softmax(catLogits);
-      const tp = (out['type_output'] ?? out['type_output/Sigmoid']).squeeze([0]);
+      const tp = out[1].squeeze([0]);          // type_output
       return { probs: catProbs.dataSync() as Float32Array, tp: tp.dataSync()[0] };
     });
     allCatProbs.push(result.probs);
@@ -481,8 +483,8 @@ export class FinlyClassifier {
     tf.tidy(() => {
       const tDummy = tf.zeros([1, this.manifest!.input.text_dim]);
       const nDummy = tf.zeros([1, this.manifest!.input.numeric_dim]);
-      const out = this.model!.predict([tDummy, nDummy]) as unknown as Record<string, tf.Tensor>;
-      Object.values(out).forEach(t => t.dataSync());
+      const raw = this.model!.predict([tDummy, nDummy]);
+      (Array.isArray(raw) ? raw : [raw]).forEach((t: tf.Tensor) => t.dataSync());
     });
 
     this.ready = true;
@@ -655,11 +657,10 @@ export class FinlyClassifier {
         const probs = tf.tidy(() => {
           const tIn = tf.tensor2d(flatT, [M, TD]);
           const nIn = tf.tensor2d(flatN, [M, ND]);
-          const out = this.model!.predict([tIn, nIn], { training: true } as tf.ModelPredictConfig) as unknown as Record<string, tf.Tensor>;
-          const catL = out['category_output'] ?? out['category_output/BiasAdd'];
-          const catP = tf.softmax(catL);
-          const tp   = out['type_output'] ?? out['type_output/Sigmoid'];
-          return { cat: catP.arraySync() as number[][], tp: tp.arraySync() as number[][] };
+          const raw = this.model!.predict([tIn, nIn], { training: true } as tf.ModelPredictConfig);
+          const out = (Array.isArray(raw) ? raw : [raw]) as tf.Tensor[];
+          const catP = tf.softmax(out[0]);     // category_output
+          return { cat: catP.arraySync() as number[][], tp: out[1].arraySync() as number[][] };
         });
 
         for (let j = 0; j < M; j++) {

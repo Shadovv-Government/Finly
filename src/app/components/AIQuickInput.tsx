@@ -88,9 +88,6 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
         categories.find(c => c.id === fallbackId) ??
         categories.find(c => c.name === 'Другое' && c.type === result.type);
 
-      console.log('[doSave] category=', result.category?.name ?? '(none)',
-        '→ resolved:', category?.name, `(${category?.id})`,
-        '| categories loaded:', categories.length);
 
       // Защита: если ни ML, ни system fallback не дали категорию — НЕ сохраняем
       // в первую попавшуюся (раньше так все молча уходило в "Еда").
@@ -128,7 +125,7 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
       notify('Не удалось сохранить операцию', 'Попробуйте ещё раз');
       setIsAdding(false);
     }
-  }, [categories, add, notify, notifyTransaction, checkBudgets, onClose]);
+  }, [categories, add, notify, notifyTransaction, checkBudgets, onClose, recordUserChoice]);
 
   const handleSave = () => {
     if (parsedResult) doSave(parsedResult);
@@ -163,8 +160,9 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
       category = categories.find(c => c.name.toLowerCase() === mlResult.categoryName.toLowerCase());
       mlConfidence = mlResult.confidence;
       if (parsed.type === 'expense' && mlResult.type === 'income') {
+        // Only trust ML's income override when there's a clear income signal in text
         const hasIncomeHint = /получил|получила|пришла|зп|зарплата|доход|подарок|возврат/i.test(text);
-        if (!hasIncomeHint) type = mlResult.type;
+        if (hasIncomeHint) type = mlResult.type;
       }
     }
 
@@ -180,9 +178,6 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
       if (catId) category = categories.find(c => c.id === catId);
     }
 
-    console.log('[buildResult] text:', text, '| ml:', mlResult?.categoryName ?? 'null',
-      mlResult ? `(${Math.round((mlResult.confidence ?? 0) * 100)}%)` : '',
-      '| category:', category?.name ?? 'none', '| type:', type);
 
     return {
       amount: parsed.amount,
