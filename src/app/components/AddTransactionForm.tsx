@@ -7,6 +7,7 @@ import { useBudgetNotifications } from '../hooks/useBudgetNotifications';
 import { useTransactionForm } from '../hooks/useTransactionForm';
 import { formatDateInputValue, parseDateInputValue } from '../utils/formatCurrency';
 import { getLucideIcon } from '../utils/lucideIcons';
+import { useMLModel } from '../hooks/useMLModel';
 
 function CategoryIcon({ name, className, color }: { name: string; className?: string; color?: string }) {
   const IconComponent = getLucideIcon(name, Wallet);
@@ -22,6 +23,7 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
   const { add } = useTransactions();
   const { notify, notifyTransaction } = useNotifications();
   const { checkBudgets } = useBudgetNotifications();
+  const { recordUserChoice } = useMLModel({ autoLoad: false });
   const {
     formData,
     setFormData,
@@ -66,9 +68,18 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
       });
 
       notifyTransaction(formData.type, parseFloat(formData.amount), category?.name || 'Без категории');
-
-      // Проверяем бюджеты и отправляем push-уведомления
       await checkBudgets();
+
+      // Teach the classifier: manual category selection with a comment is a correction signal
+      if (formData.comment && category) {
+        recordUserChoice(
+          formData.comment,
+          category.name,
+          formData.type,
+          parseFloat(formData.amount),
+          formData.date,
+        );
+      }
 
       onClose();
     } catch (error) {

@@ -173,7 +173,7 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
     const mlInput = parsed.comment ?? t;
     const mlModule = await import('../hooks/useMLModel');
     await mlModule.ensureMLModelReady();
-    const mlResult = mlModule.classifyWithMLModel(mlInput);
+    const mlResult = await mlModule.classifyOnce(mlInput);
     let category = mlResult && mlResult.confidence > 0.4
       ? categories.find(c => c.name.toLowerCase() === mlResult.categoryName.toLowerCase())
       : undefined;

@@ -18,6 +18,7 @@ interface ParsedResult {
   category?: Category;
   date?: number;
   mlConfidence?: number;
+  top3?: Array<{ categoryName: string; prob: number }>;
 }
 
 function CategoryIcon({ name, className, color }: { name: string; className?: string; color?: string }) {
@@ -55,7 +56,7 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
   const { add } = useTransactions();
   const { notify, notifyTransaction } = useNotifications();
   const { checkBudgets } = useBudgetNotifications();
-  const { ready: mlReady, classify } = useMLModel();
+  const { ready: mlReady, classify, recordUserChoice } = useMLModel();
 
   const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
   const hasVoice = !!SpeechRecognitionAPI;
@@ -111,6 +112,18 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
       });
       notifyTransaction(result.type, result.amount, category?.name ?? 'Без категории');
       await checkBudgets();
+
+      // Feed the user's confirmed category back into the classifier for future improvement
+      if (result.comment && category) {
+        recordUserChoice(
+          result.comment,
+          category.name,
+          result.type,
+          result.amount,
+          result.date ? new Date(result.date) : undefined,
+        );
+      }
+
       onClose();
     } catch {
       notify('Не удалось сохранить операцию', 'Попробуйте ещё раз');
@@ -122,6 +135,11 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
     if (parsedResult) doSave(parsedResult);
   };
 
+  const handleCategorySelect = (categoryName: string) => {
+    const selected = categories.find(c => c.name.toLowerCase() === categoryName.toLowerCase());
+    if (selected) setParsedResult(prev => prev ? { ...prev, category: selected } : null);
+  };
+
   // Запускаем обратный отсчёт и авто-отправку после голосового ввода
   const handleDiscard = () => {
     clearAutoSubmit();
@@ -130,7 +148,7 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
     setStatusText('Нажмите для записи');
   };
 
-  const buildResult = async (text: string, fromVoice: boolean): Promise<ParsedResult | null> => {
+  const buildResult = async (text: string, _fromVoice: boolean): Promise<ParsedResult | null> => {
     const parsed = parseNaturalLanguage(text);
     if (!parsed) {
       return null;
@@ -141,7 +159,9 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
     let type = parsed.type;
 
     const mlInput = parsed.comment ?? text;
-    const mlResult = mlReady ? classify(mlInput) : null;
+    const mlResult = mlReady
+      ? await classify(mlInput, parsed.amount, parsed.date ? new Date(parsed.date) : undefined)
+      : null;
     if (mlResult && mlResult.confidence > 0.4) {
       category = categories.find(c => c.name.toLowerCase() === mlResult.categoryName.toLowerCase());
       mlConfidence = mlResult.confidence;
@@ -166,7 +186,7 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
       category,
       date: parsed.date,
       mlConfidence,
-      ...(fromVoice ? {} : {}),
+      top3: mlResult?.top3,
     };
   };
 
@@ -338,6 +358,29 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
               </div>
             )}
           </div>
+          {parsedResult.top3 && parsedResult.top3.length > 1 && (
+            <div className="flex gap-2 flex-wrap mb-3 mt-1">
+              {parsedResult.top3.map(({ categoryName, prob }) => {
+                const cat = categories.find(c => c.name.toLowerCase() === categoryName.toLowerCase());
+                const isSelected = parsedResult.category?.name.toLowerCase() === categoryName.toLowerCase();
+                return (
+                  <button
+                    key={categoryName}
+                    onClick={() => handleCategorySelect(categoryName)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm transition-all ${
+                      isSelected
+                        ? 'ring-2 ring-violet-600 bg-violet-50 dark:bg-violet-950'
+                        : 'bg-muted hover:bg-accent'
+                    }`}
+                  >
+                    {cat && <CategoryIcon name={cat.icon} className="w-3.5 h-3.5" color={cat.color} />}
+                    <span>{categoryName}</span>
+                    <span className="text-xs text-muted-foreground">{Math.round(prob * 100)}%</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
           {(parsedResult.comment || parsedResult.date) && (
             <div className="flex items-center justify-between gap-2 mb-1">
               {parsedResult.comment && (

@@ -1,0 +1,80 @@
+{
+  "model_version": "4.0.0",
+  "schema_version": "2",
+  "created_at": "2026-04-20T23:51:27.268891Z",
+  "classes": [
+    "Аренда",
+    "Еда",
+    "Зарплата",
+    "Здоровье",
+    "Инвестиции",
+    "Коммунальные",
+    "Продукты",
+    "Развлечения",
+    "Транспорт",
+    "Шопинг"
+  ],
+  "num_classes": 10,
+  "input": {
+    "text_dim": 2000,
+    "numeric_dim": 5,
+    "char_raw_dim": 3000,
+    "word_raw_dim": 1500,
+    "concat_order": [
+      "char",
+      "word"
+    ],
+    "numeric_features": [
+      "log_amount",
+      "dow_sin",
+      "dow_cos",
+      "hour_sin",
+      "hour_cos"
+    ]
+  },
+  "inference": {
+    "mc_dropout_passes": 20,
+    "uncertainty_threshold": 0.2233940213918686,
+    "margin_threshold": 0.1,
+    "per_class_thresholds": {
+      "Аренда": 0.7,
+      "Еда": 0.5400000214576721,
+      "Зарплата": 0.45,
+      "Здоровье": 0.45,
+      "Инвестиции": 0.45,
+      "Коммунальные": 0.45,
+      "Продукты": 0.5699999928474426,
+      "Развлечения": 0.45,
+      "Транспорт": 0.7200000286102295,
+      "Шопинг": 0.8999999761581421
+    },
+    "min_class_threshold": 0.45,
+    "max_class_threshold": 0.9,
+    "default_class_threshold": 0.7,
+    "fallback_label": "Uncategorized",
+    "preferred_inference": "student_mc_dropout_gated"
+  },
+  "metrics": {
+    "teacher_acc": 0.4722143864598025,
+    "teacher_f1m": 0.48835537522709094,
+    "student_acc": 0.5398205272013461,
+    "student_f1m": 0.5460388037864162,
+    "ensemble_acc": 0.5372966909702748,
+    "ensemble_f1m": 0.5448344041831509,
+    "student_top3_acc": 0.7305103757711722,
+    "ensemble_top3_acc": 0.7344363432417275,
+    "runtime_coverage": 0.40689848569826137,
+    "runtime_acc_accept": 0.875947622329428,
+    "runtime_acc_all": 0.3564217610768368,
+    "runtime_f1_accept": 0.8460298804545184
+  },
+  "training": {
+    "train_size": 11945,
+    "pseudo_added": 4996,
+    "val_size": 2110,
+    "test_size": 3545,
+    "split": "GroupShuffleSplit by merchant_id",
+    "distillation": "KL(LightGBM_teacher || student)",
+    "note": "Synthetic data only. Collect user feedback for v4.1+."
+  }
+}

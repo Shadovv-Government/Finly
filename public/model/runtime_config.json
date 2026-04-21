@@ -1,0 +1,22 @@
+{
+  "mc_dropout_passes": 20,
+  "uncertainty_threshold": 0.2233940213918686,
+  "margin_threshold": 0.1,
+  "per_class_thresholds": {
+    "Аренда": 0.7,
+    "Еда": 0.5400000214576721,
+    "Зарплата": 0.45,
+    "Здоровье": 0.45,
+    "Инвестиции": 0.45,
+    "Коммунальные": 0.45,
+    "Продукты": 0.5699999928474426,
+    "Развлечения": 0.45,
+    "Транспорт": 0.7200000286102295,
+    "Шопинг": 0.8999999761581421
+  },
+  "min_class_threshold": 0.45,
+  "max_class_threshold": 0.9,
+  "default_class_threshold": 0.7,
+  "fallback_label": "Uncategorized",
+  "preferred_inference": "student_mc_dropout_gated"
+}
