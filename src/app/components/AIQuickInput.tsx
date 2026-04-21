@@ -225,8 +225,10 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
     const normalizedTranscript = transcript.trim();
     if (!normalizedTranscript || hasProcessedTranscriptRef.current) return;
     hasProcessedTranscriptRef.current = true;
-    parseText(normalizedTranscript, true);
-  }, [parseText]);
+    setChatInput(normalizedTranscript);
+    setMode('chat');
+    setStatusText('Нажмите для записи');
+  }, []);
 
   const startRecording = useCallback(() => {
     if (!hasVoice) return;
