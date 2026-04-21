@@ -116,7 +116,8 @@ export function useMLModel({ autoLoad = true }: UseMLModelOptions = {}) {
     if (!clf) return null;
     try {
       const r = await clf.classify(text, amount, date);
-      if (r.category === 'Uncategorized') return null;
+      // Always return — even Uncategorized carries top3 for user correction chips.
+      // Callers use mlResult.confidence to decide whether to trust the main label.
       return mapResult(r);
     } catch (e) {
       console.error('[classify] error:', e);

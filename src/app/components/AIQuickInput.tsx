@@ -178,6 +178,14 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
       if (catId) category = categories.find(c => c.id === catId);
     }
 
+    // Always show something in preview — fallback to "Другое" so user sees what will be saved
+    if (!category) {
+      const fallbackId = type === 'expense' ? 'cat_other_expense' : 'inc_other';
+      category = categories.find(c => c.id === fallbackId);
+    }
+
+    // top3 from ML for correction chips — show even when confidence is low
+    const top3 = mlResult?.top3?.filter(t => t.categoryName !== 'Uncategorized');
 
     return {
       amount: parsed.amount,
@@ -187,7 +195,7 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
       category,
       date: parsed.date,
       mlConfidence,
-      top3: mlResult?.top3,
+      top3,
     };
   }, [categories, classify]);
 
@@ -359,8 +367,11 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
               </div>
             )}
           </div>
-          {parsedResult.top3 && parsedResult.top3.length > 1 && (
+          {parsedResult.top3 && parsedResult.top3.length > 0 && (
             <div className="flex gap-2 flex-wrap mb-3 mt-1">
+              {!parsedResult.mlConfidence && (
+                <span className="w-full text-xs text-muted-foreground mb-1">Возможно, это:</span>
+              )}
               {parsedResult.top3.map(({ categoryName, prob }) => {
                 const cat = categories.find(c => c.name.toLowerCase() === categoryName.toLowerCase());
                 const isSelected = parsedResult.category?.name.toLowerCase() === categoryName.toLowerCase();
