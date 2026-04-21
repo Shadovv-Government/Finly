@@ -56,7 +56,7 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
   const { add } = useTransactions();
   const { notify, notifyTransaction } = useNotifications();
   const { checkBudgets } = useBudgetNotifications();
-  const { ready: mlReady, classify, recordUserChoice } = useMLModel();
+  const { classify, recordUserChoice } = useMLModel();
 
   const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
   const hasVoice = !!SpeechRecognitionAPI;
@@ -159,9 +159,7 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
     let type = parsed.type;
 
     const mlInput = parsed.comment ?? text;
-    const mlResult = mlReady
-      ? await classify(mlInput, parsed.amount, parsed.date ? new Date(parsed.date) : undefined)
-      : null;
+    const mlResult = await classify(mlInput, parsed.amount, parsed.date ? new Date(parsed.date) : undefined);
     if (mlResult && mlResult.confidence > 0.4) {
       category = categories.find(c => c.name.toLowerCase() === mlResult.categoryName.toLowerCase());
       mlConfidence = mlResult.confidence;
