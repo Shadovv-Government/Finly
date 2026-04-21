@@ -601,8 +601,108 @@ export async function getRecurringUpcoming(daysAhead: number): Promise<Recurring
 export async function findCategoryByName(query: string): Promise<{ id: string; name: string } | null> {
   const categories = await db.categories.toArray();
   const q = query.toLowerCase();
-  const found = categories.find(c => q.includes(c.name.toLowerCase()));
+  // Exact inclusion
+  let found = categories.find(c => q.includes(c.name.toLowerCase()));
+  if (found) return { id: found.id, name: found.name };
+  // Fuzzy: any query word (≥3 chars) starts/contains a category word and vice-versa
+  const qWords = q.split(/\s+/).filter(w => w.length >= 3);
+  found = categories.find(c => {
+    const cWords = c.name.toLowerCase().split(/\s+/);
+    return qWords.some(qw => cWords.some(cw => cw.startsWith(qw) || qw.startsWith(cw)));
+  });
   return found ? { id: found.id, name: found.name } : null;
+}
+
+export interface DayOfWeekSpend {
+  day: number;
+  dayLabel: string;
+  amount: number;
+}
+
+export async function getSpendByDayOfWeek(start: number, end: number): Promise<DayOfWeekSpend[]> {
+  const transactions = await db.transactions
+    .where('date').between(start, end)
+    .filter(t => t.type === 'expense')
+    .toArray();
+
+  const LABELS = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+  const byDay = new Array(7).fill(0) as number[];
+  transactions.forEach(t => { byDay[new Date(t.date).getDay()] += t.amount * t.rate; });
+  return byDay.map((amount, day) => ({ day, dayLabel: LABELS[day], amount }));
+}
+
+export interface AnomalousTransaction {
+  amount: number;
+  categoryName: string;
+  comment?: string;
+  date: number;
+  avgForCategory: number;
+  ratio: number;
+}
+
+export async function getAnomalousTransactions(start: number, end: number): Promise<AnomalousTransaction[]> {
+  const transactions = await db.transactions
+    .where('date').between(start, end)
+    .filter(t => t.type === 'expense')
+    .toArray();
+
+  const categories = await db.categories.toArray();
+  const catMap = new Map(categories.map(c => [c.id, c]));
+
+  const catStats = new Map<string, { total: number; count: number }>();
+  transactions.forEach(t => {
+    const k = t.categoryId ?? '';
+    const s = catStats.get(k) ?? { total: 0, count: 0 };
+    catStats.set(k, { total: s.total + t.amount * t.rate, count: s.count + 1 });
+  });
+
+  const result: AnomalousTransaction[] = [];
+  transactions.forEach(t => {
+    const k = t.categoryId ?? '';
+    const stats = catStats.get(k);
+    if (!stats || stats.count < 2) return;
+    const avg = stats.total / stats.count;
+    const amount = t.amount * t.rate;
+    if (amount >= avg * 2) {
+      result.push({
+        amount,
+        categoryName: catMap.get(k)?.name ?? 'Без категории',
+        comment: t.comment,
+        date: t.date,
+        avgForCategory: avg,
+        ratio: Math.round((amount / avg) * 10) / 10,
+      });
+    }
+  });
+
+  return result.sort((a, b) => b.ratio - a.ratio).slice(0, 5);
+}
+
+export interface IncomePattern {
+  typicalDay: number | null;
+  avgAmount: number;
+  occurrences: number;
+}
+
+export async function getIncomePattern(): Promise<IncomePattern> {
+  const start = new Date();
+  start.setMonth(start.getMonth() - 6);
+  const transactions = await db.transactions
+    .where('date').above(start.getTime())
+    .filter(t => t.type === 'income')
+    .toArray();
+
+  if (transactions.length === 0) return { typicalDay: null, avgAmount: 0, occurrences: 0 };
+
+  const dayCount = new Map<number, number>();
+  transactions.forEach(t => {
+    const d = new Date(t.date).getDate();
+    dayCount.set(d, (dayCount.get(d) ?? 0) + 1);
+  });
+
+  const typicalDay = [...dayCount.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+  const avgAmount = transactions.reduce((s, t) => s + t.amount * t.rate, 0) / transactions.length;
+  return { typicalDay, avgAmount, occurrences: transactions.length };
 }
 
 // ==================== Summary Stats ====================
