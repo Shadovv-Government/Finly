@@ -14,6 +14,7 @@ interface ParsedResult {
   amount: number;
   type: 'income' | 'expense';
   comment?: string;
+  rawText: string;  // original input — used for ML feedback even when comment is stripped
   currency: string;
   category?: Category;
   date?: number;
@@ -109,10 +110,12 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
       notifyTransaction(result.type, result.amount, category?.name ?? 'Без категории');
       await checkBudgets();
 
-      // Feed the user's confirmed category back into the classifier for future improvement
-      if (result.comment && category) {
+      // Feed the user's confirmed/corrected category back into the classifier.
+      // Prefer stripped comment (no amount/date noise), fall back to raw input text.
+      const feedbackText = result.comment || result.rawText;
+      if (feedbackText && category) {
         recordUserChoice(
-          result.comment,
+          feedbackText,
           category.name,
           result.type,
           result.amount,
@@ -191,6 +194,7 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
       amount: parsed.amount,
       type,
       comment: parsed.comment,
+      rawText: text,
       currency: parsed.currency || 'RUB',
       category,
       date: parsed.date,

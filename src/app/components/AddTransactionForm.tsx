@@ -1,4 +1,5 @@
-import { Calendar, MessageSquare } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Calendar, MessageSquare, Sparkles } from 'lucide-react';
 import { Wallet } from 'lucide-react';
 import { useCategories } from '../hooks/useCategories';
 import { useTransactions } from '../hooks/useTransactions';
@@ -23,13 +24,43 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
   const { add } = useTransactions();
   const { notify, notifyTransaction } = useNotifications();
   const { checkBudgets } = useBudgetNotifications();
-  const { recordUserChoice } = useMLModel({ autoLoad: false });
   const {
     formData,
     setFormData,
     formatAmount,
     handleAmountChange,
   } = useTransactionForm();
+
+  const [mlSuggestion, setMlSuggestion] = useState<{ categoryId: string; confidence: number } | null>(null);
+  const { classify, recordUserChoice } = useMLModel({ autoLoad: true });
+
+  // Debounced ML classification: runs 500ms after comment stops changing
+  useEffect(() => {
+    const comment = formData.comment.trim();
+    if (!comment) {
+      setMlSuggestion(null);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      const amount = parseFloat(formData.amount) || undefined;
+      const result = await classify(comment, amount, formData.date);
+      if (result && result.confidence > 0.4) {
+        const cat = categories.find(
+          c => c.name.toLowerCase() === result.categoryName.toLowerCase() && c.type === formData.type,
+        );
+        if (cat) {
+          setMlSuggestion({ categoryId: cat.id, confidence: result.confidence });
+          // Auto-select predicted category only if user hasn't chosen one yet
+          setFormData(prev => prev.categoryId ? prev : { ...prev, categoryId: cat.id });
+        } else {
+          setMlSuggestion(null);
+        }
+      } else {
+        setMlSuggestion(null);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [formData.comment, formData.amount, formData.date, formData.type, classify, categories, setFormData]);
 
   const filteredCategories = categories.filter(c => c.type === formData.type);
 
@@ -139,12 +170,15 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
               <button
                 key={category.id}
                 onClick={() => setFormData(prev => ({ ...prev, categoryId: category.id }))}
-                className={`flex flex-col items-center gap-2 p-2 rounded-lg transition-all ${
+                className={`relative flex flex-col items-center gap-2 p-2 rounded-lg transition-all ${
                   isSelected
                     ? 'bg-violet-100 dark:bg-violet-950 ring-2 ring-violet-600'
                     : 'hover:bg-accent'
                 }`}
               >
+                {mlSuggestion?.categoryId === category.id && (
+                  <Sparkles className="absolute top-0.5 right-0.5 w-3 h-3 text-violet-500" />
+                )}
                 <div
                   className="w-12 h-12 rounded-xl flex items-center justify-center"
                   style={{ backgroundColor: category.color + '20' }}
