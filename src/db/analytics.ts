@@ -532,6 +532,79 @@ export async function getSavingsRate(start: number, end: number): Promise<Saving
   return { income: summary.income, expenses: summary.expenses, saved, savingsRate };
 }
 
+// ==================== Extended AI helpers ====================
+
+export interface TransactionSummary {
+  amount: number;
+  categoryName: string;
+  comment?: string;
+  date: number;
+}
+
+export async function getLargestTransactions(limit: number, start: number, end: number): Promise<TransactionSummary[]> {
+  const transactions = await db.transactions
+    .where('date')
+    .between(start, end)
+    .filter(t => t.type === 'expense')
+    .toArray();
+
+  const categories = await db.categories.toArray();
+  const catMap = new Map(categories.map(c => [c.id, c]));
+
+  return transactions
+    .sort((a, b) => b.amount * b.rate - a.amount * a.rate)
+    .slice(0, limit)
+    .map(t => ({
+      amount: t.amount * t.rate,
+      categoryName: catMap.get(t.categoryId ?? '')?.name ?? 'Без категории',
+      comment: t.comment,
+      date: t.date,
+    }));
+}
+
+export async function getAverageDailySpend(start: number, end: number): Promise<number> {
+  const transactions = await db.transactions
+    .where('date')
+    .between(start, end)
+    .filter(t => t.type === 'expense')
+    .toArray();
+
+  const total = transactions.reduce((sum, t) => sum + t.amount * t.rate, 0);
+  const days = Math.max(1, Math.ceil((end - start) / MS_PER_DAY));
+  return total / days;
+}
+
+export interface RecurringUpcoming {
+  label: string;
+  amount: number;
+  nextDate: number;
+  daysUntil: number;
+}
+
+export async function getRecurringUpcoming(daysAhead: number): Promise<RecurringUpcoming[]> {
+  const now = Date.now();
+  const limit = now + daysAhead * MS_PER_DAY;
+  const templates = await db.recurringTemplates
+    .filter(t => t.isActive && t.nextDate <= limit)
+    .toArray();
+
+  return templates
+    .map(t => ({
+      label: t.comment ?? `Платёж ${t.amount} ₽`,
+      amount: t.amount,
+      nextDate: t.nextDate,
+      daysUntil: Math.ceil((t.nextDate - now) / MS_PER_DAY),
+    }))
+    .sort((a, b) => a.nextDate - b.nextDate);
+}
+
+export async function findCategoryByName(query: string): Promise<{ id: string; name: string } | null> {
+  const categories = await db.categories.toArray();
+  const q = query.toLowerCase();
+  const found = categories.find(c => q.includes(c.name.toLowerCase()));
+  return found ? { id: found.id, name: found.name } : null;
+}
+
 // ==================== Summary Stats ====================
 
 export async function getSummaryStats(): Promise<{

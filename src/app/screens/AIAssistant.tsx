@@ -6,12 +6,23 @@ function fmt(n: number) {
   return new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 }).format(n);
 }
 
+const HINTS = [
+  'Сколько потратил сегодня?',
+  'Самые крупные траты',
+  'Прогноз расходов',
+  'Ближайшие платежи',
+  'Сравни с прошлым месяцем',
+  'Мои цели',
+  'Средние расходы в день',
+  'Что ты умеешь?',
+];
+
 function InsightCard({ insight }: { insight: Insight }) {
   const map = {
-    alert:    { Icon: AlertTriangle,  bg: 'bg-red-100 dark:bg-red-950',    text: 'text-red-600 dark:text-red-400' },
-    warning:  { Icon: AlertTriangle,  bg: 'bg-yellow-100 dark:bg-yellow-950', text: 'text-yellow-600 dark:text-yellow-400' },
-    tip:      { Icon: Lightbulb,      bg: 'bg-violet-100 dark:bg-violet-950', text: 'text-violet-600 dark:text-violet-400' },
-    positive: { Icon: TrendingUp,     bg: 'bg-green-100 dark:bg-green-950',  text: 'text-green-600 dark:text-green-400' },
+    alert:    { Icon: AlertTriangle, bg: 'bg-red-100 dark:bg-red-950',       text: 'text-red-600 dark:text-red-400' },
+    warning:  { Icon: AlertTriangle, bg: 'bg-yellow-100 dark:bg-yellow-950', text: 'text-yellow-600 dark:text-yellow-400' },
+    tip:      { Icon: Lightbulb,     bg: 'bg-violet-100 dark:bg-violet-950', text: 'text-violet-600 dark:text-violet-400' },
+    positive: { Icon: TrendingUp,    bg: 'bg-green-100 dark:bg-green-950',   text: 'text-green-600 dark:text-green-400' },
   } as const;
 
   const { Icon: BaseIcon, bg, text } = map[insight.type];
@@ -32,18 +43,45 @@ function InsightCard({ insight }: { insight: Insight }) {
   );
 }
 
+function TypingBubble() {
+  return (
+    <div className="flex justify-start">
+      <div className="bg-card border border-border rounded-2xl px-4 py-3 flex gap-1 items-center">
+        <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce [animation-delay:0ms]" />
+        <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce [animation-delay:150ms]" />
+        <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce [animation-delay:300ms]" />
+      </div>
+    </div>
+  );
+}
+
+function ChatBubble({ role, message }: { role: 'user' | 'assistant'; message: string }) {
+  const isUser = role === 'user';
+  return (
+    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+      <div
+        className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+          isUser ? 'bg-violet-600 text-white' : 'bg-card border border-border'
+        }`}
+      >
+        <p className="text-sm whitespace-pre-wrap">{message}</p>
+      </div>
+    </div>
+  );
+}
+
 export const AIAssistant = () => {
-  const { loading, overview, insights, chatHistory, sendMessage } = useAIInsights();
+  const { loading, isTyping, overview, insights, chatHistory, sendMessage } = useAIInsights();
   const [message, setMessage] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatHistory]);
+  }, [chatHistory, isTyping]);
 
   const handleSend = async () => {
     const text = message.trim();
-    if (!text) return;
+    if (!text || isTyping) return;
     setMessage('');
     await sendMessage(text);
   };
@@ -109,14 +147,21 @@ export const AIAssistant = () => {
 
         {/* Insights */}
         <div className="px-4 py-4">
-          <h3 className="font-bold mb-3">Важные инсайты</h3>
+          <h3 className="font-bold mb-3">
+            Важные инсайты
+            {insights.length > 0 && (
+              <span className="ml-2 text-xs font-normal bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-400 px-2 py-0.5 rounded-full">
+                {insights.length}
+              </span>
+            )}
+          </h3>
           {loading ? (
             <div className="flex items-center gap-2 text-muted-foreground">
               <Loader2 className="w-4 h-4 animate-spin" />
               <span className="text-sm">Загрузка…</span>
             </div>
           ) : insights.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Всё в порядке, инсайтов нет.</p>
+            <p className="text-sm text-muted-foreground">Всё в порядке — нет срочных инсайтов.</p>
           ) : (
             <div className="space-y-3">
               {insights.map(insight => (
@@ -126,49 +171,36 @@ export const AIAssistant = () => {
           )}
         </div>
 
-        {/* Chat History */}
-        {chatHistory.length > 0 && (
-          <div className="px-4 py-4">
-            <h3 className="font-bold mb-3">История вопросов</h3>
-            <div className="space-y-3">
-              {chatHistory.map((chat, index) => (
-                <div
-                  key={index}
-                  className={`flex ${chat.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[80%] rounded-2xl p-3 ${
-                      chat.role === 'user'
-                        ? 'bg-violet-600 text-white'
-                        : 'bg-card border border-border'
-                    }`}
+        {/* Chat */}
+        <div className="px-4 py-4">
+          {chatHistory.length > 0 ? (
+            <>
+              <h3 className="font-bold mb-3">История вопросов</h3>
+              <div className="space-y-3">
+                {chatHistory.map((chat, index) => (
+                  <ChatBubble key={index} role={chat.role} message={chat.message} />
+                ))}
+                {isTyping && <TypingBubble />}
+              </div>
+              <div ref={chatEndRef} />
+            </>
+          ) : !loading && (
+            <>
+              <p className="text-xs text-muted-foreground mb-2">Попробуйте спросить:</p>
+              <div className="flex flex-wrap gap-2">
+                {HINTS.map(hint => (
+                  <button
+                    key={hint}
+                    onClick={() => sendMessage(hint)}
+                    className="text-xs px-3 py-1.5 bg-muted rounded-full hover:bg-accent transition-colors"
                   >
-                    <p className="text-sm">{chat.message}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div ref={chatEndRef} />
-          </div>
-        )}
-
-        {/* Prompt hints */}
-        {chatHistory.length === 0 && !loading && (
-          <div className="px-4 pb-4">
-            <p className="text-xs text-muted-foreground mb-2">Попробуйте спросить:</p>
-            <div className="flex flex-wrap gap-2">
-              {['Сколько потратил?', 'Какой баланс?', 'Прогноз расходов', 'Сравни с прошлым месяцем'].map(hint => (
-                <button
-                  key={hint}
-                  onClick={() => sendMessage(hint)}
-                  className="text-xs px-3 py-1.5 bg-muted rounded-full hover:bg-accent transition-colors"
-                >
-                  {hint}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+                    {hint}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Chat Input */}
@@ -180,14 +212,15 @@ export const AIAssistant = () => {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="flex-1 px-4 py-3 bg-muted rounded-xl outline-none focus:ring-2 focus:ring-violet-600"
+            disabled={isTyping}
+            className="flex-1 px-4 py-3 bg-muted rounded-xl outline-none focus:ring-2 focus:ring-violet-600 disabled:opacity-60"
           />
           <button
             onClick={handleSend}
-            disabled={!message.trim()}
+            disabled={!message.trim() || isTyping}
             className="w-12 h-12 bg-gradient-to-br from-violet-600 to-indigo-700 text-white rounded-xl flex items-center justify-center disabled:opacity-50"
           >
-            <Send className="w-5 h-5" />
+            {isTyping ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
           </button>
         </div>
       </div>
