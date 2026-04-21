@@ -12,6 +12,7 @@ import { getLucideIcon } from '../utils/lucideIcons';
 
 interface ParsedResult {
   amount: number;
+  needsAmount?: boolean;  // true when no number was found in input — show editable field
   type: 'income' | 'expense';
   comment?: string;
   rawText: string;  // original input — used for ML feedback even when comment is stripped
@@ -78,11 +79,12 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
   // Сохранение транзакции (принимает result напрямую для авто-отправки)
   const doSave = useCallback(async (result: ParsedResult) => {
     clearAutoSubmit();
+    if (!result.amount) {
+      notify('Укажите сумму', 'Введите сумму перед сохранением');
+      return;
+    }
     setIsAdding(true);
     try {
-      // Приоритет: ML/паттерн → "Другое" по системному ID → "Другое" по имени.
-      // Раньше последний fallback брал ПЕРВУЮ категорию типа — а в seed.ts это
-      // cat_food (Еда), из-за чего любая нераспознанная трата уходила в Еду.
       const fallbackId = result.type === 'expense' ? 'cat_other_expense' : 'inc_other';
       const category =
         result.category ??
@@ -148,22 +150,23 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
   };
 
   const buildResult = useCallback(async (text: string, _fromVoice: boolean): Promise<ParsedResult | null> => {
+    if (!text.trim()) return null;
+
     const parsed = parseNaturalLanguage(text);
-    if (!parsed) {
-      return null;
-    }
+    // If no amount found, still build a partial result — let user fill it in
+    const needsAmount = !parsed;
+    const amount = parsed?.amount ?? 0;
+    let type: 'income' | 'expense' = parsed?.type ?? 'expense';
 
     let category: Category | undefined;
     let mlConfidence: number | undefined;
-    let type = parsed.type;
 
-    const mlInput = parsed.comment ?? text;
-    const mlResult = await classify(mlInput, parsed.amount, parsed.date ? new Date(parsed.date) : undefined);
+    const mlInput = parsed?.comment ?? text;
+    const mlResult = await classify(mlInput, amount || undefined, parsed?.date ? new Date(parsed.date) : undefined);
     if (mlResult && mlResult.confidence > 0.4) {
       category = categories.find(c => c.name.toLowerCase() === mlResult.categoryName.toLowerCase());
       mlConfidence = mlResult.confidence;
-      if (parsed.type === 'expense' && mlResult.type === 'income') {
-        // Only trust ML's income override when there's a clear income signal in text
+      if (type === 'expense' && mlResult.type === 'income') {
         const hasIncomeHint = /получил|получила|пришла|зп|зарплата|доход|подарок|возврат/i.test(text);
         if (hasIncomeHint) type = mlResult.type;
       }
@@ -181,23 +184,22 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
       if (catId) category = categories.find(c => c.id === catId);
     }
 
-    // Always show something in preview — fallback to "Другое" so user sees what will be saved
     if (!category) {
       const fallbackId = type === 'expense' ? 'cat_other_expense' : 'inc_other';
       category = categories.find(c => c.id === fallbackId);
     }
 
-    // top3 from ML for correction chips — show even when confidence is low
     const top3 = mlResult?.top3?.filter(t => t.categoryName !== 'Uncategorized');
 
     return {
-      amount: parsed.amount,
+      amount,
+      needsAmount,
       type,
-      comment: parsed.comment,
+      comment: parsed?.comment,
       rawText: text,
-      currency: parsed.currency || 'RUB',
+      currency: parsed?.currency || 'RUB',
       category,
-      date: parsed.date,
+      date: parsed?.date,
       mlConfidence,
       top3,
     };
@@ -349,14 +351,31 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
             )}
           </div>
           <div className="flex items-center justify-between mb-2">
-            <span
-              className={`text-2xl font-bold ${
-                parsedResult.type === 'expense' ? 'text-red-500' : 'text-green-500'
-              }`}
-            >
-              {parsedResult.type === 'expense' ? '−' : '+'}
-              {parsedResult.amount.toLocaleString('ru-RU')} ₽
-            </span>
+            {parsedResult.needsAmount ? (
+              <div className="flex items-center gap-1">
+                <span className={`text-2xl font-bold ${parsedResult.type === 'expense' ? 'text-red-500' : 'text-green-500'}`}>
+                  {parsedResult.type === 'expense' ? '−' : '+'}
+                </span>
+                <input
+                  autoFocus
+                  type="tel"
+                  inputMode="decimal"
+                  placeholder="0"
+                  value={parsedResult.amount || ''}
+                  onChange={e => {
+                    const val = parseFloat(e.target.value.replace(',', '.')) || 0;
+                    setParsedResult(prev => prev ? { ...prev, amount: val, needsAmount: val === 0 } : null);
+                  }}
+                  className={`text-2xl font-bold w-28 bg-transparent border-b-2 border-violet-400 focus:outline-none placeholder:text-muted-foreground ${parsedResult.type === 'expense' ? 'text-red-500' : 'text-green-500'}`}
+                />
+                <span className="text-2xl font-bold text-muted-foreground">₽</span>
+              </div>
+            ) : (
+              <span className={`text-2xl font-bold ${parsedResult.type === 'expense' ? 'text-red-500' : 'text-green-500'}`}>
+                {parsedResult.type === 'expense' ? '−' : '+'}
+                {parsedResult.amount.toLocaleString('ru-RU')} ₽
+              </span>
+            )}
             {parsedResult.category && (
               <div
                 className="flex items-center gap-2 px-3 py-1 rounded-xl"
@@ -418,7 +437,7 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
             </button>
             <button
               onClick={handleSave}
-              disabled={isAdding}
+              disabled={isAdding || !parsedResult.amount}
               className="flex-1 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-xl text-sm font-semibold disabled:opacity-60 transition-all"
             >
               {isAdding
