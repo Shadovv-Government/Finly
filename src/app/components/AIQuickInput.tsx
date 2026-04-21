@@ -12,6 +12,7 @@ import { getLucideIcon } from '../utils/lucideIcons';
 
 interface ParsedResult {
   amount: number;
+  amountStr: string;       // raw input string — avoids number→string rounding artifacts
   needsAmount?: boolean;  // true when no number was found in input — show editable field
   type: 'income' | 'expense';
   comment?: string;
@@ -193,6 +194,7 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
 
     return {
       amount,
+      amountStr: amount > 0 ? String(amount) : '',
       needsAmount,
       type,
       comment: parsed?.comment,
@@ -352,23 +354,29 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
           </div>
           <div className="flex items-center justify-between mb-2">
             {parsedResult.needsAmount ? (
-              <div className="flex items-center gap-1">
-                <span className={`text-2xl font-bold ${parsedResult.type === 'expense' ? 'text-red-500' : 'text-green-500'}`}>
-                  {parsedResult.type === 'expense' ? '−' : '+'}
-                </span>
-                <input
-                  autoFocus
-                  type="tel"
-                  inputMode="decimal"
-                  placeholder="0"
-                  value={parsedResult.amount || ''}
-                  onChange={e => {
-                    const val = parseFloat(e.target.value.replace(',', '.')) || 0;
-                    setParsedResult(prev => prev ? { ...prev, amount: val, needsAmount: val === 0 } : null);
-                  }}
-                  className={`text-2xl font-bold w-28 bg-transparent border-b-2 border-violet-400 focus:outline-none placeholder:text-muted-foreground ${parsedResult.type === 'expense' ? 'text-red-500' : 'text-green-500'}`}
-                />
-                <span className="text-2xl font-bold text-muted-foreground">₽</span>
+              <div className="flex flex-col gap-1 flex-1">
+                {parsedResult.rawText ? (
+                  <p className="text-xs text-muted-foreground truncate">«{parsedResult.rawText}»</p>
+                ) : null}
+                <div className="flex items-center gap-1">
+                  <span className={`text-2xl font-bold ${parsedResult.type === 'expense' ? 'text-red-500' : 'text-green-500'}`}>
+                    {parsedResult.type === 'expense' ? '−' : '+'}
+                  </span>
+                  <input
+                    autoFocus
+                    type="tel"
+                    inputMode="decimal"
+                    placeholder="0"
+                    value={parsedResult.amountStr}
+                    onChange={e => {
+                      const raw = e.target.value;
+                      const val = parseFloat(raw.replace(',', '.')) || 0;
+                      setParsedResult(prev => prev ? { ...prev, amount: val, amountStr: raw, needsAmount: val === 0 } : null);
+                    }}
+                    className={`text-2xl font-bold w-28 bg-transparent border-b-2 border-violet-400 focus:outline-none placeholder:text-muted-foreground ${parsedResult.type === 'expense' ? 'text-red-500' : 'text-green-500'}`}
+                  />
+                  <span className="text-2xl font-bold text-muted-foreground">₽</span>
+                </div>
               </div>
             ) : (
               <span className={`text-2xl font-bold ${parsedResult.type === 'expense' ? 'text-red-500' : 'text-green-500'}`}>
