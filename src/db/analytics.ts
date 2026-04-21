@@ -442,6 +442,96 @@ export async function getGoalsProgress(): Promise<GoalProgress[]> {
   return result;
 }
 
+// ==================== AI Insights helpers ====================
+
+export interface CategoryMoMDelta {
+  categoryId: string;
+  categoryName: string;
+  icon: string;
+  color: string;
+  thisMonth: number;
+  lastMonth: number;
+  delta: number;
+  deltaPercent: number;
+}
+
+export async function getCategoryMoMDelta(): Promise<CategoryMoMDelta[]> {
+  const now = new Date();
+  const thisStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+  const lastStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
+  const lastEnd = thisStart - 1;
+
+  const [thisMonth, lastMonth] = await Promise.all([
+    getExpensesByCategory(thisStart, now.getTime()),
+    getExpensesByCategory(lastStart, lastEnd),
+  ]);
+
+  const lastMap = new Map(lastMonth.map(c => [c.categoryId, c]));
+  const result: CategoryMoMDelta[] = [];
+
+  for (const cur of thisMonth) {
+    const prev = lastMap.get(cur.categoryId);
+    const lastAmt = prev?.amount ?? 0;
+    const delta = cur.amount - lastAmt;
+    const deltaPercent = lastAmt > 0 ? (delta / lastAmt) * 100 : 100;
+    result.push({
+      categoryId: cur.categoryId,
+      categoryName: cur.categoryName,
+      icon: cur.icon,
+      color: cur.color,
+      thisMonth: cur.amount,
+      lastMonth: lastAmt,
+      delta,
+      deltaPercent,
+    });
+  }
+
+  return result.sort((a, b) => Math.abs(b.deltaPercent) - Math.abs(a.deltaPercent));
+}
+
+export interface MonthForecast {
+  spent: number;
+  forecastTotal: number;
+  daysInMonth: number;
+  daysPassed: number;
+  daysLeft: number;
+  dailyRate: number;
+}
+
+export async function getMonthForecast(): Promise<MonthForecast> {
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const daysPassed = Math.max(1, now.getDate());
+  const daysLeft = daysInMonth - daysPassed;
+
+  const transactions = await db.transactions
+    .where('date')
+    .between(monthStart, now.getTime())
+    .filter(t => t.type === 'expense')
+    .toArray();
+
+  const spent = transactions.reduce((sum, t) => sum + t.amount * t.rate, 0);
+  const dailyRate = spent / daysPassed;
+  const forecastTotal = spent + dailyRate * daysLeft;
+
+  return { spent, forecastTotal, daysInMonth, daysPassed, daysLeft, dailyRate };
+}
+
+export interface SavingsRateResult {
+  income: number;
+  expenses: number;
+  saved: number;
+  savingsRate: number;
+}
+
+export async function getSavingsRate(start: number, end: number): Promise<SavingsRateResult> {
+  const summary = await getBalanceByPeriod(start, end);
+  const saved = summary.income - summary.expenses;
+  const savingsRate = summary.income > 0 ? (saved / summary.income) * 100 : 0;
+  return { income: summary.income, expenses: summary.expenses, saved, savingsRate };
+}
+
 // ==================== Summary Stats ====================
 
 export async function getSummaryStats(): Promise<{
