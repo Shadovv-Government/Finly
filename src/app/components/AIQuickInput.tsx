@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Mic, MicOff, Send, Sparkles, MessageSquare, Brain, Wallet } from 'lucide-react';
-import { parseNaturalLanguage, findBestMatch } from '../../db/ai';
+import { parseNaturalLanguage, findBestMatch, inferCategoryId } from '../../db/ai';
 import { useMLModel } from '../hooks/useMLModel';
 import { useCategories } from '../hooks/useCategories';
 import { useTransactions } from '../hooks/useTransactions';
@@ -148,7 +148,7 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
     setStatusText('Нажмите для записи');
   };
 
-  const buildResult = async (text: string, _fromVoice: boolean): Promise<ParsedResult | null> => {
+  const buildResult = useCallback(async (text: string, _fromVoice: boolean): Promise<ParsedResult | null> => {
     const parsed = parseNaturalLanguage(text);
     if (!parsed) {
       return null;
@@ -176,6 +176,11 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
       }
     }
 
+    if (!category) {
+      const catId = inferCategoryId(mlInput, type);
+      if (catId) category = categories.find(c => c.id === catId);
+    }
+
     return {
       amount: parsed.amount,
       type,
@@ -186,9 +191,9 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
       mlConfidence,
       top3: mlResult?.top3,
     };
-  };
+  }, [categories, classify]);
 
-  const parseText = async (text: string, fromVoice = false) => {
+  const parseText = useCallback(async (text: string, fromVoice = false) => {
     const result = await buildResult(text, fromVoice);
     if (!result) {
       setStatusText('Не удалось распознать. Попробуйте ещё раз.');
@@ -200,7 +205,7 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
       pendingResultRef.current = result;
       setStatusText('Проверьте результат и нажмите "Добавить"');
     }
-  };
+  }, [buildResult]);
 
   const processVoiceTranscript = useCallback((transcript: string) => {
     const normalizedTranscript = transcript.trim();

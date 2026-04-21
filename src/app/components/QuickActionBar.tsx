@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { Plus, Mic, Sparkles, ArrowUp, Pause, Play, Lock, ChevronUp, Trash2 } from 'lucide-react';
-import { parseNaturalLanguage, findBestMatch } from '../../db/ai';
+import { parseNaturalLanguage, findBestMatch, inferCategoryId } from '../../db/ai';
+import { classifyOnce } from '../hooks/useMLModel';
 import { useCategories } from '../hooks/useCategories';
 import { useTransactions } from '../hooks/useTransactions';
 import { useNotifications } from '../hooks/useNotifications';
@@ -171,9 +172,7 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
     if (!parsed) return;
     // 1) ML-классификация
     const mlInput = parsed.comment ?? t;
-    const mlModule = await import('../hooks/useMLModel');
-    await mlModule.ensureMLModelReady();
-    const mlResult = await mlModule.classifyOnce(mlInput);
+    const mlResult = await classifyOnce(mlInput);
     let category = mlResult && mlResult.confidence > 0.4
       ? categories.find(c => c.name.toLowerCase() === mlResult.categoryName.toLowerCase())
       : undefined;
@@ -184,7 +183,13 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({ onOpenForm }) =>
       if (match) category = categories.find(c => c.id === match.pattern.categoryId);
     }
 
-    // 3) Системный fallback — «Другое» по ID (не первый элемент массива!)
+    // 3) Keyword fallback для коротких аббревиатур (зп, жкх, и т.д.)
+    if (!category) {
+      const catId = inferCategoryId(mlInput, parsed.type);
+      if (catId) category = categories.find(c => c.id === catId);
+    }
+
+    // 4) Системный fallback — «Другое» по ID (не первый элемент массива!)
     // Раньше тут было categories.find(c => c.type === parsed.type) →
     // categories[0] → всегда cat_food ("Еда"). Исправлено.
     if (!category) {

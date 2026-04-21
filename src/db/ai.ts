@@ -270,6 +270,33 @@ function addDays(d: Date, n: number): Date {
   return r;
 }
 
+// ==================== Keyword → Category Fallback ====================
+
+const KEYWORD_CATEGORY_MAP: Array<{ keywords: string[]; id: string; type: 'income' | 'expense' }> = [
+  // Income
+  { keywords: ['зп', 'зарплата', 'оклад', 'аванс', 'получка', 'получил', 'получила', 'пришла', 'начислили', 'выплата'], id: 'inc_salary', type: 'income' },
+  { keywords: ['дивиденд', 'инвест', 'процент', 'купон', 'доход от'], id: 'inc_investments', type: 'income' },
+  { keywords: ['подарок', 'подарили', 'презент', 'возврат', 'кешбэк', 'кэшбэк'], id: 'inc_gift', type: 'income' },
+  // Expenses
+  { keywords: ['кафе', 'ресторан', 'обед', 'ужин', 'завтрак', 'пицца', 'бургер', 'суши', 'кофе', 'фастфуд', 'столовая'], id: 'cat_food', type: 'expense' },
+  { keywords: ['продукты', 'супермаркет', 'пятёрочка', 'перекрёсток', 'магнит', 'лента', 'дикси', 'ашан', 'вкусвилл'], id: 'cat_groceries', type: 'expense' },
+  { keywords: ['такси', 'убер', 'uber', 'яндекс go', 'метро', 'автобус', 'троллейбус', 'бензин', 'парковка', 'заправка'], id: 'cat_transport', type: 'expense' },
+  { keywords: ['аренда', 'съём', 'ипотека', 'квартплата', 'жильё'], id: 'cat_home', type: 'expense' },
+  { keywords: ['жкх', 'коммуналка', 'свет', 'газ', 'водоснабжение', 'интернет', 'связь', 'мобильный', 'телефон'], id: 'cat_utilities', type: 'expense' },
+  { keywords: ['врач', 'аптека', 'лекарство', 'медицина', 'больница', 'клиника', 'стоматолог', 'анализы'], id: 'cat_health', type: 'expense' },
+  { keywords: ['одежда', 'обувь', 'шопинг', 'вайлдберриз', 'wildberries', 'ozon', 'озон', 'маркет'], id: 'cat_shopping', type: 'expense' },
+  { keywords: ['кино', 'театр', 'концерт', 'клуб', 'бар', 'игры', 'steam', 'подписка', 'netflix', 'нетфликс', 'spotify'], id: 'cat_fun', type: 'expense' },
+];
+
+export function inferCategoryId(text: string, type: 'income' | 'expense'): string | null {
+  const lower = text.toLowerCase();
+  for (const entry of KEYWORD_CATEGORY_MAP) {
+    if (entry.type !== type) continue;
+    if (entry.keywords.some(k => lower.includes(k))) return entry.id;
+  }
+  return null;
+}
+
 // ==================== AI Suggestions ====================
 
 export interface AISuggestion {
