@@ -49,7 +49,6 @@ self.addEventListener('message', (event: ExtendableMessageEvent) => {
 // Fine-tuning runs in the main thread (WebGL available there),
 // so we just message open clients. If none are open the sync tag
 // stays registered and retries when the app is next opened.
-// @ts-ignore — SyncEvent not yet in TS SW lib
 self.addEventListener('sync', async (event: any) => {
   if (event.tag !== 'finly-fine-tune') return;
   event.waitUntil((async () => {

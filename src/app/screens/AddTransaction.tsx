@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { X, Calendar, MessageSquare, Mic, Sparkles, Wallet } from 'lucide-react';
+import { X, Calendar, MessageSquare, Mic, MicOff, Sparkles, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { useCategories } from '../hooks/useCategories';
 import { useTransactions } from '../hooks/useTransactions';
 import { useBudgetNotifications } from '../hooks/useBudgetNotifications';
+import { useSpeechInput } from '../hooks/useSpeechInput';
 import { parseNaturalLanguage, findBestMatch } from '../../db/ai';
 import {
   formatAmountInput,
@@ -31,6 +32,7 @@ export const AddTransaction = () => {
   const [quickInput, setQuickInput] = useState('');
   const [isProcessingQuickInput, setIsProcessingQuickInput] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const speech = useSpeechInput();
 
   const filteredCategories = categories.filter(c =>
     c.type === type
@@ -44,13 +46,12 @@ export const AddTransaction = () => {
     }
   };
 
-  // Обработка быстрого ввода
-  const handleQuickInputProcess = async () => {
-    if (!quickInput.trim()) return;
+  const processText = async (text: string) => {
+    if (!text.trim()) return;
     
     setIsProcessingQuickInput(true);
     try {
-      const parsed = parseNaturalLanguage(quickInput);
+      const parsed = parseNaturalLanguage(text);
       if (parsed) {
         // Установить сумму
         if (parsed.amount > 0) {
@@ -68,6 +69,7 @@ export const AddTransaction = () => {
             toast.success(`Категория определена: ${match.category.name}`);
           }
         }
+        setQuickInput('');
         toast.success('Данные распознаны');
       } else {
         toast.error('Не удалось распознать. Укажите сумму, например: "кофе 450 рублей"');
@@ -79,11 +81,10 @@ export const AddTransaction = () => {
     }
   };
 
-  // Обработка Enter в поле быстрого ввода
   const handleQuickInputKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      handleQuickInputProcess();
+      processText(quickInput);
     }
   };
 
@@ -160,7 +161,7 @@ export const AddTransaction = () => {
             />
             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
               <button 
-                onClick={handleQuickInputProcess}
+                onClick={() => processText(quickInput)}
                 aria-label="Распознать быстрый ввод"
                 disabled={isProcessingQuickInput || !quickInput.trim()}
                 className="text-violet-600 hover:text-violet-700 disabled:text-muted-foreground transition-colors"
@@ -168,9 +169,25 @@ export const AddTransaction = () => {
               >
                 <Sparkles className="w-5 h-5" />
               </button>
-              <button aria-label="Голосовой ввод скоро будет доступен" className="text-muted-foreground">
-                <Mic className="w-5 h-5" />
-              </button>
+              {speech.supported && (
+                <button
+                  type="button"
+                  aria-label={speech.state === 'listening' ? 'Остановить запись' : 'Голосовой ввод'}
+                  onClick={() => speech.start((transcript) => {
+                    setQuickInput(transcript);
+                    processText(transcript);
+                  })}
+                  className={`transition-colors ${
+                    speech.state === 'listening'
+                      ? 'text-red-500 animate-pulse'
+                      : speech.state === 'error'
+                      ? 'text-amber-500'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {speech.state === 'listening' ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                </button>
+              )}
             </div>
           </div>
         </div>

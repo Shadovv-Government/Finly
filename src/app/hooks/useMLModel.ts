@@ -41,7 +41,7 @@ async function requestFineTuneSync(): Promise<void> {
   if (!('serviceWorker' in navigator)) return;
   try {
     const reg = await navigator.serviceWorker.ready;
-    // @ts-ignore — Background Sync API not yet in TS lib
+    // @ts-expect-error — Background Sync API not yet in TS lib
     if (reg.sync) await reg.sync.register('finly-fine-tune');
   } catch { /* not supported or SW not yet active */ }
 }
