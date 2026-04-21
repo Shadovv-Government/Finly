@@ -469,6 +469,8 @@ export class FinlyClassifier {
     } catch { /* non-critical */ }
 
     // 4. TF.js model
+    // Note: model.json has been pre-patched to remove L2 regularizer references
+    // (regularizers only affect training loss, not inference output).
     this.model = await tf.loadLayersModel(base + 'model_predict/model.json');
 
     // 5. Rules: custom (higher priority) + builtins

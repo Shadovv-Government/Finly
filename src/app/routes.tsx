@@ -24,6 +24,14 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+function AppLoading() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="w-8 h-8 rounded-full border-2 border-violet-600 border-t-transparent animate-spin" />
+    </div>
+  );
+}
+
 export const router = createBrowserRouter([
   {
     path: '/onboarding',
@@ -48,6 +56,7 @@ export const router = createBrowserRouter([
         <Layout />
       </ProtectedRoute>
     ),
+    HydrateFallback: AppLoading,
     children: [
       { index: true, lazy: lazyRoute(() => import('./screens/Dashboard'), 'Dashboard') },
       { path: 'history', lazy: lazyRoute(() => import('./screens/TransactionHistory'), 'TransactionHistory') },

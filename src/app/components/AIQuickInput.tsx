@@ -88,10 +88,9 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
         categories.find(c => c.id === fallbackId) ??
         categories.find(c => c.name === 'Другое' && c.type === result.type);
 
-      // Диагностика: видим в консоли, КАКОЙ слой fallback сработал
-      // console.log('[doSave] result.category=', result.category?.name,
-      //             '| fallback to:', category?.name, '(' + category?.id + ')',
-      //             '| categoriesLoaded=', categories.length);
+      console.log('[doSave] category=', result.category?.name ?? '(none)',
+        '→ resolved:', category?.name, `(${category?.id})`,
+        '| categories loaded:', categories.length);
 
       // Защита: если ни ML, ни system fallback не дали категорию — НЕ сохраняем
       // в первую попавшуюся (раньше так все молча уходило в "Еда").
@@ -180,6 +179,10 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
       const catId = inferCategoryId(mlInput, type);
       if (catId) category = categories.find(c => c.id === catId);
     }
+
+    console.log('[buildResult] text:', text, '| ml:', mlResult?.categoryName ?? 'null',
+      mlResult ? `(${Math.round((mlResult.confidence ?? 0) * 100)}%)` : '',
+      '| category:', category?.name ?? 'none', '| type:', type);
 
     return {
       amount: parsed.amount,
