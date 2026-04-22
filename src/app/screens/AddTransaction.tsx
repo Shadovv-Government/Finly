@@ -1,11 +1,14 @@
 import { useState } from 'react';
-import { X, Calendar, MessageSquare, Mic, MicOff, Sparkles, Wallet } from 'lucide-react';
+import { X, Calendar, MessageSquare, Mic, MicOff, Sparkles, Wallet, Camera } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { useCategories } from '../hooks/useCategories';
 import { useTransactions } from '../hooks/useTransactions';
 import { useBudgetNotifications } from '../hooks/useBudgetNotifications';
 import { useSpeechInput } from '../hooks/useSpeechInput';
+import { useReceiptScanner } from '../hooks/useReceiptScanner';
+import type { ReceiptData } from '../hooks/useReceiptScanner';
+import { ReceiptScannerModal } from '../components/ReceiptScannerModal';
 import { parseNaturalLanguage, findBestMatch } from '../../db/ai';
 import {
   formatAmountInput,
@@ -32,7 +35,10 @@ export const AddTransaction = () => {
   const [quickInput, setQuickInput] = useState('');
   const [isProcessingQuickInput, setIsProcessingQuickInput] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
   const speech = useSpeechInput();
+  const scanner = useReceiptScanner();
 
   const filteredCategories = categories.filter(c =>
     c.type === type
@@ -132,6 +138,38 @@ export const AddTransaction = () => {
     }
   };
 
+  const handleReceiptFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setReceiptFile(file);
+    setShowReceiptModal(true);
+    scanner.scan(file);
+    e.target.value = '';
+  };
+
+  const handleReceiptConfirm = (data: ReceiptData) => {
+    if (data.amount !== null) {
+      setAmount(String(data.amount));
+    }
+    if (data.merchant) {
+      setComment(data.merchant);
+    }
+    if (data.date) {
+      setSelectedDate(parseDateInputValue(data.date));
+    }
+
+    setShowReceiptModal(false);
+    scanner.reset();
+    setReceiptFile(null);
+  };
+
+  const handleReceiptClose = () => {
+    setShowReceiptModal(false);
+    scanner.reset();
+    setReceiptFile(null);
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
@@ -157,9 +195,22 @@ export const AddTransaction = () => {
               value={quickInput}
               onChange={(e) => setQuickInput(e.target.value)}
               onKeyDown={handleQuickInputKeyDown}
-              className="w-full px-4 py-3 pr-24 bg-muted rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600"
+              className="w-full px-4 py-3 pr-32 bg-muted rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600"
             />
             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+              <label
+                aria-label="Сканировать чек"
+                className="cursor-pointer text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <Camera className="w-5 h-5" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="sr-only"
+                  onChange={handleReceiptFile}
+                />
+              </label>
               <button 
                 onClick={() => processText(quickInput)}
                 aria-label="Распознать быстрый ввод"
@@ -298,6 +349,17 @@ export const AddTransaction = () => {
           Сохранить
         </button>
       </div>
+
+      {showReceiptModal && (
+        <ReceiptScannerModal
+          file={receiptFile}
+          result={scanner.result}
+          isLoading={scanner.isLoading}
+          error={scanner.error}
+          onConfirm={handleReceiptConfirm}
+          onClose={handleReceiptClose}
+        />
+      )}
     </div>
   );
 };
