@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Calendar, MessageSquare, Sparkles } from 'lucide-react';
+import { Calendar, Camera, MessageSquare, Sparkles } from 'lucide-react';
 import { Wallet } from 'lucide-react';
 import { useCategories } from '../hooks/useCategories';
 import { useTransactions } from '../hooks/useTransactions';
 import { useNotifications } from '../hooks/useNotifications';
 import { useBudgetNotifications } from '../hooks/useBudgetNotifications';
 import { useTransactionForm } from '../hooks/useTransactionForm';
+import { useReceiptScanner } from '../hooks/useReceiptScanner';
+import type { ReceiptData } from '../hooks/useReceiptScanner';
 import { formatDateInputValue, parseDateInputValue } from '../utils/formatCurrency';
 import { getLucideIcon } from '../utils/lucideIcons';
 import { useMLModel } from '../hooks/useMLModel';
+import { ReceiptScannerModal } from './ReceiptScannerModal';
 
 function CategoryIcon({ name, className, color }: { name: string; className?: string; color?: string }) {
   const IconComponent = getLucideIcon(name, Wallet);
@@ -24,6 +27,7 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
   const { add } = useTransactions();
   const { notify, notifyTransaction } = useNotifications();
   const { checkBudgets } = useBudgetNotifications();
+  const scanner = useReceiptScanner();
   const {
     formData,
     setFormData,
@@ -32,6 +36,8 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
   } = useTransactionForm();
 
   const [mlSuggestion, setMlSuggestion] = useState<{ categoryId: string; confidence: number } | null>(null);
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
   const { classify, recordUserChoice } = useMLModel({ autoLoad: true });
 
   // Debounced ML classification: runs 500ms after comment stops changing
@@ -63,6 +69,34 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
   }, [formData.comment, formData.amount, formData.date, formData.type, classify, categories, setFormData]);
 
   const filteredCategories = categories.filter(c => c.type === formData.type);
+
+  const handleReceiptFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setReceiptFile(file);
+    setShowReceiptModal(true);
+    scanner.scan(file);
+    e.target.value = '';
+  };
+
+  const handleReceiptConfirm = (data: ReceiptData) => {
+    setFormData(prev => ({
+      ...prev,
+      amount: data.amount !== null ? String(data.amount) : prev.amount,
+      comment: data.merchant ?? prev.comment,
+      date: data.date ? parseDateInputValue(data.date) : prev.date,
+    }));
+    setShowReceiptModal(false);
+    scanner.reset();
+    setReceiptFile(null);
+  };
+
+  const handleReceiptClose = () => {
+    setShowReceiptModal(false);
+    scanner.reset();
+    setReceiptFile(null);
+  };
 
   const handleSave = async () => {
     if (!formData.amount) {
@@ -216,6 +250,19 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
             onChange={(e) => setFormData(prev => ({ ...prev, comment: e.target.value }))}
             className="flex-1 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-md"
           />
+          <label
+            aria-label="Сканировать чек"
+            className="cursor-pointer text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <Camera className="w-5 h-5" />
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="sr-only"
+              onChange={handleReceiptFile}
+            />
+          </label>
         </div>
       </div>
 
@@ -228,6 +275,17 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
           Сохранить
         </button>
       </div>
+
+      {showReceiptModal && (
+        <ReceiptScannerModal
+          file={receiptFile}
+          result={scanner.result}
+          isLoading={scanner.isLoading}
+          error={scanner.error}
+          onConfirm={handleReceiptConfirm}
+          onClose={handleReceiptClose}
+        />
+      )}
     </div>
   );
 };

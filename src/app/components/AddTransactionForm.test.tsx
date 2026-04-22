@@ -28,11 +28,21 @@ vi.mock('../hooks/useTransactionForm', () => ({
   useTransactionForm: vi.fn(),
 }));
 
+vi.mock('../hooks/useReceiptScanner', () => ({
+  useReceiptScanner: vi.fn(),
+}));
+
+vi.mock('../hooks/useMLModel', () => ({
+  useMLModel: vi.fn(),
+}));
+
 import { useCategories } from '../hooks/useCategories';
 import { useTransactions } from '../hooks/useTransactions';
 import { useNotifications } from '../hooks/useNotifications';
 import { useBudgetNotifications } from '../hooks/useBudgetNotifications';
 import { useTransactionForm } from '../hooks/useTransactionForm';
+import { useReceiptScanner } from '../hooks/useReceiptScanner';
+import { useMLModel } from '../hooks/useMLModel';
 
 const mockCategories = [
   { id: 'cat-1', name: 'Продукты', type: 'expense' as const, icon: 'ShoppingCart', color: '#FF5722', isSystem: true },
@@ -42,6 +52,19 @@ const mockCategories = [
 
 describe('AddTransactionForm', () => {
   const mockOnClose = vi.fn();
+  const scannerState = {
+    scan: vi.fn(),
+    result: {
+      amount: 450,
+      merchant: 'Пятёрочка',
+      date: '2026-04-22',
+      confidence: 85,
+      rawText: 'Пятёрочка\nИТОГО 450.00',
+    },
+    isLoading: false,
+    error: null,
+    reset: vi.fn(),
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -82,6 +105,13 @@ describe('AddTransactionForm', () => {
       formatAmount: vi.fn((v) => v),
       parseAmountInput: vi.fn((v) => v),
       handleAmountChange: vi.fn(),
+    });
+
+    (useReceiptScanner as any).mockReturnValue(scannerState);
+
+    (useMLModel as any).mockReturnValue({
+      classify: vi.fn().mockResolvedValue(null),
+      recordUserChoice: vi.fn(),
     });
   });
 
@@ -380,6 +410,44 @@ describe('AddTransactionForm', () => {
       });
 
       expect(mockAdd).toHaveBeenCalled();
+    });
+  });
+
+  describe('сканер чеков', () => {
+    it('запускает сканирование и заполняет форму после подтверждения', async () => {
+      const mockSetFormData = vi.fn();
+      (useTransactionForm as any).mockReturnValue({
+        formData: {
+          amount: '',
+          type: 'expense',
+          categoryId: '',
+          comment: '',
+          date: new Date('2024-01-15'),
+        },
+        setFormData: mockSetFormData,
+        quickInput: '',
+        setQuickInput: vi.fn(),
+        isParsing: false,
+        parseQuickInput: vi.fn(),
+        formatAmount: vi.fn((v: string) => v),
+        parseAmountInput: vi.fn((v: string) => v),
+        handleAmountChange: vi.fn(),
+      });
+
+      const { container } = render(<AddTransactionForm onClose={mockOnClose} />);
+      const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+
+      expect(fileInput).not.toBeNull();
+
+      const file = new File(['receipt'], 'receipt.jpg', { type: 'image/jpeg' });
+      fireEvent.change(fileInput, { target: { files: [file] } });
+
+      expect(scannerState.scan).toHaveBeenCalledWith(file);
+
+      fireEvent.click(await screen.findByRole('button', { name: /использовать/i }));
+
+      expect(mockSetFormData).toHaveBeenCalledWith(expect.any(Function));
+      expect(scannerState.reset).toHaveBeenCalled();
     });
   });
 });
