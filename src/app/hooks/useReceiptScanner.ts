@@ -70,10 +70,12 @@ export function useReceiptScanner() {
   const [result, setResult] = useState<ReceiptData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<ReceiptScanError | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const scan = async (file: File) => {
     setIsLoading(true);
     setError(null);
+    setErrorMessage(null);
     setResult(null);
     try {
       const { createWorker } = await import('tesseract.js');
@@ -95,6 +97,7 @@ export function useReceiptScanner() {
     } catch (error) {
       console.error('[ReceiptScanner] OCR failed', error);
       setError('ocr_error');
+      setErrorMessage(error instanceof Error ? error.message : String(error));
     } finally {
       setIsLoading(false);
     }
@@ -103,8 +106,9 @@ export function useReceiptScanner() {
   const reset = () => {
     setResult(null);
     setError(null);
+    setErrorMessage(null);
     setIsLoading(false);
   };
 
-  return { scan, result, isLoading, error, reset };
+  return { scan, result, isLoading, error, errorMessage, reset };
 }

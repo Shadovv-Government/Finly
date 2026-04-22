@@ -7,6 +7,7 @@ interface ReceiptScannerModalProps {
   result: ReceiptData | null;
   isLoading: boolean;
   error: ReceiptScanError | null;
+  errorMessage?: string | null;
   onConfirm: (data: ReceiptData) => void;
   onClose: () => void;
 }
@@ -16,6 +17,7 @@ export function ReceiptScannerModal({
   result,
   isLoading,
   error,
+  errorMessage,
   onConfirm,
   onClose,
 }: ReceiptScannerModalProps) {
@@ -88,7 +90,12 @@ export function ReceiptScannerModal({
 
           {!isLoading && error === 'ocr_error' && !result && (
             <div className="rounded-xl border border-border bg-card p-4 text-center text-muted-foreground">
-              Не удалось распознать чек. Попробуй ещё раз.
+              <p>Не удалось распознать чек. Попробуй ещё раз.</p>
+              {errorMessage && (
+                <p className="mt-2 break-all text-left text-xs text-muted-foreground/80">
+                  {errorMessage}
+                </p>
+              )}
             </div>
           )}
 

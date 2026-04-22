@@ -111,4 +111,20 @@ describe('ReceiptScannerModal', () => {
 
     expect(onClose).toHaveBeenCalled();
   });
+
+  it('shows OCR error details when provided', () => {
+    render(
+      <ReceiptScannerModal
+        file={mockFile}
+        result={null}
+        isLoading={false}
+        error={'ocr_error' as ReceiptScanError}
+        errorMessage="Failed to load /tesseract-core/tesseract-core-relaxedsimd-lstm.wasm.js"
+        onConfirm={vi.fn()}
+        onClose={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText(/Failed to load/i)).toBeInTheDocument();
+  });
 });

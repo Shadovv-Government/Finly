@@ -356,6 +356,7 @@ export const AddTransaction = () => {
           result={scanner.result}
           isLoading={scanner.isLoading}
           error={scanner.error}
+          errorMessage={scanner.errorMessage}
           onConfirm={handleReceiptConfirm}
           onClose={handleReceiptClose}
         />
