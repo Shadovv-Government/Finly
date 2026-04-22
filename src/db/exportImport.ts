@@ -253,13 +253,15 @@ export async function importData(
   try {
     await db.transaction(
       'rw',
-      db.categories,
-      db.transactions,
-      db.budgets,
-      db.goals,
-      db.recurringTemplates,
-      db.settings,
-      db.aiPatterns,
+      [
+        db.categories,
+        db.transactions,
+        db.budgets,
+        db.goals,
+        db.recurringTemplates,
+        db.settings,
+        db.aiPatterns,
+      ],
       async () => {
         // Импортируем категории первыми (нужны для транзакций)
         if (data.categories?.length) {
