@@ -10,6 +10,23 @@ export interface ReceiptData {
 
 export type ReceiptScanError = 'low_confidence' | 'ocr_error';
 
+export function getRequiredReceiptScannerCoreAssets() {
+  return [
+    'tesseract-core.wasm.js',
+    'tesseract-core.wasm',
+    'tesseract-core-simd.wasm.js',
+    'tesseract-core-simd.wasm',
+    'tesseract-core-lstm.wasm.js',
+    'tesseract-core-lstm.wasm',
+    'tesseract-core-simd-lstm.wasm.js',
+    'tesseract-core-simd-lstm.wasm',
+    'tesseract-core-relaxedsimd.wasm.js',
+    'tesseract-core-relaxedsimd.wasm',
+    'tesseract-core-relaxedsimd-lstm.wasm.js',
+    'tesseract-core-relaxedsimd-lstm.wasm',
+  ];
+}
+
 export function getReceiptScannerWorkerOptions() {
   return {
     workerPath: '/tesseract/worker.min.js',

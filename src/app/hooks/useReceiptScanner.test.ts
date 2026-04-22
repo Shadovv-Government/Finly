@@ -4,6 +4,7 @@ import {
   extractMerchant,
   extractDate,
   getReceiptScannerWorkerOptions,
+  getRequiredReceiptScannerCoreAssets,
 } from './useReceiptScanner';
 
 describe('extractAmount', () => {
@@ -72,5 +73,24 @@ describe('getReceiptScannerWorkerOptions', () => {
       langPath: '/tessdata/4.0.0_best_int',
       gzip: true,
     });
+  });
+});
+
+describe('getRequiredReceiptScannerCoreAssets', () => {
+  it('includes relaxedsimd core variants for browsers that support them', () => {
+    expect(getRequiredReceiptScannerCoreAssets()).toEqual([
+      'tesseract-core.wasm.js',
+      'tesseract-core.wasm',
+      'tesseract-core-simd.wasm.js',
+      'tesseract-core-simd.wasm',
+      'tesseract-core-lstm.wasm.js',
+      'tesseract-core-lstm.wasm',
+      'tesseract-core-simd-lstm.wasm.js',
+      'tesseract-core-simd-lstm.wasm',
+      'tesseract-core-relaxedsimd.wasm.js',
+      'tesseract-core-relaxedsimd.wasm',
+      'tesseract-core-relaxedsimd-lstm.wasm.js',
+      'tesseract-core-relaxedsimd-lstm.wasm',
+    ]);
   });
 });
