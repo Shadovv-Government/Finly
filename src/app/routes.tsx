@@ -12,13 +12,37 @@ const lazyRoute = <T extends Record<string, ComponentType<any>>>(
   return { Component: mod[exportName] };
 };
 
+export function resolveProtectedRoute({
+  user,
+  onboardingComplete,
+  biometricEnabled,
+  biometricLocked,
+}: {
+  user: { id: string } | null;
+  onboardingComplete: boolean;
+  biometricEnabled: boolean;
+  biometricLocked: boolean;
+}): '/register' | '/onboarding' | 'lock' | null {
+  if (!user) return '/register';
+  if (!onboardingComplete) return '/onboarding';
+  if (biometricEnabled && biometricLocked) return 'lock';
+  return null;
+}
+
 // Protected route wrapper
 function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { user, biometric } = useAuth();
-  if (!user) {
-    return <Navigate to="/register" replace />;
+  const { user, biometric, onboardingComplete } = useAuth();
+  const redirect = resolveProtectedRoute({
+    user,
+    onboardingComplete,
+    biometricEnabled: biometric.isEnabled,
+    biometricLocked: biometric.isLocked,
+  });
+
+  if (redirect === '/register' || redirect === '/onboarding') {
+    return <Navigate to={redirect} replace />;
   }
-  if (biometric.isEnabled && biometric.isLocked) {
+  if (redirect === 'lock') {
     return <LockScreen />;
   }
   return <>{children}</>;

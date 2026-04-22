@@ -116,6 +116,11 @@ export async function createGoalContribution(
 
   // Создаем транзакцию расхода и обновляем прогресс атомарно
   await db.transaction('rw', db.transactions, db.goals, async () => {
+    const goalForUpdate = await db.goals.get(goalId);
+    if (!goalForUpdate) {
+      throw new Error('Цель не найдена');
+    }
+
     await db.transactions.add({
       amount,
       type: 'expense',
@@ -126,7 +131,7 @@ export async function createGoalContribution(
       rate: 1,
       createdAt: Date.now(),
     });
-    await db.goals.update(goalId, { currentAmount: goal.currentAmount + amount });
+    await db.goals.update(goalId, { currentAmount: goalForUpdate.currentAmount + amount });
   });
 }
 

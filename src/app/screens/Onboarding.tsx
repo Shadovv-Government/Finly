@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Wallet, Sparkles, WifiOff } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 export const Onboarding = () => {
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const { completeOnboarding } = useAuth();
 
   const slides = [
     {
@@ -27,18 +29,22 @@ export const Onboarding = () => {
     }
   ];
 
-  const handleNext = () => {
+  const finishOnboarding = async () => {
+    localStorage.setItem('finly-onboarding-completed', 'true');
+    await completeOnboarding();
+    navigate('/');
+  };
+
+  const handleNext = async () => {
     if (currentSlide < slides.length - 1) {
       setCurrentSlide(currentSlide + 1);
     } else {
-      localStorage.setItem('finly-onboarding-completed', 'true');
-      navigate('/');
+      await finishOnboarding();
     }
   };
 
-  const handleSkip = () => {
-    localStorage.setItem('finly-onboarding-completed', 'true');
-    navigate('/');
+  const handleSkip = async () => {
+    await finishOnboarding();
   };
 
   const slide = slides[currentSlide];

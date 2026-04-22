@@ -27,8 +27,7 @@ export async function createUser(name: string, deviceId?: string): Promise<strin
  * Получает текущего пользователя (первого в БД)
  */
 export async function getCurrentUser(): Promise<User | undefined> {
-  const users = await db.users.toArray();
-  return users.length > 0 ? users[0] : undefined;
+  return db.users.orderBy('createdAt').last();
 }
 
 /**
@@ -49,6 +48,5 @@ export async function deleteUser(id: string): Promise<void> {
  * Проверяет наличие пользователя
  */
 export async function hasUser(): Promise<boolean> {
-  const users = await db.users.toArray();
-  return users.length > 0;
+  return (await db.users.count()) > 0;
 }
