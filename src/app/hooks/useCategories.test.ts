@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import { useCategories } from './useCategories';
 
 // Мок для операций с БД
@@ -25,6 +25,7 @@ import { formatErrorForUser } from '../utils/errorHandler';
 
 describe('useCategories', () => {
   beforeEach(() => {
+    vi.useRealTimers();
     vi.clearAllMocks();
   });
 
@@ -188,9 +189,3 @@ describe('useCategories', () => {
     });
   });
 });
-
-// Helper для act
-async function act<T>(fn: () => T | Promise<T>): Promise<void> {
-  await fn();
-  await new Promise(resolve => setTimeout(resolve, 0));
-}
