@@ -69,6 +69,7 @@ describe('getReceiptScannerWorkerOptions', () => {
   it('uses local worker, core, and language assets', () => {
     expect(getReceiptScannerWorkerOptions()).toEqual({
       workerPath: '/tesseract/worker.min.js',
+      workerBlobURL: false,
       corePath: '/tesseract-core',
       langPath: '/tessdata/4.0.0_best_int',
       gzip: true,
