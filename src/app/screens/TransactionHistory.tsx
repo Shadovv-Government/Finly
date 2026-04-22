@@ -18,6 +18,7 @@ const SWIPE_DIRECTION_LOCK_THRESHOLD = 10;
 function SwipeableRow({ onDelete, children }: { onDelete: () => void; children: React.ReactNode }) {
   const rowRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const deleteBackgroundRef = useRef<HTMLDivElement>(null);
   const startXRef = useRef(0);
   const startYRef = useRef(0);
   const currentOffsetRef = useRef(0);
@@ -30,6 +31,9 @@ function SwipeableRow({ onDelete, children }: { onDelete: () => void; children: 
     if (!contentRef.current) return;
     contentRef.current.style.transition = animated ? 'transform 0.22s ease' : 'none';
     contentRef.current.style.transform = `translateX(${x}px)`;
+    if (deleteBackgroundRef.current) {
+      deleteBackgroundRef.current.style.opacity = x < 0 ? '1' : '0';
+    }
   };
 
   useEffect(() => {
@@ -120,7 +124,11 @@ function SwipeableRow({ onDelete, children }: { onDelete: () => void; children: 
         opacity: isDeleting ? 0 : 1,
       }}
     >
-      <div className="absolute right-0 top-0 bottom-0 w-20 flex items-center justify-center bg-red-500" style={{ visibility: currentOffsetRef.current < 0 ? 'visible' : 'hidden' }}>
+      <div
+        ref={deleteBackgroundRef}
+        className="absolute right-0 top-0 bottom-0 w-20 flex items-center justify-center bg-red-500"
+        style={{ opacity: 0, transition: 'opacity 0.12s ease' }}
+      >
         <Trash2 className="w-5 h-5 text-white" />
       </div>
       <div
