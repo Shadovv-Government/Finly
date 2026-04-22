@@ -192,6 +192,18 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
           className="w-full text-4xl font-bold text-center bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-lg"
         />
         <p className="text-center text-muted-foreground mt-2">₽</p>
+        <label className="mt-4 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-card px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+          <Camera className="h-5 w-5" />
+          <span>Сканировать чек</span>
+          <input
+            aria-label="Сканировать чек"
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="sr-only"
+            onChange={handleReceiptFile}
+          />
+        </label>
       </div>
 
       {/* Category Grid */}
@@ -250,19 +262,6 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
             onChange={(e) => setFormData(prev => ({ ...prev, comment: e.target.value }))}
             className="flex-1 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-md"
           />
-          <label
-            aria-label="Сканировать чек"
-            className="cursor-pointer text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <Camera className="w-5 h-5" />
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="sr-only"
-              onChange={handleReceiptFile}
-            />
-          </label>
         </div>
       </div>
 

@@ -139,6 +139,12 @@ describe('AddTransactionForm', () => {
       expect(screen.getByPlaceholderText('Комментарий')).toBeInTheDocument();
     });
 
+    it('должен рендерить отдельную кнопку сканера под суммой', () => {
+      render(<AddTransactionForm onClose={mockOnClose} />);
+
+      expect(screen.getByLabelText('Сканировать чек')).toBeInTheDocument();
+    });
+
     it('должен рендерить выбор даты', () => {
       render(<AddTransactionForm onClose={mockOnClose} />);
 
