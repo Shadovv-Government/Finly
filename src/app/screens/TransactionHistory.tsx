@@ -120,7 +120,7 @@ function SwipeableRow({ onDelete, children }: { onDelete: () => void; children: 
         opacity: isDeleting ? 0 : 1,
       }}
     >
-      <div className="absolute right-0 top-0 bottom-0 w-20 flex items-center justify-center bg-red-500">
+      <div className="absolute right-0 top-0 bottom-0 w-20 flex items-center justify-center bg-red-500" style={{ visibility: currentOffsetRef.current < 0 ? 'visible' : 'hidden' }}>
         <Trash2 className="w-5 h-5 text-white" />
       </div>
       <div
