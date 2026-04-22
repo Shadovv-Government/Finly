@@ -10,6 +10,15 @@ export interface ReceiptData {
 
 export type ReceiptScanError = 'low_confidence' | 'ocr_error';
 
+export function getReceiptScannerWorkerOptions() {
+  return {
+    workerPath: '/tesseract/worker.min.js',
+    corePath: '/tesseract-core',
+    langPath: '/tessdata/4.0.0_best_int',
+    gzip: true,
+  };
+}
+
 export function extractAmount(text: string): number | null {
   const keywordPattern =
     /(?:итого|total|к оплате|сумма)[^\d]*(\d[\d \t]*[.,]\d{2}|\d+)/i;
@@ -51,7 +60,7 @@ export function useReceiptScanner() {
     setResult(null);
     try {
       const { createWorker } = await import('tesseract.js');
-      const worker = await createWorker(['rus', 'eng']);
+      const worker = await createWorker(['rus', 'eng'], 1, getReceiptScannerWorkerOptions());
       const { data } = await worker.recognize(file);
       await worker.terminate();
 
@@ -66,7 +75,8 @@ export function useReceiptScanner() {
       if (data.confidence < 40 || parsed.amount === null) {
         setError('low_confidence');
       }
-    } catch {
+    } catch (error) {
+      console.error('[ReceiptScanner] OCR failed', error);
       setError('ocr_error');
     } finally {
       setIsLoading(false);

@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { extractAmount, extractMerchant, extractDate } from './useReceiptScanner';
+import {
+  extractAmount,
+  extractMerchant,
+  extractDate,
+  getReceiptScannerWorkerOptions,
+} from './useReceiptScanner';
 
 describe('extractAmount', () => {
   it('extracts amount after ИТОГО keyword', () => {
@@ -56,5 +61,16 @@ describe('extractDate', () => {
 
   it('returns null when no date found', () => {
     expect(extractDate('no date here')).toBeNull();
+  });
+});
+
+describe('getReceiptScannerWorkerOptions', () => {
+  it('uses local worker, core, and language assets', () => {
+    expect(getReceiptScannerWorkerOptions()).toEqual({
+      workerPath: '/tesseract/worker.min.js',
+      corePath: '/tesseract-core',
+      langPath: '/tessdata/4.0.0_best_int',
+      gzip: true,
+    });
   });
 });
