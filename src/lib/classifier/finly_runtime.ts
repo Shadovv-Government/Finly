@@ -433,6 +433,7 @@ export class FinlyClassifier {
   private tfidfWord:   TfidfParams | null = null;
   private maskData:    FeatureMask | null = null;
   private featureImportance: FeatureImportance[] = [];
+  private featureIndexByName = new Map<string, number>();
   private rules:       Rule[] = [];
   private lru:         LRUCache<string, ClassifyResult>;
   private cfg:         ClassifierConfig;
@@ -464,6 +465,7 @@ export class FinlyClassifier {
     this.tfidfChar = charJ;
     this.tfidfWord = wordJ;
     this.maskData  = maskJ;
+    this.buildFeatureIndexMap();
 
     // 3. Feature importance (optional, for explain)
     try {
@@ -840,14 +842,53 @@ export class FinlyClassifier {
     const topN = 5;
     const scores: Array<{ name: string; score: number }> = [];
     for (const { feature, gain } of this.featureImportance.slice(0, 200)) {
-      // feature name is "c:пятёр" (char) or "w:пятёрочка" (word)
-      // We don't have a reverse index, so we just report top active features by gain
-      const dimIdx = this.featureImportance.indexOf({ feature, gain }); // approximate
+      const dimIdx = this.featureIndexByName.get(feature);
+      if (dimIdx === undefined) continue;
       if (dimIdx < textVec.length && textVec[dimIdx] > 0) {
         scores.push({ name: feature.replace(/^[cw]:/, ''), score: textVec[dimIdx] * gain });
       }
     }
     return scores.sort((a,b) => b.score - a.score).slice(0, topN).map(s => s.name);
+  }
+
+  private buildFeatureIndexMap(): void {
+    if (!this.manifest || !this.tfidfChar || !this.tfidfWord || !this.maskData) {
+      this.featureIndexByName.clear();
+      return;
+    }
+
+    const rawIndexToMaskedIndex = new Map<number, number>();
+    let selectedIndex = 0;
+    for (let rawIndex = 0; rawIndex < this.maskData.mask.length; rawIndex++) {
+      if (this.maskData.mask[rawIndex]) {
+        rawIndexToMaskedIndex.set(rawIndex, selectedIndex);
+        selectedIndex++;
+      }
+    }
+
+    const paramsByPart = {
+      char: this.tfidfChar,
+      word: this.tfidfWord,
+    } as const;
+    const prefixByPart = {
+      char: 'c:',
+      word: 'w:',
+    } as const;
+
+    let offset = 0;
+    this.featureIndexByName.clear();
+
+    for (const part of this.manifest.input.concat_order) {
+      const params = paramsByPart[part];
+      for (const [token, rawIndex] of Object.entries(params.vocab)) {
+        const concatIndex = offset + rawIndex;
+        const maskedIndex = rawIndexToMaskedIndex.get(concatIndex);
+        if (maskedIndex !== undefined) {
+          this.featureIndexByName.set(`${prefixByPart[part]}${token}`, maskedIndex);
+        }
+      }
+      offset += params.n_features;
+    }
   }
 
   // ─── Private helpers ──────────────────────────────────────────────────────

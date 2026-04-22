@@ -6,6 +6,29 @@ import {
   NotificationItem,
 } from './types';
 
+const BASE_SCHEMA = {
+  // Транзакции: индексы для фильтрации по дате, категории и типу
+  transactions: '++id, date, categoryId, type, createdAt',
+
+  // Категории: поиск по типу (доход/расход)
+  categories: 'id, type, isSystem',
+
+  // Бюджеты: поиск по категории и периоду
+  budgets: '++id, categoryId, period, startDate',
+
+  // Цели: фильтрация активных
+  goals: '++id, isActive, deadline',
+
+  // Шаблоны: поиск по дате следующего платежа для автодобавления
+  recurringTemplates: '++id, nextDate, isActive',
+
+  // Настройки: ключ-значение
+  settings: 'key',
+
+  // AI паттерны: поиск по слову
+  aiPatterns: '++id, pattern, categoryId',
+} satisfies Record<string, string>;
+
 class FinlyDatabase extends Dexie {
   // Объявляем таблицы как свойства класса
   transactions!: Table<Transaction, number>;
@@ -22,35 +45,18 @@ class FinlyDatabase extends Dexie {
     super('FinlyDB');
 
     // Версионирование схемы
-    this.version(1).stores({
-      // Транзакции: индексы для фильтрации по дате, категории и типу
-      transactions: '++id, date, categoryId, type, createdAt',
-
-      // Категории: поиск по типу (доход/расход)
-      categories: 'id, type, isSystem',
-
-      // Бюджеты: поиск по категории и периоду
-      budgets: '++id, categoryId, period, startDate',
-
-      // Цели: фильтрация активных
-      goals: '++id, isActive, deadline',
-
-      // Шаблоны: поиск по дате следующего платежа для автодобавления
-      recurringTemplates: '++id, nextDate, isActive',
-
-      // Настройки: ключ-значение
-      settings: 'key',
-
-      // AI паттерны: поиск по слову
-      aiPatterns: '++id, pattern, categoryId',
-    });
+    this.version(1).stores(BASE_SCHEMA);
 
     this.version(2).stores({
+      ...BASE_SCHEMA,
       // Пользователи
       users: 'id, createdAt',
     });
 
     this.version(3).stores({
+      ...BASE_SCHEMA,
+      users: 'id, createdAt',
+
       // Уведомления с persist и статусом прочтения
       notifications: '++id, type, read, createdAt, expiresAt',
     });
