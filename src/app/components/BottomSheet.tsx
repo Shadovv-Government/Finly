@@ -27,6 +27,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
   const dragStartY = useRef<number | null>(null);
   const dragCurrentY = useRef<number>(0);
   const isDragging = useRef(false);
+  const previousUserSelect = useRef<string>('');
 
   // Управление видимостью с анимацией
   useEffect(() => {
@@ -65,21 +66,35 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
 
+  const getClientY = (e: TouchEvent | MouseEvent | React.TouchEvent | React.MouseEvent) => {
+    if ('touches' in e) {
+      return e.touches[0]?.clientY ?? 0;
+    }
+    return e.clientY;
+  };
+
   // Drag handlers
   const onDragStart = (e: React.TouchEvent | React.MouseEvent) => {
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    if ('button' in e && e.button !== 0) return;
+
+    const clientY = getClientY(e);
     dragStartY.current = clientY;
     dragCurrentY.current = 0;
     isDragging.current = true;
+    previousUserSelect.current = document.body.style.userSelect;
+    document.body.style.userSelect = 'none';
   };
 
-  const onDragMove = (e: React.TouchEvent | React.MouseEvent) => {
+  const onDragMove = (e: TouchEvent | MouseEvent) => {
     if (!isDragging.current || dragStartY.current === null) return;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const clientY = getClientY(e);
     const raw = clientY - dragStartY.current;
     // bottom sheet: только вниз; top sheet: только вверх
     const delta = isTop ? Math.min(0, raw) : Math.max(0, raw);
     dragCurrentY.current = delta;
+    if ('touches' in e) {
+      e.preventDefault();
+    }
     if (sheetRef.current) {
       sheetRef.current.style.transform = `translateY(${delta}px)`;
       sheetRef.current.style.transition = 'none';
@@ -106,8 +121,32 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
         sheetRef.current.style.transform = 'translateY(0)';
       }
     }
+    document.body.style.userSelect = previousUserSelect.current;
     dragStartY.current = null;
   };
+
+  useEffect(() => {
+    if (!visible) return;
+
+    const handleMouseMove = (e: MouseEvent) => onDragMove(e);
+    const handleTouchMove = (e: TouchEvent) => onDragMove(e);
+    const handleDragEnd = () => onDragEnd();
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleDragEnd);
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleDragEnd);
+    window.addEventListener('touchcancel', handleDragEnd);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleDragEnd);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleDragEnd);
+      window.removeEventListener('touchcancel', handleDragEnd);
+      document.body.style.userSelect = previousUserSelect.current;
+    };
+  }, [visible, isTop, onClose]);
 
   if (!visible) return null;
 
@@ -139,12 +178,8 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
                            ? (closing ? 'animate-slide-down-minimal' : 'animate-slide-up-minimal')
                            : (closing ? 'animate-slide-down' : 'animate-slide-up')
                        }`
-                   }`}
+        }`}
         onClick={(e) => e.stopPropagation()}
-        onTouchMove={onDragMove}
-        onMouseMove={onDragMove}
-        onTouchEnd={onDragEnd}
-        onMouseUp={onDragEnd}
       >
         {/* Handle — drag zone (сверху для bottom sheet) */}
         {!isTop && (
