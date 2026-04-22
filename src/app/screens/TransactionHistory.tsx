@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect } from 'react';
-import { Search, Filter, X, Calendar, ChevronDown } from 'lucide-react';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { Search, Filter, X, Calendar, ChevronDown, Trash2 } from 'lucide-react';
 import { CategoryBadge } from '../components/CategoryBadge';
 import { AmountDisplay } from '../components/AmountDisplay';
 import { BottomSheet } from '../components/BottomSheet';
@@ -8,9 +8,62 @@ import { useCategories } from '../hooks/useCategories';
 import { Transaction } from '../../db/types';
 
 const PAGE_SIZE = 50;
+const SWIPE_THRESHOLD = 72;
+
+function SwipeableRow({ onDelete, children }: { onDelete: () => void; children: React.ReactNode }) {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const startXRef = useRef(0);
+  const currentOffsetRef = useRef(0);
+
+  const translate = (x: number, animated: boolean) => {
+    if (!contentRef.current) return;
+    contentRef.current.style.transition = animated ? 'transform 0.22s ease' : 'none';
+    contentRef.current.style.transform = `translateX(${x}px)`;
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    startXRef.current = e.touches[0].clientX;
+    currentOffsetRef.current = 0;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    const dx = e.touches[0].clientX - startXRef.current;
+    if (dx < 0) {
+      const offset = Math.max(dx, -(SWIPE_THRESHOLD + 24));
+      currentOffsetRef.current = offset;
+      translate(offset, false);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (currentOffsetRef.current < -SWIPE_THRESHOLD) {
+      translate(-300, true);
+      setTimeout(onDelete, 200);
+    } else {
+      translate(0, true);
+    }
+    currentOffsetRef.current = 0;
+  };
+
+  return (
+    <div className="relative overflow-hidden">
+      <div className="absolute right-0 top-0 bottom-0 w-20 flex items-center justify-center bg-red-500">
+        <Trash2 className="w-5 h-5 text-white" />
+      </div>
+      <div
+        ref={contentRef}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
 
 export const TransactionHistory = () => {
-  const { transactions } = useTransactions();
+  const { transactions, remove } = useTransactions();
   const { categories } = useCategories();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -190,22 +243,24 @@ export const TransactionHistory = () => {
                       const category = categories.find(c => c.id === transaction.categoryId);
                       const time = new Date(transaction.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
                       return (
-                        <div
+                        <SwipeableRow
                           key={transaction.id}
-                          className={`flex items-center gap-3 p-4 ${index !== dayTransactions.length - 1 ? 'border-b border-border' : ''}`}
+                          onDelete={() => transaction.id !== undefined && remove(transaction.id)}
                         >
-                          <CategoryBadge categoryId={transaction.categoryId as string | undefined} size="md" />
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium truncate">{category?.name || 'Без категории'}</p>
-                            {transaction.comment && (
-                              <p className="text-sm text-muted-foreground truncate">{transaction.comment}</p>
-                            )}
+                          <div className={`flex items-center gap-3 p-4 bg-card ${index !== dayTransactions.length - 1 ? 'border-b border-border' : ''}`}>
+                            <CategoryBadge categoryId={transaction.categoryId as string | undefined} size="md" />
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate">{category?.name || 'Без категории'}</p>
+                              {transaction.comment && (
+                                <p className="text-sm text-muted-foreground truncate">{transaction.comment}</p>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              <AmountDisplay amount={transaction.amount} type={transaction.type} size="md" />
+                              <p className="text-xs text-muted-foreground">{time}</p>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <AmountDisplay amount={transaction.amount} type={transaction.type} size="md" />
-                            <p className="text-xs text-muted-foreground">{time}</p>
-                          </div>
-                        </div>
+                        </SwipeableRow>
                       );
                     })}
                   </div>

@@ -60,11 +60,111 @@ export async function findBestMatch(comment: string): Promise<AIMatch | null> {
 
 // ==================== Natural Language Parsing ====================
 
+// ==================== Russian Numeral Conversion ====================
+
+const RU_ONES: Record<string, number> = {
+  ноль: 0, нуль: 0,
+  один: 1, одна: 1, одного: 1, одну: 1,
+  два: 2, две: 2, двух: 2,
+  три: 3, трёх: 3, трех: 3,
+  четыре: 4, четырёх: 4, четырех: 4,
+  пять: 5, пяти: 5,
+  шесть: 6, шести: 6,
+  семь: 7, семи: 7,
+  восемь: 8, восьми: 8,
+  девять: 9, девяти: 9,
+  десять: 10, десяти: 10,
+  одиннадцать: 11, одиннадцати: 11,
+  двенадцать: 12, двенадцати: 12,
+  тринадцать: 13, тринадцати: 13,
+  четырнадцать: 14, четырнадцати: 14,
+  пятнадцать: 15, пятнадцати: 15,
+  шестнадцать: 16, шестнадцати: 16,
+  семнадцать: 17, семнадцати: 17,
+  восемнадцать: 18, восемнадцати: 18,
+  девятнадцать: 19, девятнадцати: 19,
+};
+
+const RU_TENS: Record<string, number> = {
+  двадцать: 20, двадцати: 20,
+  тридцать: 30, тридцати: 30,
+  сорок: 40, сорока: 40,
+  пятьдесят: 50, пятидесяти: 50,
+  шестьдесят: 60, шестидесяти: 60,
+  семьдесят: 70, семидесяти: 70,
+  восемьдесят: 80, восьмидесяти: 80,
+  девяносто: 90, девяноста: 90,
+};
+
+const RU_HUNDREDS: Record<string, number> = {
+  сто: 100, ста: 100,
+  двести: 200, двухсот: 200,
+  триста: 300, трёхсот: 300, трехсот: 300,
+  четыреста: 400, четырёхсот: 400, четырехсот: 400,
+  пятьсот: 500, пятисот: 500,
+  шестьсот: 600, шестисот: 600,
+  семьсот: 700, семисот: 700,
+  восемьсот: 800, восьмисот: 800,
+  девятьсот: 900, девятисот: 900,
+};
+
+const RU_SCALE: Record<string, number> = {
+  тысяча: 1000, тысячи: 1000, тысяч: 1000, тысячу: 1000,
+  миллион: 1_000_000, миллиона: 1_000_000, миллионов: 1_000_000,
+};
+
+function convertRuNumeralsToDigits(text: string): string {
+  const words = text.toLowerCase().split(/\s+/);
+  const result: string[] = [];
+  let current = 0;
+  let total = 0;
+  let numStartIdx = -1;
+
+  const flush = (i: number) => {
+    const val = total + current;
+    if (val > 0) {
+      result.push(String(val));
+      total = 0;
+      current = 0;
+      numStartIdx = -1;
+    } else if (i >= 0) {
+      result.push(words[i]);
+    }
+  };
+
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i];
+
+    if (RU_ONES[w] !== undefined) {
+      if (numStartIdx < 0) numStartIdx = i;
+      current += RU_ONES[w];
+    } else if (RU_TENS[w] !== undefined) {
+      if (numStartIdx < 0) numStartIdx = i;
+      current += RU_TENS[w];
+    } else if (RU_HUNDREDS[w] !== undefined) {
+      if (numStartIdx < 0) numStartIdx = i;
+      current += RU_HUNDREDS[w];
+    } else if (RU_SCALE[w] !== undefined) {
+      if (numStartIdx < 0) numStartIdx = i;
+      const scale = RU_SCALE[w];
+      total = (total + (current || 1)) * scale;
+      current = 0;
+    } else {
+      flush(-1);
+      result.push(w);
+    }
+  }
+  flush(-1);
+
+  return result.join(' ');
+}
+
 /**
  * Парсит текст в формате "кофе 450 рублей в Старбаксе"
  * Возвращает структурированные данные
  */
 export function parseNaturalLanguage(text: string): ParsedTransaction | null {
+  text = convertRuNumeralsToDigits(text);
   // Паттерны для извлечения суммы (от специфичного к общему)
   const amountPatterns = [
     /(\d+(?:[.,]\d+)?)\s*(?:рублей|рубля|рублю|руб\.?|р\.?(?=\s|$)|₽|rub|r(?=\s|$)|usd|\$|eur|€)/i,

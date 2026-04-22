@@ -221,14 +221,12 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
     }
   }, [buildResult]);
 
-  const processVoiceTranscript = useCallback((transcript: string) => {
+  const processVoiceTranscript = useCallback(async (transcript: string) => {
     const normalizedTranscript = transcript.trim();
     if (!normalizedTranscript || hasProcessedTranscriptRef.current) return;
     hasProcessedTranscriptRef.current = true;
-    setChatInput(normalizedTranscript);
-    setMode('chat');
-    setStatusText('Нажмите для записи');
-  }, []);
+    await parseText(normalizedTranscript, true);
+  }, [parseText]);
 
   const startRecording = useCallback(() => {
     if (!hasVoice) return;
@@ -249,8 +247,8 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
 
       if (e.results[e.results.length - 1].isFinal) {
         shouldProcessOnEndRef.current = false;
-        processVoiceTranscript(transcript);
         setIsRecording(false);
+        processVoiceTranscript(transcript);
       }
     };
 
@@ -273,7 +271,7 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
         return;
       }
 
-      processVoiceTranscript(transcript);
+      void processVoiceTranscript(transcript);
     };
 
     recognitionRef.current = recognition;

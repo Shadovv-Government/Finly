@@ -1,4 +1,4 @@
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, Tooltip } from 'recharts';
 import { Calendar } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useAnalytics, getPeriodRange, PeriodType } from '../hooks/useAnalytics';
@@ -79,6 +79,39 @@ export const Analytics = () => {
   }, [transactions, periodRange]);
 
   const [selectedWeekIdx, setSelectedWeekIdx] = useState<number | null>(null);
+
+  const trendData = useMemo(() => {
+    if (transactions.length === 0) return [];
+    const totalDays = Math.ceil((periodRange.end - periodRange.start) / (24 * 60 * 60 * 1000));
+    const groupByDay = totalDays <= 31;
+    const buckets = new Map<string, { label: string; expense: number; income: number; ts: number }>();
+
+    transactions.forEach(t => {
+      const d = new Date(t.date);
+      let key: string;
+      let label: string;
+      let ts: number;
+      if (groupByDay) {
+        key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+        label = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+        ts = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+      } else {
+        const ws = new Date(d);
+        ws.setDate(d.getDate() - d.getDay());
+        key = `${ws.getFullYear()}-${ws.getMonth()}-${ws.getDate()}`;
+        label = ws.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+        ts = ws.getTime();
+      }
+      if (!buckets.has(key)) buckets.set(key, { label, expense: 0, income: 0, ts });
+      const b = buckets.get(key)!;
+      if (t.type === 'expense') b.expense += t.amount;
+      else b.income += t.amount;
+    });
+
+    return Array.from(buckets.values())
+      .sort((a, b) => a.ts - b.ts)
+      .map(b => ({ label: b.label, expense: b.expense, income: b.income }));
+  }, [transactions, periodRange]);
 
   const pieData = useMemo(() => {
     return expensesByCategory
@@ -197,6 +230,47 @@ export const Analytics = () => {
           )}
         </div>
       </div>
+
+      {/* Trend Chart */}
+      {trendData.length > 1 && (
+        <div className="px-4 py-4">
+          <h2 className="font-bold mb-4">Динамика</h2>
+          <div className="bg-card rounded-2xl p-4 border border-border">
+            <ResponsiveContainer width="100%" height={180}>
+              <AreaChart data={trendData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="gExp" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="gInc" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="label" fontSize={11} stroke="currentColor" className="text-muted-foreground" tick={{ fontSize: 11 }} />
+                <YAxis fontSize={11} stroke="currentColor" className="text-muted-foreground" tickFormatter={formatShort} width={40} />
+                <Tooltip
+                  formatter={(v: number, name: string) => [`${v.toLocaleString('ru-RU')} ₽`, name === 'expense' ? 'Расходы' : 'Доходы']}
+                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                />
+                <Area type="monotone" dataKey="income" name="income" stroke="#22c55e" fill="url(#gInc)" strokeWidth={2} dot={false} />
+                <Area type="monotone" dataKey="expense" name="expense" stroke="#ef4444" fill="url(#gExp)" strokeWidth={2} dot={false} />
+              </AreaChart>
+            </ResponsiveContainer>
+            <div className="flex justify-center gap-6 mt-3">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-green-500" />
+                <span className="text-sm">Доходы</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-red-500" />
+                <span className="text-sm">Расходы</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Pie Chart */}
       <div className="px-4 py-4">
