@@ -178,11 +178,18 @@ interface Category {
 | ID | Название | Тип | Иконка | Цвет |
 |----|----------|-----|--------|------|
 | `cat_food` | Еда | expense | Utensils | #FF5722 |
+| `cat_groceries` | Продукты | expense | ShoppingBasket | #8BC34A |
 | `cat_transport` | Транспорт | expense | Car | #2196F3 |
-| `cat_home` | Жильё | expense | Home | #795548 |
-| `cat_fun` | Развлечения | expense | PartyPopper | #E91E63 |
+| `cat_home` | Аренда | expense | Home | #795548 |
+| `cat_utilities` | Коммунальные | expense | Zap | #FF9800 |
+| `cat_health` | Здоровье | expense | Heart | #E91E63 |
+| `cat_shopping` | Шопинг | expense | ShoppingBag | #9C27B0 |
+| `cat_fun` | Развлечения | expense | PartyPopper | #AB47BC |
+| `cat_other_expense` | Другое | expense | CircleHelp | #9E9E9E |
 | `inc_salary` | Зарплата | income | Wallet | #4CAF50 |
+| `inc_investments` | Инвестиции | income | TrendingUp | #00BCD4 |
 | `inc_gift` | Подарок | income | Gift | #9C27B0 |
+| `inc_other` | Другое | income | CircleHelp | #9E9E9E |
 
 ---
 
@@ -259,8 +266,9 @@ interface AppSettings {
 | `theme` | `'light' \| 'dark' \| 'system'` | Тема оформления |
 | `baseCurrency` | `'RUB'` | Базовая валюта |
 | `onboardingComplete` | `false` | Пройден ли онбординг |
-| `biometricEnabled` | `false` | Включена ли биометрия |
-| `pinHash` | `string \| null` | Хэш PIN-кода |
+| `biometric_enabled` | `boolean` | Включена ли биометрическая аутентификация |
+| `biometric_credential_id` | `string \| null` | ID WebAuthn credential |
+| `biometric_last_active` | `number \| null` | Timestamp последней успешной биометрии |
 
 ---
 
@@ -432,5 +440,10 @@ await seedDatabase();
 | `recurring.ts` | CRUD повторяющихся платежей | — |
 | `users.ts` | CRUD пользователей | — |
 | `aiPatterns.ts` | CRUD AI паттернов | — |
-| `biometric.ts` | Биометрическая аутентификация | — |
+| `biometric.ts` | Биометрические настройки в `settings` | — |
 | `notifications.ts` | CRUD уведомлений (+ persist, read/unread) | — |
+
+## Notes
+
+- `transactions.categoryId` в `src/db/types.ts` является optional: если значение не задано, UI использует системную категорию "Другое".
+- Актуальная версия схемы Dexie — `v3`; при инициализации `seedDatabase()` также дополняет недостающие системные категории и обновляет старые названия/иконки.

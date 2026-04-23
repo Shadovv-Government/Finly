@@ -63,7 +63,7 @@
 │           Dexie.js ORM                       │
 ├──────────────────────────────────────────────┤
 │        Storage Layer                         │
-│   IndexedDB → FinlyDB (8 таблиц)             │
+│   IndexedDB → FinlyDB (9 таблиц)             │
 ├──────────────────────────────────────────────┤
 │        PWA Layer                             │
 │   Service Worker (Workbox) + Manifest        │
@@ -223,7 +223,8 @@ src/db/
 │   ├── settings.ts    — CRUD настроек
 │   ├── users.ts       — CRUD пользователей
 │   ├── aiPatterns.ts  — CRUD AI паттернов
-│   └── biometric.ts   — Биометрическая аутентификация
+│   ├── biometric.ts   — Биометрические настройки
+│   └── notifications.ts — CRUD уведомлений
 └── readme.md          — Документация по БД
 ```
 
@@ -237,22 +238,30 @@ src/db/
 | ID | Название | Иконка | Цвет |
 |----|----------|--------|------|
 | `cat_food` | Еда | Utensils | #FF5722 |
+| `cat_groceries` | Продукты | ShoppingBasket | #8BC34A |
 | `cat_transport` | Транспорт | Car | #2196F3 |
-| `cat_home` | Жильё | Home | #795548 |
-| `cat_fun` | Развлечения | PartyPopper | #E91E63 |
+| `cat_home` | Аренда | Home | #795548 |
+| `cat_utilities` | Коммунальные | Zap | #FF9800 |
+| `cat_health` | Здоровье | Heart | #E91E63 |
+| `cat_shopping` | Шопинг | ShoppingBag | #9C27B0 |
+| `cat_fun` | Развлечения | PartyPopper | #AB47BC |
+| `cat_other_expense` | Другое | CircleHelp | #9E9E9E |
 
 **Категории доходов:**
 | ID | Название | Иконка | Цвет |
 |----|----------|--------|------|
 | `inc_salary` | Зарплата | Wallet | #4CAF50 |
+| `inc_investments` | Инвестиции | TrendingUp | #00BCD4 |
 | `inc_gift` | Подарок | Gift | #9C27B0 |
+| `inc_other` | Другое | CircleHelp | #9E9E9E |
 
 **Настройки по умолчанию:**
 - `theme`: `'light'`
 - `baseCurrency`: `'RUB'`
 - `onboardingComplete`: `false`
+- biometric-ключи (`biometric_enabled`, `biometric_credential_id`, `biometric_last_active`) создаются при включении аутентификации
 
-**Миграция иконок:** если в БД есть категории со старыми эмодзи-иконками (🍔, 🚗...), они автоматически заменяются на названия иконок Lucide (Utensils, Car...).
+**Миграции seed-данных:** старые эмодзи-иконки заменяются на Lucide-иконки, недостающие системные категории добавляются автоматически, а `cat_home` переименовывается из `Жильё` в `Аренда`.
 
 ---
 
@@ -272,7 +281,8 @@ CRUD-операции разделены по отдельным файлам д
 | `settings.ts` | **Settings** | `getSetting`, `setSetting`, `getAllSettings` |
 | `users.ts` | **Users** | `createUser`, `getUser`, `updateUser`, `deleteUser`, `getCurrentUser` |
 | `aiPatterns.ts` | **AI Patterns** | `addAIPattern`, `getAIPattern`, `updateAIPattern`, `deleteAIPattern` |
-| `biometric.ts` | **Biometric** | `getBiometricSettings`, `updateBiometricSettings`, `getPinHash`, `setPinHash` |
+| `biometric.ts` | **Biometric** | `getBiometricSettings`, `setBiometricSetting`, `clearBiometricSettings` |
+| `notifications.ts` | **Notifications** | `addNotification`, `getAllNotifications`, `markAllNotificationsAsRead`, `clearReadNotifications`, `clearExpiredNotifications` |
 
 Все функции экспортируются через `operations/index.ts`.
 
@@ -379,6 +389,7 @@ interface ValidationResult {
 | `Settings.tsx` | Настройки приложения |
 | `Budgets.tsx` | Управление бюджетами |
 | `Goals.tsx` | Финансовые цели |
+| `RecurringScreen.tsx` | Управление повторяющимися операциями |
 | `Categories.tsx` | Категории операций |
 | `AIAssistant.tsx` | AI-ассистент |
 | `Onboarding.tsx` | Онбординг для новых пользователей |
@@ -389,7 +400,7 @@ interface ValidationResult {
 | `TermsOfService.tsx` | Условия использования |
 | `ComponentShowcase.tsx` | Демонстрация компонентов |
 
-**Всего: 15 экранов**
+**Всего: 16 экранов**
 
 ### 8.4 Маршрутизация (`routes.tsx`)
 
@@ -400,6 +411,7 @@ interface ValidationResult {
 /settings            → Settings
 /budgets             → Budgets
 /goals               → Goals
+/recurring           → RecurringScreen
 /categories          → Categories
 /ai-assistant        → AIAssistant
 /components          → ComponentShowcase
@@ -409,7 +421,7 @@ interface ValidationResult {
 /terms               → TermsOfService
 ```
 
-**ProtectedRoute:** все маршруты кроме `/onboarding`, `/register`, `/privacy`, `/terms` требуют авторизации.
+**ProtectedRoute:** все маршруты кроме `/onboarding`, `/register`, `/privacy`, `/terms` требуют авторизации. Если включена биометрия и приложение заблокировано, роут рендерит `LockScreen`.
 
 ---
 
@@ -521,16 +533,21 @@ this.version(2).stores({
 | `useBudgets` | Управление бюджетами и лимитами |
 | `useGoals` | Финансовые цели и прогресс |
 | `useAnalytics` | Аналитические данные для графиков |
+| `useRecurringTemplates` | CRUD и загрузка шаблонов повторяющихся операций |
 
 ### Вспомогательные хуки
 
 | Хук | Описание |
 |-----|----------|
 | `useBiometric` | Биометрическая аутентификация |
+| `useBudgetNotifications` | Генерация уведомлений о бюджетах |
+| `useNotificationPanel` | Сборка панели уведомлений и persist read-state |
 | `useNotifications` | Уведомления (Sonner) |
+| `useReceiptScanner` | OCR-сканирование чеков |
+| `useSpeechInput` | Голосовой ввод |
 | `useTransactionForm` | Логика формы транзакций |
 
-**Всего: 8 хуков**
+**Всего: 11+ хуков**
 
 ---
 
@@ -900,5 +917,3 @@ this.version(3).stores({
 
 - [ ] Мультивалютность с авто-конвертацией
 - [ ] Push-уведомления о лимитах
-
-

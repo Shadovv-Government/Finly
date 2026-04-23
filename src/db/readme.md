@@ -79,22 +79,29 @@ await seedDatabase();
 | ID | Название | Иконка | Цвет |
 |----|----------|--------|------|
 | `cat_food` | Еда | Utensils | #FF5722 |
+| `cat_groceries` | Продукты | ShoppingBasket | #8BC34A |
 | `cat_transport` | Транспорт | Car | #2196F3 |
-| `cat_home` | Жильё | Home | #795548 |
-| `cat_fun` | Развлечения | PartyPopper | #E91E63 |
+| `cat_home` | Аренда | Home | #795548 |
+| `cat_utilities` | Коммунальные | Zap | #FF9800 |
+| `cat_health` | Здоровье | Heart | #E91E63 |
+| `cat_shopping` | Шопинг | ShoppingBag | #9C27B0 |
+| `cat_fun` | Развлечения | PartyPopper | #AB47BC |
+| `cat_other_expense` | Другое | CircleHelp | #9E9E9E |
 
 **Категории доходов:**
 | ID | Название | Иконка | Цвет |
 |----|----------|--------|------|
 | `inc_salary` | Зарплата | Wallet | #4CAF50 |
+| `inc_investments` | Инвестиции | TrendingUp | #00BCD4 |
 | `inc_gift` | Подарок | Gift | #9C27B0 |
+| `inc_other` | Другое | CircleHelp | #9E9E9E |
 
 **Настройки по умолчанию:**
 - `theme`: `'light'`
 - `baseCurrency`: `'RUB'`
 - `onboardingComplete`: `false`
 
-**Миграция иконок:** если в БД есть категории со старыми эмодзи-иконками (🍔, 🚗...), они автоматически заменяются на названия иконок Lucide (Utensils, Car...).
+**Миграции seed-данных:** если в БД есть категории со старыми эмодзи-иконками (🍔, 🚗...), они автоматически заменяются на названия иконок Lucide; недостающие системные категории добавляются автоматически; категория `cat_home` переименовывается из `Жильё` в `Аренда`.
 
 ## Файлы
 
@@ -126,7 +133,7 @@ CRUD-операции разделены по отдельным файлам д
 | `recurring.ts` | CRUD повторяющихся платежей | — |
 | `users.ts` | CRUD пользователей | — |
 | `aiPatterns.ts` | CRUD AI паттернов | — |
-| `biometric.ts` | Биометрическая аутентификация | — |
+| `biometric.ts` | Биометрические настройки в `settings` | — |
 | `notifications.ts` | CRUD уведомлений (+ persist, read/unread) | — |
 
 ---
@@ -225,9 +232,8 @@ CRUD-операции разделены по отдельным файлам д
 | Функция | Описание |
 |---------|----------|
 | `getBiometricSettings()` | Получить настройки биометрии |
-| `updateBiometricSettings(settings)` | Обновить настройки биометрии |
-| `getPinHash()` | Получить хэш PIN-кода |
-| `setPinHash(hash)` | Сохранить хэш PIN-кода |
+| `setBiometricSetting(key, value)` | Сохранить biometric-ключ в `settings` |
+| `clearBiometricSettings()` | Очистить biometric-ключи из `settings` |
 
 ### Notifications
 

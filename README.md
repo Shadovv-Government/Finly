@@ -24,6 +24,13 @@ npm run build
 npm run preview
 ```
 
+### Проверка качества
+```bash
+npm run lint
+npm test
+npm run test:coverage
+```
+
 ## Функциональность
 
 ### Основные возможности
@@ -40,7 +47,7 @@ npm run preview
 - Поиск по тексту комментария
 
 #### Категории
-- Базовый набор категорий (еда, транспорт, жильё, развлечения)
+- Расширенный системный набор категорий доходов и расходов
 - Системные категории с иконками Lucide React и HEX-цветами
 - Поддержка пользовательских категорий
 
@@ -65,6 +72,17 @@ npm run preview
 - Шаблоны для регулярных платежей (аренда, подписки)
 - Интервалы: daily, weekly, monthly, yearly
 - Автодобавление по расписанию
+- Отдельный экран управления повторяющимися операциями
+
+#### Уведомления
+- Панель уведомлений на дашборде с группировкой по дате
+- Persist уведомлений в IndexedDB и статусы read/unread
+- Сигналы о перерасходе бюджета, дедлайнах целей, повторяющихся платежах и аномальных тратах
+
+#### Сканирование чеков
+- OCR-сканирование чеков через Tesseract.js
+- Автозаполнение суммы, комментария и даты после распознавания
+- Поддержка русского и английского языков
 
 #### Импорт/экспорт данных
 - Экспорт операций в CSV/JSON
@@ -87,6 +105,7 @@ npm run preview
 - Обучение на исправлениях пользователя (confidence, usageCount)
 - Рекомендации по бюджету и целям
 - Поиск аномальных трат
+- Локальная ML-классификация текста операций
 
 ## PWA и Offline
 
@@ -104,6 +123,8 @@ npm run preview
 - **React Router 7.13.1** — клиентская маршрутизация
 - **Zustand 4.5.2** — управление состоянием
 - **react-hook-form 7.55.0** — управление формами
+- **TensorFlow.js 4.22.0** — локальная ML-классификация
+- **Tesseract.js 7.0.0** — OCR для сканирования чеков
 - **UI-компоненты:** Radix UI (полный набор), shadcn/ui, cmdk, vaul (bottom sheets), embla-carousel, react-dnd
 - **Стили:** Tailwind CSS 4.1.12, class-variance-authority, tailwind-merge
 - **Графики:** Recharts 2.15.2, Chart.js 4.4.2 + react-chartjs-2
@@ -147,7 +168,9 @@ finly/
 │   │   │   ├── BottomNav.tsx
 │   │   │   ├── BottomSheet.tsx
 │   │   │   ├── CategoryBadge.tsx
-│   │   │   └── EmptyState.tsx
+│   │   │   ├── EmptyState.tsx
+│   │   │   ├── NotificationsPanel.tsx
+│   │   │   └── ReceiptScannerModal.tsx
 │   │   ├── contexts/
 │   │   │   ├── AuthContext.tsx # Авторизация и профиль пользователя
 │   │   │   └── ThemeContext.tsx # Темы (light/dark/system)
@@ -157,7 +180,11 @@ finly/
 │   │   │   ├── useBudgets.ts
 │   │   │   ├── useCategories.ts
 │   │   │   ├── useGoals.ts
+│   │   │   ├── useNotificationPanel.ts
 │   │   │   ├── useNotifications.ts
+│   │   │   ├── useReceiptScanner.ts
+│   │   │   ├── useRecurringTemplates.ts
+│   │   │   ├── useSpeechInput.ts
 │   │   │   ├── useTransactionForm.ts
 │   │   │   └── useTransactions.ts
 │   │   ├── screens/
@@ -167,6 +194,7 @@ finly/
 │   │   │   ├── Settings.tsx
 │   │   │   ├── Budgets.tsx
 │   │   │   ├── Goals.tsx
+│   │   │   ├── RecurringScreen.tsx
 │   │   │   ├── Categories.tsx
 │   │   │   ├── AIAssistant.tsx
 │   │   │   ├── Onboarding.tsx
@@ -196,7 +224,8 @@ finly/
 │   │   │   ├── settings.ts
 │   │   │   ├── users.ts
 │   │   │   ├── aiPatterns.ts
-│   │   │   └── biometric.ts
+│   │   │   ├── biometric.ts
+│   │   │   └── notifications.ts
 │   │   ├── analytics.ts        # Аналитические запросы
 │   │   ├── ai.ts               # AI-автокатегоризация
 │   │   └── exportImport.ts     # Экспорт/импорт данных
