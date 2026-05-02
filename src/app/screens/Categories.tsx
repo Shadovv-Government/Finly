@@ -6,6 +6,7 @@ import { Category } from '../../db/types';
 import { CategoryForm } from '../components/CategoryForm';
 import { useNotifications } from '../hooks/useNotifications';
 import { getLucideIcon } from '../utils/lucideIcons';
+import { reassignCategoryTransactions, deleteCategoryWithTransactions } from '../../db/operations';
 
 export const Categories = () => {
   const { categories, add, update, remove } = useCategories();
@@ -19,6 +20,10 @@ export const Categories = () => {
   
   // Состояние для диалога подтверждения удаления
   const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
+
+  // Состояние для конфликтного диалога (категория используется в транзакциях)
+  const [conflictCategory, setConflictCategory] = useState<Category | null>(null);
+  const [reassignTargetId, setReassignTargetId] = useState<string>('');
 
   // Открыть форму для новой категории
   const handleAddCategory = (type: 'income' | 'expense') => {
@@ -41,14 +46,48 @@ export const Categories = () => {
   // Подтвердить удаление
   const handleDeleteConfirm = async () => {
     if (!deletingCategory) return;
-    
+
     try {
       await remove(deletingCategory.id);
       notify('✅ Категория удалена', `Категория "${deletingCategory.name}" удалена`);
-    } catch (error: any) {
-      notify('❌ Ошибка', error?.message || 'Не удалось удалить категорию');
-    } finally {
       setDeletingCategory(null);
+    } catch (error: any) {
+      const msg: string = error?.message ?? '';
+      if (msg.startsWith('Нельзя удалить категорию')) {
+        // Переключаемся на конфликтный диалог
+        setConflictCategory(deletingCategory);
+        setReassignTargetId('');
+        setDeletingCategory(null);
+      } else {
+        notify('❌ Ошибка', msg || 'Не удалось удалить категорию');
+        setDeletingCategory(null);
+      }
+    }
+  };
+
+  const handleReassignAndDelete = async () => {
+    if (!conflictCategory || !reassignTargetId) return;
+    try {
+      await reassignCategoryTransactions(conflictCategory.id, reassignTargetId);
+      notify('✅ Готово', `Операции переназначены, категория "${conflictCategory.name}" удалена`);
+    } catch (error: any) {
+      notify('❌ Ошибка', error?.message || 'Не удалось переназначить операции');
+    } finally {
+      setConflictCategory(null);
+      setReassignTargetId('');
+    }
+  };
+
+  const handleDeleteWithTransactions = async () => {
+    if (!conflictCategory) return;
+    try {
+      await deleteCategoryWithTransactions(conflictCategory.id);
+      notify('✅ Удалено', `Категория "${conflictCategory.name}" и все её операции удалены`);
+    } catch (error: any) {
+      notify('❌ Ошибка', error?.message || 'Не удалось удалить');
+    } finally {
+      setConflictCategory(null);
+      setReassignTargetId('');
     }
   };
 
@@ -226,7 +265,7 @@ export const Categories = () => {
           <div className="bg-card rounded-2xl p-6 max-w-sm w-full">
             <h3 className="text-lg font-bold mb-2">Удалить категорию?</h3>
             <p className="text-muted-foreground mb-6">
-              Вы уверены, что хотите удалить категорию "{deletingCategory.name}"? 
+              Вы уверены, что хотите удалить категорию "{deletingCategory.name}"?
               Это действие нельзя отменить.
             </p>
             <div className="flex gap-3">
@@ -241,6 +280,59 @@ export const Categories = () => {
                 className="flex-1 py-3 bg-red-600 text-white rounded-xl font-medium"
               >
                 Удалить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Конфликтный диалог — категория используется в операциях */}
+      {conflictCategory && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-2xl p-6 max-w-sm w-full">
+            <h3 className="text-lg font-bold mb-1">Категория используется</h3>
+            <p className="text-muted-foreground text-sm mb-4">
+              В категории «{conflictCategory.name}» есть операции. Выберите действие:
+            </p>
+
+            {/* Переназначить */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">
+                Переназначить операции на другую категорию:
+              </label>
+              <select
+                value={reassignTargetId}
+                onChange={e => setReassignTargetId(e.target.value)}
+                className="w-full border border-border rounded-xl px-3 py-2 bg-background text-sm"
+              >
+                <option value="">— выберите категорию —</option>
+                {categories
+                  .filter(c => c.type === conflictCategory.type && c.id !== conflictCategory.id)
+                  .map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={handleReassignAndDelete}
+                disabled={!reassignTargetId}
+                className="w-full py-3 bg-violet-600 text-white rounded-xl font-medium disabled:opacity-40"
+              >
+                Переназначить и удалить категорию
+              </button>
+              <button
+                onClick={handleDeleteWithTransactions}
+                className="w-full py-3 bg-red-600 text-white rounded-xl font-medium"
+              >
+                Удалить категорию вместе с операциями
+              </button>
+              <button
+                onClick={() => { setConflictCategory(null); setReassignTargetId(''); }}
+                className="w-full py-3 bg-muted rounded-xl font-medium"
+              >
+                Отмена
               </button>
             </div>
           </div>

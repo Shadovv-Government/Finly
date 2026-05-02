@@ -42,7 +42,7 @@ describe('validateTransaction', () => {
       });
 
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('Amount must be greater than 0');
+      expect(result.errors).toContain('Сумма должна быть больше 0');
     });
 
     it('должен ошибаться для нулевой суммы', () => {
@@ -56,7 +56,7 @@ describe('validateTransaction', () => {
       });
 
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('Amount must be greater than 0');
+      expect(result.errors).toContain('Сумма должна быть больше 0');
     });
 
     it('должен ошибаться для отсутствующей суммы', () => {
@@ -67,7 +67,7 @@ describe('validateTransaction', () => {
       } as any);
 
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('Amount is required');
+      expect(result.errors).toContain('Сумма обязательна');
     });
 
     it('должен предупреждать для очень маленькой суммы', () => {
@@ -80,7 +80,7 @@ describe('validateTransaction', () => {
         rate: 1,
       });
 
-      expect(result.warnings.some(w => w.includes('Amount is very small'))).toBe(true);
+      expect(result.warnings.some(w => w.includes('Сумма очень маленькая'))).toBe(true);
     });
   });
 
@@ -116,7 +116,7 @@ describe('validateTransaction', () => {
       });
 
       expect(result.isValid).toBe(false);
-      expect(result.errors.some(e => e.includes('Invalid transaction type'))).toBe(true);
+      expect(result.errors.some(e => e.includes('Неверный тип операции'))).toBe(true);
     });
 
     it('должен ошибаться для отсутствующего типа', () => {
@@ -127,7 +127,7 @@ describe('validateTransaction', () => {
       } as any);
 
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('Transaction type is required');
+      expect(result.errors).toContain('Тип операции обязателен');
     });
   });
 
@@ -162,7 +162,7 @@ describe('validateTransaction', () => {
       } as any);
 
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('Category ID must be a string');
+      expect(result.errors).toContain('ID категории должен быть строкой');
     });
   });
 
@@ -188,7 +188,7 @@ describe('validateTransaction', () => {
         date: futureDate,
       });
 
-      expect(result.warnings).toContain('Date is in the future');
+      expect(result.warnings).toContain('Дата в будущем');
     });
 
     it('должен предупреждать для даты более 10 лет назад', () => {
@@ -201,7 +201,7 @@ describe('validateTransaction', () => {
         date: pastDate,
       });
 
-      expect(result.warnings).toContain('Date is more than 10 years ago');
+      expect(result.warnings).toContain('Дата более 10 лет назад');
     });
   });
 
@@ -228,7 +228,7 @@ describe('validateTransaction', () => {
       });
 
       expect(result.isValid).toBe(false);
-      expect(result.errors.some(e => e.includes('Comment exceeds maximum length'))).toBe(true);
+      expect(result.errors.some(e => e.includes('Комментарий превышает максимальную длину'))).toBe(true);
     });
   });
 
@@ -255,7 +255,7 @@ describe('validateCategory', () => {
       } as any);
 
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('Category ID is required');
+      expect(result.errors).toContain('ID категории обязателен');
     });
 
     it('должен пропускать id при обновлении', () => {
@@ -292,7 +292,7 @@ describe('validateCategory', () => {
       });
 
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('Category name is required');
+      expect(result.errors).toContain('Название категории обязательно');
     });
 
     it('должен ошибаться для названия из пробелов', () => {
@@ -306,7 +306,7 @@ describe('validateCategory', () => {
       });
 
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('Name cannot be empty or whitespace only');
+      expect(result.errors).toContain('Название не может быть пустым или состоять только из пробелов');
     });
 
     it('должен ошибаться для слишком длинного названия', () => {
@@ -320,7 +320,7 @@ describe('validateCategory', () => {
       });
 
       expect(result.isValid).toBe(false);
-      expect(result.errors.some(e => e.includes('Name exceeds maximum length'))).toBe(true);
+      expect(result.errors.some(e => e.includes('Название превышает максимальную длину'))).toBe(true);
     });
   });
 
@@ -362,7 +362,7 @@ describe('validateCategory', () => {
       });
 
       expect(result.isValid).toBe(false);
-      expect(result.errors.some(e => e.includes('Invalid type'))).toBe(true);
+      expect(result.errors.some(e => e.includes('Неверный тип'))).toBe(true);
     });
   });
 
@@ -377,7 +377,7 @@ describe('validateCategory', () => {
         isSystem: true,
       });
 
-      expect(result.warnings.some(w => w.includes('Color should be a hex code'))).toBe(true);
+      expect(result.warnings.some(w => w.includes('Цвет должен быть в формате hex'))).toBe(true);
     });
 
     it('должен проходить для валидного hex цвета', () => {
@@ -419,7 +419,7 @@ describe('validateBudget', () => {
       });
 
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('Amount must be greater than 0');
+      expect(result.errors).toContain('Сумма должна быть больше 0');
     });
 
     it('должен ошибаться для невалидного периода', () => {
@@ -432,7 +432,7 @@ describe('validateBudget', () => {
       });
 
       expect(result.isValid).toBe(false);
-      expect(result.errors.some(e => e.includes('Invalid period'))).toBe(true);
+      expect(result.errors.some(e => e.includes('Неверный период'))).toBe(true);
     });
   });
 });
@@ -463,7 +463,7 @@ describe('validateGoal', () => {
       });
 
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('Current amount cannot be negative');
+      expect(result.errors).toContain('Текущая сумма не может быть отрицательной');
     });
 
     it('должен предупреждать если текущая сумма больше целевой', () => {
@@ -476,7 +476,7 @@ describe('validateGoal', () => {
         isActive: true,
       });
 
-      expect(result.warnings).toContain('Current amount exceeds target amount');
+      expect(result.warnings).toContain('Текущая сумма превышает целевую');
     });
   });
 });
@@ -506,7 +506,7 @@ describe('validateRecurringTemplate', () => {
     });
 
     expect(result.isValid).toBe(false);
-    expect(result.errors.some(e => e.includes('Invalid interval'))).toBe(true);
+    expect(result.errors.some(e => e.includes('Неверный интервал'))).toBe(true);
   });
 });
 
@@ -531,7 +531,7 @@ describe('validateAIPattern', () => {
     });
 
     expect(result.isValid).toBe(false);
-    expect(result.errors.some(e => e.includes('Pattern must be at least'))).toBe(true);
+    expect(result.errors.some(e => e.includes('Шаблон должен быть не менее'))).toBe(true);
   });
 
   it('должен ошибаться для невалидной уверенности', () => {
@@ -543,7 +543,7 @@ describe('validateAIPattern', () => {
     });
 
     expect(result.isValid).toBe(false);
-    expect(result.errors.some(e => e.includes('Confidence must be between'))).toBe(true);
+    expect(result.errors.some(e => e.includes('Уверенность должна быть от'))).toBe(true);
   });
 });
 
@@ -552,7 +552,7 @@ describe('assertValid', () => {
     const result = { isValid: false, errors: ['Error 1', 'Error 2'], warnings: [] };
 
     expect(() => assertValid(result, 'Transaction')).toThrow(
-      'Transaction validation failed: Error 1; Error 2'
+      'Ошибка валидации (Transaction): Error 1; Error 2'
     );
   });
 
@@ -587,6 +587,6 @@ describe('validateWithWarnings', () => {
     });
 
     expect(() => validateWithWarnings(mockData, mockValidator, 'Transaction'))
-      .toThrow('Transaction validation failed: Invalid amount');
+      .toThrow('Ошибка валидации (Transaction): Invalid amount');
   });
 });

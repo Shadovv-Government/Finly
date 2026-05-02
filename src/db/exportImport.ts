@@ -74,6 +74,7 @@ const ALLOWED_SETTING_KEYS = new Set<string>([
 ]);
 const MAX_IMPORT_FILE_BYTES = 5 * 1024 * 1024;
 const MAX_IMPORT_RECORDS = 10000;
+const SUPPORTED_VERSION = '1.0';
 
 function createEmptyImportedCounts(): ImportResult['imported'] {
   return {
@@ -134,7 +135,7 @@ export async function exportData(): Promise<ExportData> {
   ]);
 
   return {
-    version: '1.0',
+    version: SUPPORTED_VERSION,
     exportedAt: Date.now(),
     transactions,
     categories,
@@ -245,9 +246,16 @@ export async function importData(
     return {
       success: false,
       imported: createEmptyImportedCounts(),
-      errors: [`Import exceeds the maximum supported record count of ${MAX_IMPORT_RECORDS}`],
+      errors: [`Импорт превышает максимальное количество записей (${MAX_IMPORT_RECORDS})`],
       warnings: [],
     };
+  }
+
+  // Проверка версии схемы
+  if (!data.version) {
+    result.warnings.push('Версия файла не указана. Возможна несовместимость данных.');
+  } else if (data.version !== SUPPORTED_VERSION) {
+    result.warnings.push(`Версия файла (${data.version}) не поддерживается. Ожидается ${SUPPORTED_VERSION}. Данные могут быть некорректны.`);
   }
 
   try {
@@ -272,12 +280,12 @@ export async function importData(
             try {
               const validation = validateCategory(category as Partial<Category>);
               if (!validation.isValid) {
-                result.errors.push(`Invalid category "${category.name}": ${validation.errors.join('; ')}`);
+                result.errors.push(`Некорректная категория "${category.name}": ${validation.errors.join('; ')}`);
                 continue;
               }
 
               if (existingIds.has(category.id) && !mergeCategories) {
-                result.warnings.push(`Category "${category.name}" already exists, skipped`);
+                result.warnings.push(`Категория "${category.name}" уже существует, пропущена`);
                 continue;
               }
 
@@ -288,7 +296,7 @@ export async function importData(
               }
               result.imported.categories++;
             } catch (error) {
-              result.errors.push(`Failed to import category "${category.name}": ${error}`);
+              result.errors.push(`Ошибка импорта категории "${category.name}": ${error}`);
             }
           }
         }
@@ -298,7 +306,7 @@ export async function importData(
             try {
               const validation = validateTransaction(transaction as Partial<Transaction>);
               if (!validation.isValid) {
-                result.errors.push(`Invalid transaction: ${validation.errors.join('; ')}`);
+                result.errors.push(`Некорректная операция: ${validation.errors.join('; ')}`);
                 continue;
               }
 
@@ -306,7 +314,7 @@ export async function importData(
                 const category = await db.categories.get(transaction.categoryId);
                 if (!category) {
                   result.warnings.push(
-                    `Transaction skipped: category "${transaction.categoryId}" not found`
+                    `Операция пропущена: категория "${transaction.categoryId}" не найдена`
                   );
                   continue;
                 }
@@ -315,7 +323,7 @@ export async function importData(
               await db.transactions.add(transaction);
               result.imported.transactions++;
             } catch (error) {
-              result.errors.push(`Failed to import transaction: ${error}`);
+              result.errors.push(`Ошибка импорта операции: ${error}`);
             }
           }
         }
@@ -325,13 +333,13 @@ export async function importData(
             try {
               const validation = validateBudget(budget as Partial<Budget>);
               if (!validation.isValid) {
-                result.errors.push(`Invalid budget: ${validation.errors.join('; ')}`);
+                result.errors.push(`Некорректный бюджет: ${validation.errors.join('; ')}`);
                 continue;
               }
               await db.budgets.add(budget);
               result.imported.budgets++;
             } catch (error) {
-              result.errors.push(`Failed to import budget: ${error}`);
+              result.errors.push(`Ошибка импорта бюджета: ${error}`);
             }
           }
         }
@@ -341,13 +349,13 @@ export async function importData(
             try {
               const validation = validateGoal(goal as Partial<Goal>);
               if (!validation.isValid) {
-                result.errors.push(`Invalid goal: ${validation.errors.join('; ')}`);
+                result.errors.push(`Некорректная цель: ${validation.errors.join('; ')}`);
                 continue;
               }
               await db.goals.add(goal);
               result.imported.goals++;
             } catch (error) {
-              result.errors.push(`Failed to import goal: ${error}`);
+              result.errors.push(`Ошибка импорта цели: ${error}`);
             }
           }
         }
@@ -357,13 +365,13 @@ export async function importData(
             try {
               const validation = validateRecurringTemplate(template as Partial<RecurringTemplate>);
               if (!validation.isValid) {
-                result.errors.push(`Invalid recurring template: ${validation.errors.join('; ')}`);
+                result.errors.push(`Некорректный регулярный платёж: ${validation.errors.join('; ')}`);
                 continue;
               }
               await db.recurringTemplates.add(template);
               result.imported.recurringTemplates++;
             } catch (error) {
-              result.errors.push(`Failed to import recurring template: ${error}`);
+              result.errors.push(`Ошибка импорта регулярного платежа: ${error}`);
             }
           }
         }
@@ -372,11 +380,11 @@ export async function importData(
           for (const setting of data.settings) {
             try {
               if (BIOMETRIC_SETTING_KEYS.has(setting.key)) {
-                result.warnings.push(`Biometric setting "${setting.key}" skipped (device-specific)`);
+                result.warnings.push(`Биометрическая настройка "${setting.key}" пропущена (привязана к устройству)`);
                 continue;
               }
               if (!ALLOWED_SETTING_KEYS.has(setting.key)) {
-                result.warnings.push(`Unknown setting "${setting.key}" skipped`);
+                result.warnings.push(`Неизвестная настройка "${setting.key}" пропущена`);
                 continue;
               }
               if (mergeSettings) {
@@ -389,7 +397,7 @@ export async function importData(
               }
               result.imported.settings++;
             } catch (error) {
-              result.errors.push(`Failed to import setting "${setting.key}": ${error}`);
+              result.errors.push(`Ошибка импорта настройки "${setting.key}": ${error}`);
             }
           }
         }
@@ -399,27 +407,27 @@ export async function importData(
             try {
               const validation = validateAIPattern(pattern as Partial<AIPattern>);
               if (!validation.isValid) {
-                result.errors.push(`Invalid AI pattern: ${validation.errors.join('; ')}`);
+                result.errors.push(`Некорректный AI-паттерн: ${validation.errors.join('; ')}`);
                 continue;
               }
               await db.aiPatterns.add(pattern);
               result.imported.aiPatterns++;
             } catch (error) {
-              result.errors.push(`Failed to import AI pattern: ${error}`);
+              result.errors.push(`Ошибка импорта AI-паттерна: ${error}`);
             }
           }
         }
 
         if (result.errors.length > 0) {
-          throw new Error('Import rolled back due to validation or write errors');
+          throw new Error('Импорт отменён: обнаружены ошибки валидации');
         }
       }
     );
   } catch (error) {
     result.success = false;
     result.imported = createEmptyImportedCounts();
-    if (!result.errors.some(message => message.includes('Import failed:'))) {
-      result.errors.push(`Import failed: ${error}`);
+    if (!result.errors.some(message => message.includes('Импорт не выполнен:'))) {
+      result.errors.push(`Импорт не выполнен: ${error}`);
     }
   }
 
@@ -434,7 +442,7 @@ export async function importFromFile(file: File): Promise<ImportResult> {
     return {
       success: false,
       imported: createEmptyImportedCounts(),
-      errors: [`File is too large. Maximum supported size is ${MAX_IMPORT_FILE_BYTES} bytes`],
+      errors: [`Файл слишком большой. Максимальный размер: ${MAX_IMPORT_FILE_BYTES} байт`],
       warnings: [],
     };
   }
@@ -451,7 +459,7 @@ export async function importFromFile(file: File): Promise<ImportResult> {
         resolve({
           success: false,
           imported: createEmptyImportedCounts(),
-          errors: [`Failed to parse file: ${error}`],
+          errors: [`Ошибка чтения файла: ${error}`],
           warnings: [],
         });
       }
@@ -461,7 +469,7 @@ export async function importFromFile(file: File): Promise<ImportResult> {
       resolve({
         success: false,
         imported: createEmptyImportedCounts(),
-        errors: ['Failed to read file'],
+        errors: ['Не удалось прочитать файл'],
         warnings: [],
       });
     };

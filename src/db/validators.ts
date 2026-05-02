@@ -1,6 +1,7 @@
 // src/db/validators.ts
 // Валидация данных перед вставкой/обновлением в БД
 
+import { validation as msg } from '../i18n/ru';
 import {
   Transaction,
   Category,
@@ -48,68 +49,67 @@ export function validateTransaction(
   // amount
   if (!isUpdate || data.amount !== undefined) {
     if (data.amount === undefined || data.amount === null) {
-      errors.push('Amount is required');
+      errors.push(msg.amountRequired);
     } else if (typeof data.amount !== 'number') {
-      errors.push('Amount must be a number');
+      errors.push(msg.amountMustBeNumber);
     } else if (data.amount <= 0) {
-      errors.push('Amount must be greater than 0');
+      errors.push(msg.amountMustBePositive);
     } else if (data.amount > MAX_AMOUNT) {
-      errors.push(`Amount exceeds maximum (${MAX_AMOUNT})`);
+      errors.push(msg.amountExceedsMax(MAX_AMOUNT));
     } else if (data.amount < MIN_AMOUNT) {
-      warnings.push(`Amount is very small (< ${MIN_AMOUNT})`);
+      warnings.push(msg.amountTooSmall(MIN_AMOUNT));
     }
   }
 
   // type
   if (!isUpdate || data.type !== undefined) {
     if (!data.type) {
-      errors.push('Transaction type is required');
+      errors.push(msg.typeRequired);
     } else if (!VALID_TRANSACTION_TYPES.includes(data.type)) {
-      errors.push(`Invalid transaction type. Must be one of: ${VALID_TRANSACTION_TYPES.join(', ')}`);
+      errors.push(msg.typeInvalidFull(VALID_TRANSACTION_TYPES.join(', ')));
     }
   }
 
-  // categoryId (теперь опционален — если не указан, будет подставлена категория "Другое")
+  // categoryId (опционален — если не указан, будет подставлена категория "Другое")
   if (!isUpdate || data.categoryId !== undefined) {
     if (data.categoryId !== undefined && typeof data.categoryId !== 'string') {
-      errors.push('Category ID must be a string');
+      errors.push(msg.categoryIdMustBeString);
     }
   }
 
   // date
   if (!isUpdate || data.date !== undefined) {
     if (!data.date) {
-      errors.push('Date is required');
+      errors.push(msg.dateRequired);
     } else if (typeof data.date !== 'number') {
-      errors.push('Date must be a timestamp (number)');
+      errors.push(msg.dateMustBeTimestamp);
     } else if (data.date > Date.now() + MAX_FUTURE_DATE_OFFSET) {
-      warnings.push('Date is in the future');
+      warnings.push(msg.dateFuture);
     } else if (data.date < Date.now() - MAX_PAST_DATE_OFFSET) {
-      // 10 years ago
-      warnings.push('Date is more than 10 years ago');
+      warnings.push(msg.dateTooOld);
     }
   }
 
   // currency
   if (data.currency !== undefined) {
     if (typeof data.currency !== 'string') {
-      errors.push('Currency must be a string');
+      errors.push(msg.currencyMustBeString);
     } else if (data.currency.length !== 3) {
-      warnings.push('Currency should be a 3-letter code (e.g., RUB, USD)');
+      warnings.push(msg.currencyMustBe3Chars);
     }
   }
 
   // rate
   if (data.rate !== undefined) {
     if (typeof data.rate !== 'number' || data.rate <= 0) {
-      errors.push('Exchange rate must be a positive number');
+      errors.push(msg.rateMustBePositive);
     }
   }
 
   // comment
   if (data.comment !== undefined && data.comment !== null) {
     if (data.comment.length > MAX_COMMENT_LENGTH) {
-      errors.push(`Comment exceeds maximum length (${MAX_COMMENT_LENGTH} characters)`);
+      errors.push(msg.commentTooLong(MAX_COMMENT_LENGTH));
     }
   }
 
@@ -131,58 +131,58 @@ export function validateCategory(
 
   // id (только для создания)
   if (!isUpdate && !data.id) {
-    errors.push('Category ID is required');
+    errors.push(msg.categoryIdRequired);
   } else if (data.id && typeof data.id !== 'string') {
-    errors.push('Category ID must be a string');
+    errors.push(msg.categoryIdMustBeString);
   }
 
   // name
   if (!isUpdate || data.name !== undefined) {
     if (!data.name) {
-      errors.push('Category name is required');
+      errors.push(msg.categoryNameRequired);
     } else if (data.name.length > MAX_NAME_LENGTH) {
-      errors.push(`Name exceeds maximum length (${MAX_NAME_LENGTH} characters)`);
+      errors.push(msg.nameTooLong(MAX_NAME_LENGTH));
     } else if (data.name.trim().length === 0) {
-      errors.push('Name cannot be empty or whitespace only');
+      errors.push(msg.categoryNameBlank);
     }
   }
 
   // type
   if (!isUpdate || data.type !== undefined) {
     if (!data.type) {
-      errors.push('Category type is required');
+      errors.push(msg.categoryTypeRequired);
     } else if (!VALID_TRANSACTION_TYPES.includes(data.type)) {
-      errors.push(`Invalid type. Must be one of: ${VALID_TRANSACTION_TYPES.join(', ')}`);
+      errors.push(msg.typeInvalid(VALID_TRANSACTION_TYPES.join(', ')));
     }
   }
 
   // icon
   if (data.icon !== undefined) {
     if (typeof data.icon !== 'string') {
-      errors.push('Icon must be a string');
+      errors.push(msg.iconMustBeString);
     } else if (data.icon.length > 10) {
-      warnings.push('Icon seems too long (expected emoji or short name)');
+      warnings.push(msg.categoryIconTooLong);
     }
   }
 
   // color
   if (data.color !== undefined) {
     if (typeof data.color !== 'string') {
-      errors.push('Color must be a string');
+      errors.push(msg.colorMustBeString);
     } else if (!/^#[0-9A-Fa-f]{6}$/.test(data.color)) {
-      warnings.push('Color should be a hex code (e.g., #FF5722)');
+      warnings.push(msg.categoryColorInvalidFormat);
     }
   }
 
   // isSystem
   if (data.isSystem !== undefined && typeof data.isSystem !== 'boolean') {
-    errors.push('isSystem must be a boolean');
+    errors.push(msg.categoryIsSystemMustBeBool);
   }
 
   // parentId (опционально)
   if (data.parentId !== undefined && data.parentId !== null) {
     if (typeof data.parentId !== 'string') {
-      errors.push('Parent ID must be a string');
+      errors.push(msg.categoryParentIdMustBeString);
     }
   }
 
@@ -205,49 +205,49 @@ export function validateBudget(
   // categoryId
   if (!isUpdate || data.categoryId !== undefined) {
     if (!data.categoryId) {
-      errors.push('Category ID is required');
+      errors.push(msg.categoryIdRequired);
     } else if (typeof data.categoryId !== 'string') {
-      errors.push('Category ID must be a string');
+      errors.push(msg.categoryIdMustBeString);
     }
   }
 
   // amount
   if (!isUpdate || data.amount !== undefined) {
     if (data.amount === undefined || data.amount === null) {
-      errors.push('Amount is required');
+      errors.push(msg.amountRequired);
     } else if (typeof data.amount !== 'number') {
-      errors.push('Amount must be a number');
+      errors.push(msg.amountMustBeNumber);
     } else if (data.amount <= 0) {
-      errors.push('Amount must be greater than 0');
+      errors.push(msg.amountMustBePositive);
     } else if (data.amount > MAX_AMOUNT) {
-      errors.push(`Amount exceeds maximum (${MAX_AMOUNT})`);
+      errors.push(msg.amountExceedsMax(MAX_AMOUNT));
     }
   }
 
   // period
   if (!isUpdate || data.period !== undefined) {
     if (!data.period) {
-      errors.push('Period is required');
+      errors.push(msg.budgetPeriodRequired);
     } else if (!VALID_PERIOD_TYPES.includes(data.period)) {
-      errors.push(`Invalid period. Must be one of: ${VALID_PERIOD_TYPES.join(', ')}`);
+      errors.push(msg.budgetPeriodInvalid(VALID_PERIOD_TYPES.join(', ')));
     }
   }
 
   // startDate
   if (!isUpdate || data.startDate !== undefined) {
     if (!data.startDate) {
-      errors.push('Start date is required');
+      errors.push(msg.budgetStartDateRequired);
     } else if (typeof data.startDate !== 'number') {
-      errors.push('Start date must be a timestamp (number)');
+      errors.push(msg.budgetStartDateMustBeTimestamp);
     }
   }
 
   // currency
   if (data.currency !== undefined) {
     if (typeof data.currency !== 'string') {
-      errors.push('Currency must be a string');
+      errors.push(msg.currencyMustBeString);
     } else if (data.currency.length !== 3) {
-      warnings.push('Currency should be a 3-letter code (e.g., RUB, USD)');
+      warnings.push(msg.currencyMustBe3Chars);
     }
   }
 
@@ -270,54 +270,54 @@ export function validateGoal(
   // name
   if (!isUpdate || data.name !== undefined) {
     if (!data.name) {
-      errors.push('Goal name is required');
+      errors.push(msg.goalNameRequired);
     } else if (data.name.length > MAX_NAME_LENGTH) {
-      errors.push(`Name exceeds maximum length (${MAX_NAME_LENGTH} characters)`);
+      errors.push(msg.nameTooLong(MAX_NAME_LENGTH));
     }
   }
 
   // targetAmount
   if (!isUpdate || data.targetAmount !== undefined) {
     if (data.targetAmount === undefined || data.targetAmount === null) {
-      errors.push('Target amount is required');
+      errors.push(msg.goalTargetAmountRequired);
     } else if (typeof data.targetAmount !== 'number') {
-      errors.push('Target amount must be a number');
+      errors.push(msg.goalTargetAmountMustBeNumber);
     } else if (data.targetAmount <= 0) {
-      errors.push('Target amount must be greater than 0');
+      errors.push(msg.goalTargetAmountMustBePositive);
     }
   }
 
   // currentAmount
   if (data.currentAmount !== undefined) {
     if (typeof data.currentAmount !== 'number') {
-      errors.push('Current amount must be a number');
+      errors.push(msg.goalCurrentAmountMustBeNumber);
     } else if (data.currentAmount < 0) {
-      errors.push('Current amount cannot be negative');
+      errors.push(msg.goalCurrentAmountNegative);
     } else if (data.targetAmount && data.currentAmount > data.targetAmount) {
-      warnings.push('Current amount exceeds target amount');
+      warnings.push(msg.goalCurrentExceedsTarget);
     }
   }
 
   // deadline (опционально)
   if (data.deadline !== undefined && data.deadline !== null) {
     if (typeof data.deadline !== 'number') {
-      errors.push('Deadline must be a timestamp (number)');
+      errors.push(msg.goalDeadlineMustBeTimestamp);
     } else if (data.deadline < Date.now()) {
-      warnings.push('Deadline is in the past');
+      warnings.push(msg.goalDeadlineInPast);
     }
   }
 
   // icon, color
   if (data.icon !== undefined && typeof data.icon !== 'string') {
-    errors.push('Icon must be a string');
+    errors.push(msg.iconMustBeString);
   }
   if (data.color !== undefined && typeof data.color !== 'string') {
-    errors.push('Color must be a string');
+    errors.push(msg.colorMustBeString);
   }
 
   // isActive
   if (data.isActive !== undefined && typeof data.isActive !== 'boolean') {
-    errors.push('isActive must be a boolean');
+    errors.push(msg.isActiveMustBeBool);
   }
 
   return {
@@ -339,58 +339,58 @@ export function validateRecurringTemplate(
   // amount
   if (!isUpdate || data.amount !== undefined) {
     if (data.amount === undefined || data.amount === null) {
-      errors.push('Amount is required');
+      errors.push(msg.amountRequired);
     } else if (typeof data.amount !== 'number') {
-      errors.push('Amount must be a number');
+      errors.push(msg.amountMustBeNumber);
     } else if (data.amount <= 0) {
-      errors.push('Amount must be greater than 0');
+      errors.push(msg.amountMustBePositive);
     }
   }
 
   // type
   if (!isUpdate || data.type !== undefined) {
     if (!data.type) {
-      errors.push('Transaction type is required');
+      errors.push(msg.typeRequired);
     } else if (!VALID_TRANSACTION_TYPES.includes(data.type)) {
-      errors.push(`Invalid type. Must be one of: ${VALID_TRANSACTION_TYPES.join(', ')}`);
+      errors.push(msg.typeInvalid(VALID_TRANSACTION_TYPES.join(', ')));
     }
   }
 
   // categoryId
   if (!isUpdate || data.categoryId !== undefined) {
     if (!data.categoryId) {
-      errors.push('Category ID is required');
+      errors.push(msg.categoryIdRequired);
     } else if (typeof data.categoryId !== 'string') {
-      errors.push('Category ID must be a string');
+      errors.push(msg.categoryIdMustBeString);
     }
   }
 
   // interval
   if (!isUpdate || data.interval !== undefined) {
     if (!data.interval) {
-      errors.push('Interval is required');
+      errors.push(msg.recurringIntervalRequired);
     } else if (!VALID_INTERVALS.includes(data.interval)) {
-      errors.push(`Invalid interval. Must be one of: ${VALID_INTERVALS.join(', ')}`);
+      errors.push(msg.recurringIntervalInvalid(VALID_INTERVALS.join(', ')));
     }
   }
 
   // nextDate
   if (!isUpdate || data.nextDate !== undefined) {
     if (!data.nextDate) {
-      errors.push('Next date is required');
+      errors.push(msg.recurringNextDateRequired);
     } else if (typeof data.nextDate !== 'number') {
-      errors.push('Next date must be a timestamp (number)');
+      errors.push(msg.recurringNextDateMustBeTimestamp);
     }
   }
 
   // isActive
   if (data.isActive !== undefined && typeof data.isActive !== 'boolean') {
-    errors.push('isActive must be a boolean');
+    errors.push(msg.isActiveMustBeBool);
   }
 
   // comment (опционально)
   if (data.comment !== undefined && data.comment.length > MAX_COMMENT_LENGTH) {
-    errors.push(`Comment exceeds maximum length (${MAX_COMMENT_LENGTH} characters)`);
+    errors.push(msg.commentTooLong(MAX_COMMENT_LENGTH));
   }
 
   return {
@@ -412,42 +412,42 @@ export function validateAIPattern(
   // pattern
   if (!isUpdate || data.pattern !== undefined) {
     if (!data.pattern) {
-      errors.push('Pattern is required');
+      errors.push(msg.aiPatternRequired);
     } else if (typeof data.pattern !== 'string') {
-      errors.push('Pattern must be a string');
+      errors.push(msg.aiPatternMustBeString);
     } else if (data.pattern.length < MIN_PATTERN_LENGTH) {
-      errors.push(`Pattern must be at least ${MIN_PATTERN_LENGTH} characters`);
+      errors.push(msg.aiPatternTooShort(MIN_PATTERN_LENGTH));
     } else if (data.pattern.length > MAX_PATTERN_LENGTH) {
-      warnings.push('Pattern seems too long');
+      warnings.push(msg.aiPatternTooLong);
     }
   }
 
   // categoryId
   if (!isUpdate || data.categoryId !== undefined) {
     if (!data.categoryId) {
-      errors.push('Category ID is required');
+      errors.push(msg.categoryIdRequired);
     } else if (typeof data.categoryId !== 'string') {
-      errors.push('Category ID must be a string');
+      errors.push(msg.categoryIdMustBeString);
     }
   }
 
   // confidence
   if (data.confidence !== undefined) {
     if (typeof data.confidence !== 'number') {
-      errors.push('Confidence must be a number');
+      errors.push(msg.aiConfidenceMustBeNumber);
     } else if (data.confidence < MIN_AI_CONFIDENCE || data.confidence > MAX_AI_CONFIDENCE) {
-      errors.push(`Confidence must be between ${MIN_AI_CONFIDENCE} and ${MAX_AI_CONFIDENCE}`);
+      errors.push(msg.aiConfidenceRange(MIN_AI_CONFIDENCE, MAX_AI_CONFIDENCE));
     }
   }
 
   // usageCount
   if (data.usageCount !== undefined) {
     if (typeof data.usageCount !== 'number') {
-      errors.push('Usage count must be a number');
+      errors.push(msg.aiUsageCountMustBeNumber);
     } else if (data.usageCount < 0) {
-      errors.push('Usage count cannot be negative');
+      errors.push(msg.aiUsageCountNegative);
     } else if (data.usageCount > MAX_AI_USAGE_COUNT) {
-      errors.push(`Usage count exceeds maximum (${MAX_AI_USAGE_COUNT})`);
+      errors.push(msg.aiUsageCountExceedsMax(MAX_AI_USAGE_COUNT));
     }
   }
 
@@ -469,7 +469,7 @@ export function assertValid(
 ): asserts result is ValidationResult & { isValid: true } {
   if (!result.isValid) {
     throw new Error(
-      `${entityType} validation failed: ${result.errors.join('; ')}`
+      `Ошибка валидации (${entityType}): ${result.errors.join('; ')}`
     );
   }
 }
@@ -483,9 +483,9 @@ export function validateWithWarnings<T>(
   entityType: string
 ): { data: T; warnings: string[] } {
   const result = validator(data);
-  
+
   if (!result.isValid) {
-    throw new Error(`${entityType} validation failed: ${result.errors.join('; ')}`);
+    throw new Error(`Ошибка валидации (${entityType}): ${result.errors.join('; ')}`);
   }
 
   return {

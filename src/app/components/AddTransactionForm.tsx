@@ -36,6 +36,7 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
   } = useTransactionForm();
 
   const [mlSuggestion, setMlSuggestion] = useState<{ categoryId: string; confidence: number } | null>(null);
+  const [isMlClassifying, setIsMlClassifying] = useState(false);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const { classify, recordUserChoice } = useMLModel({ autoLoad: true });
@@ -45,8 +46,10 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
     const comment = formData.comment.trim();
     if (!comment) {
       setMlSuggestion(null);
+      setIsMlClassifying(false);
       return;
     }
+    setIsMlClassifying(true);
     const timer = setTimeout(async () => {
       const amount = parseFloat(formData.amount) || undefined;
       const result = await classify(comment, amount, formData.date);
@@ -64,8 +67,12 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
       } else {
         setMlSuggestion(null);
       }
+      setIsMlClassifying(false);
     }, 500);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      setIsMlClassifying(false);
+    };
   }, [formData.comment, formData.amount, formData.date, formData.type, classify, categories, setFormData]);
 
   const filteredCategories = categories.filter(c => c.type === formData.type);
@@ -99,6 +106,7 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
   };
 
   const handleSave = async () => {
+    if (isMlClassifying) return;
     if (!formData.amount) {
       notify('Укажите сумму', 'Добавьте сумму операции перед сохранением');
       return;
@@ -269,9 +277,10 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
       <div className="px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom)+4rem)]">
         <button
           onClick={handleSave}
-          className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-xl font-semibold"
+          disabled={isMlClassifying}
+          className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-xl font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          Сохранить
+          {isMlClassifying ? 'Определяю категорию...' : 'Сохранить'}
         </button>
       </div>
 

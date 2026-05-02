@@ -4,6 +4,7 @@ import { BottomNav } from './components/BottomNav';
 import { BottomSheet } from './components/BottomSheet';
 import { AIQuickInput } from './components/AIQuickInput';
 import { AddTransactionForm } from './components/AddTransactionForm';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 type QuickInputTab = 'ai' | 'manual';
 
@@ -61,7 +62,9 @@ export const Layout = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Outlet />
+      <ErrorBoundary key={location.pathname}>
+        <Outlet />
+      </ErrorBoundary>
       {showNav && (
         <BottomNav
           onOpenQuickInput={() => openQuickInput(false)}

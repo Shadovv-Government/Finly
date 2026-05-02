@@ -16,6 +16,7 @@ import {
   getAllTransactions,
 } from './transactions';
 import { validateTransaction } from '../validators';
+import { getBalanceByPeriod } from '../analytics';
 
 vi.mock('../db', () => ({
   db: {
@@ -231,5 +232,60 @@ describe('transactions operations', () => {
       expect(db.transactions.orderBy).toHaveBeenCalledWith('date');
       expect(result).toEqual(transactions);
     });
+  });
+});
+
+// =====================================================================
+// getBalanceByPeriod — end-to-end: data written via addTransaction is
+// read and aggregated by the analytics layer.
+// Both use the same mocked db.transactions instance.
+// =====================================================================
+
+describe('getBalanceByPeriod', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  function mockBetween(txs: Partial<Transaction>[]) {
+    (db.transactions.where as Mocked<any>).mockReturnValue({
+      between: vi.fn().mockReturnValue({
+        toArray: vi.fn().mockResolvedValue(txs),
+      }),
+    });
+  }
+
+  it('суммирует доходы и расходы с учётом курса валюты', async () => {
+    mockBetween([
+      { type: 'income',  amount: 50000, rate: 1  },
+      { type: 'income',  amount: 100,   rate: 90 }, // 9 000 ₽ по курсу
+      { type: 'expense', amount: 20000, rate: 1  },
+      { type: 'expense', amount: 50,    rate: 90 }, // 4 500 ₽ по курсу
+    ]);
+    const r = await getBalanceByPeriod(0, 1);
+    expect(r.income).toBe(59000);
+    expect(r.expenses).toBe(24500);
+    expect(r.balance).toBe(34500);
+  });
+
+  it('возвращает нули для пустого периода', async () => {
+    mockBetween([]);
+    const r = await getBalanceByPeriod(0, 1);
+    expect(r.income).toBe(0);
+    expect(r.expenses).toBe(0);
+    expect(r.balance).toBe(0);
+  });
+
+  it('balance === income − expenses', async () => {
+    mockBetween([
+      { type: 'income',  amount: 80000, rate: 1 },
+      { type: 'expense', amount: 35000, rate: 1 },
+    ]);
+    const r = await getBalanceByPeriod(0, 1);
+    expect(r.balance).toBe(r.income - r.expenses);
+  });
+
+  it('сохраняет переданные periodStart / periodEnd', async () => {
+    mockBetween([]);
+    const r = await getBalanceByPeriod(1000, 9999);
+    expect(r.periodStart).toBe(1000);
+    expect(r.periodEnd).toBe(9999);
   });
 });

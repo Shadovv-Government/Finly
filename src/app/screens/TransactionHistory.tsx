@@ -1,147 +1,174 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
-import { Search, Filter, X, Calendar, ChevronDown, Trash2 } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Search, Filter, X, Calendar, ChevronDown } from 'lucide-react';
 import { CategoryBadge } from '../components/CategoryBadge';
 import { AmountDisplay } from '../components/AmountDisplay';
 import { BottomSheet } from '../components/BottomSheet';
+import { SwipeableRow } from '../components/SwipeableRow';
 import { useTransactions } from '../hooks/useTransactions';
 import { useCategories } from '../hooks/useCategories';
-import { Transaction } from '../../db/types';
+import { Transaction, Category } from '../../db/types';
 
 const PAGE_SIZE = 50;
-const SWIPE_THRESHOLD = 72;
-const DELETE_EXIT_DURATION_MS = 260;
-const DELETE_SWIPE_OFFSET = 96;
-const SWIPE_MAX_OFFSET = 112;
-const SWIPE_RESISTANCE = 0.35;
-const SWIPE_DIRECTION_LOCK_THRESHOLD = 10;
 
-function SwipeableRow({ onDelete, children }: { onDelete: () => void; children: React.ReactNode }) {
-  const rowRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
-  const deleteBackgroundRef = useRef<HTMLDivElement>(null);
-  const startXRef = useRef(0);
-  const startYRef = useRef(0);
-  const currentOffsetRef = useRef(0);
-  const gestureLockRef = useRef<'horizontal' | 'vertical' | null>(null);
-  const deleteTimerRef = useRef<number | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [maxHeight, setMaxHeight] = useState<string | undefined>(undefined);
+// ==================== TransactionItem ====================
 
-  const translate = (x: number, animated: boolean) => {
-    if (!contentRef.current) return;
-    contentRef.current.style.transition = animated ? 'transform 0.22s ease' : 'none';
-    contentRef.current.style.transform = `translateX(${x}px)`;
-    if (deleteBackgroundRef.current) {
-      deleteBackgroundRef.current.style.opacity = x < 0 ? '1' : '0';
-    }
-  };
+interface TransactionItemProps {
+  transaction: Transaction;
+  category: Category | undefined;
+  isLast: boolean;
+  onDelete: () => void;
+}
 
-  useEffect(() => {
-    return () => {
-      if (deleteTimerRef.current !== null) {
-        window.clearTimeout(deleteTimerRef.current);
-      }
-    };
-  }, []);
-
-  const startDelete = () => {
-    if (isDeleting) return;
-
-    const rowHeight = rowRef.current?.scrollHeight ?? 0;
-    setIsDeleting(true);
-    setMaxHeight(`${rowHeight}px`);
-    translate(-DELETE_SWIPE_OFFSET, true);
-
-    requestAnimationFrame(() => {
-      setMaxHeight('0px');
-    });
-
-    deleteTimerRef.current = window.setTimeout(() => {
-      onDelete();
-    }, DELETE_EXIT_DURATION_MS);
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (isDeleting) return;
-    startXRef.current = e.touches[0].clientX;
-    startYRef.current = e.touches[0].clientY;
-    currentOffsetRef.current = 0;
-    gestureLockRef.current = null;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (isDeleting) return;
-    const touch = e.touches[0];
-    const dx = touch.clientX - startXRef.current;
-    const dy = touch.clientY - startYRef.current;
-
-    if (!gestureLockRef.current) {
-      if (
-        Math.abs(dx) < SWIPE_DIRECTION_LOCK_THRESHOLD &&
-        Math.abs(dy) < SWIPE_DIRECTION_LOCK_THRESHOLD
-      ) {
-        return;
-      }
-
-      gestureLockRef.current = Math.abs(dx) > Math.abs(dy) ? 'horizontal' : 'vertical';
-    }
-
-    if (gestureLockRef.current !== 'horizontal' || dx >= 0) {
-      return;
-    }
-
-    e.preventDefault();
-
-    const swipeDistance = Math.abs(dx);
-    const resistedDistance = swipeDistance <= SWIPE_THRESHOLD
-      ? swipeDistance
-      : SWIPE_THRESHOLD + (swipeDistance - SWIPE_THRESHOLD) * SWIPE_RESISTANCE;
-    const offset = -Math.min(resistedDistance, SWIPE_MAX_OFFSET);
-
-    currentOffsetRef.current = offset;
-    translate(offset, false);
-  };
-
-  const handleTouchEnd = () => {
-    if (isDeleting) return;
-    if (gestureLockRef.current === 'horizontal' && currentOffsetRef.current < -SWIPE_THRESHOLD) {
-      startDelete();
-    } else {
-      translate(0, true);
-    }
-
-    currentOffsetRef.current = 0;
-    gestureLockRef.current = null;
-  };
-
+function TransactionItem({ transaction, category, isLast, onDelete }: TransactionItemProps) {
+  const time = new Date(transaction.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
   return (
-    <div
-      ref={rowRef}
-      data-state={isDeleting ? 'deleting' : 'idle'}
-      className="relative overflow-hidden transition-[max-height,opacity] duration-[260ms] ease-out"
-      style={{
-        maxHeight,
-        opacity: isDeleting ? 0 : 1,
-      }}
-    >
-      <div
-        ref={deleteBackgroundRef}
-        className="absolute right-0 top-0 bottom-0 w-20 flex items-center justify-center bg-red-500"
-        style={{ opacity: 0, transition: 'opacity 0.12s ease' }}
-      >
-        <Trash2 className="w-5 h-5 text-white" />
+    <SwipeableRow onDelete={onDelete}>
+      <div className={`flex items-center gap-3 p-4 bg-card ${isLast ? '' : 'border-b border-border'}`}>
+        <CategoryBadge categoryId={transaction.categoryId as string | undefined} size="md" />
+        <div className="flex-1 min-w-0">
+          <p className="font-medium truncate">{category?.name || 'Без категории'}</p>
+          {transaction.comment && (
+            <p className="text-sm text-muted-foreground truncate">{transaction.comment}</p>
+          )}
+        </div>
+        <div className="text-right">
+          <AmountDisplay amount={transaction.amount} type={transaction.type} size="md" />
+          <p className="text-xs text-muted-foreground">{time}</p>
+        </div>
       </div>
-      <div
-        ref={contentRef}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
-        {children}
-      </div>
-    </div>
+    </SwipeableRow>
   );
 }
+
+// ==================== TransactionFilters ====================
+
+interface TransactionFiltersProps {
+  isOpen: boolean;
+  onClose: () => void;
+  filterType: 'all' | 'expense' | 'income';
+  setFilterType: (v: 'all' | 'expense' | 'income') => void;
+  selectedCategory: string | null;
+  setSelectedCategory: (v: string | null) => void;
+  dateFrom: string;
+  setDateFrom: (v: string) => void;
+  dateTo: string;
+  setDateTo: (v: string) => void;
+  filterCategories: Category[];
+  onClearAll: () => void;
+}
+
+function TransactionFilters({
+  isOpen, onClose, filterType, setFilterType, selectedCategory, setSelectedCategory,
+  dateFrom, setDateFrom, dateTo, setDateTo, filterCategories, onClearAll,
+}: TransactionFiltersProps) {
+  return (
+    <BottomSheet isOpen={isOpen} onClose={onClose} title="Фильтры" side="top">
+      <div className="flex flex-col pb-4">
+        {/* Тип операции */}
+        <div className="px-4 py-4">
+          <label className="text-sm font-medium mb-3 block">Тип операции</label>
+          <div className="flex gap-2 p-1 bg-muted rounded-xl">
+            {([
+              { value: 'all' as const, label: 'Все' },
+              { value: 'expense' as const, label: 'Расходы' },
+              { value: 'income' as const, label: 'Доходы' },
+            ]).map(item => (
+              <button
+                key={item.value}
+                onClick={() => { setFilterType(item.value); setSelectedCategory(null); }}
+                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                  filterType === item.value
+                    ? 'bg-white dark:bg-card shadow-sm text-violet-600 dark:text-violet-400'
+                    : 'text-muted-foreground'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* По категории */}
+        <div className="px-4 py-4">
+          <label className="text-sm font-medium mb-3 block">Категория</label>
+          <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto p-2 bg-muted rounded-xl">
+            <button
+              onClick={() => setSelectedCategory(null)}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                !selectedCategory
+                  ? 'bg-white dark:bg-card shadow-sm text-violet-600 dark:text-violet-400'
+                  : 'text-muted-foreground hover:bg-accent'
+              }`}
+            >
+              Все
+            </button>
+            {filterCategories.map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  selectedCategory === cat.id
+                    ? 'bg-violet-100 dark:bg-violet-950 ring-2 ring-violet-600'
+                    : 'hover:bg-accent'
+                }`}
+              >
+                <div
+                  className="w-4 h-4 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: cat.color }}
+                />
+                <span className="truncate">{cat.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* По дате */}
+        <div className="px-4 py-4">
+          <label className="text-sm font-medium mb-3 block">Период</label>
+          <div className="flex gap-2">
+            <div className="flex-1 flex items-center gap-2 p-3 bg-muted rounded-xl">
+              <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="flex-1 bg-transparent outline-none text-sm"
+              />
+            </div>
+            <span className="text-muted-foreground self-center">—</span>
+            <div className="flex-1 flex items-center gap-2 p-3 bg-muted rounded-xl">
+              <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="flex-1 bg-transparent outline-none text-sm"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Кнопки */}
+        <div className="px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom)+4rem)] flex gap-3">
+          <button
+            onClick={() => { onClearAll(); onClose(); }}
+            className="flex-1 py-3 bg-muted rounded-xl font-medium text-sm"
+          >
+            Сбросить
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-[2] py-3 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-xl font-semibold text-sm"
+          >
+            Применить
+          </button>
+        </div>
+      </div>
+    </BottomSheet>
+  );
+}
+
+// ==================== TransactionHistory ====================
 
 export const TransactionHistory = () => {
   const { transactions, remove } = useTransactions();
@@ -222,7 +249,6 @@ export const TransactionHistory = () => {
       <div className="px-4 py-4 bg-card border-b border-border sticky top-0 z-10">
         <h1 className="text-xl font-bold mb-4">История операций</h1>
 
-        {/* Search Bar */}
         <div className="relative mb-3">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <input
@@ -242,7 +268,6 @@ export const TransactionHistory = () => {
           )}
         </div>
 
-        {/* Filter Bar */}
         <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
           <button
             onClick={() => setIsFilterOpen(true)}
@@ -294,7 +319,7 @@ export const TransactionHistory = () => {
       <div className="px-4 py-4">
         {Object.keys(groupedTransactions).length > 0 ? (() => {
           const groupEntries = Object.entries(groupedTransactions);
-          let shownGroups: [string, Transaction[]][] = [];
+          const shownGroups: [string, Transaction[]][] = [];
           let count = 0;
 
           for (const [date, txs] of groupEntries) {
@@ -320,30 +345,15 @@ export const TransactionHistory = () => {
                     <span className="text-sm text-muted-foreground">{dayTransactions.length} операций</span>
                   </div>
                   <div className="bg-card rounded-2xl border border-border overflow-hidden">
-                    {dayTransactions.map((transaction, index) => {
-                      const category = categories.find(c => c.id === transaction.categoryId);
-                      const time = new Date(transaction.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-                      return (
-                        <SwipeableRow
-                          key={transaction.id}
-                          onDelete={() => transaction.id !== undefined && remove(transaction.id)}
-                        >
-                          <div className={`flex items-center gap-3 p-4 bg-card ${index !== dayTransactions.length - 1 ? 'border-b border-border' : ''}`}>
-                            <CategoryBadge categoryId={transaction.categoryId as string | undefined} size="md" />
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium truncate">{category?.name || 'Без категории'}</p>
-                              {transaction.comment && (
-                                <p className="text-sm text-muted-foreground truncate">{transaction.comment}</p>
-                              )}
-                            </div>
-                            <div className="text-right">
-                              <AmountDisplay amount={transaction.amount} type={transaction.type} size="md" />
-                              <p className="text-xs text-muted-foreground">{time}</p>
-                            </div>
-                          </div>
-                        </SwipeableRow>
-                      );
-                    })}
+                    {dayTransactions.map((transaction, index) => (
+                      <TransactionItem
+                        key={transaction.id}
+                        transaction={transaction}
+                        category={categories.find(c => c.id === transaction.categoryId)}
+                        isLast={index === dayTransactions.length - 1}
+                        onDelete={() => transaction.id !== undefined && remove(transaction.id)}
+                      />
+                    ))}
                   </div>
                 </div>
               ))}
@@ -382,115 +392,20 @@ export const TransactionHistory = () => {
         )}
       </div>
 
-      {/* Filters BottomSheet */}
-      <BottomSheet
+      <TransactionFilters
         isOpen={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}
-        title="Фильтры"
-        side="top"
-      >
-        <div className="flex flex-col pb-4">
-          {/* Тип операции */}
-          <div className="px-4 py-4">
-            <label className="text-sm font-medium mb-3 block">Тип операции</label>
-            <div className="flex gap-2 p-1 bg-muted rounded-xl">
-              {([
-                { value: 'all' as const, label: 'Все' },
-                { value: 'expense' as const, label: 'Расходы' },
-                { value: 'income' as const, label: 'Доходы' },
-              ]).map(item => (
-                <button
-                  key={item.value}
-                  onClick={() => { setFilterType(item.value); setSelectedCategory(null); }}
-                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
-                    filterType === item.value
-                      ? 'bg-white dark:bg-card shadow-sm text-violet-600 dark:text-violet-400'
-                      : 'text-muted-foreground'
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* По категории */}
-          <div className="px-4 py-4">
-            <label className="text-sm font-medium mb-3 block">Категория</label>
-            <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto p-2 bg-muted rounded-xl">
-              <button
-                onClick={() => setSelectedCategory(null)}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                  !selectedCategory
-                    ? 'bg-white dark:bg-card shadow-sm text-violet-600 dark:text-violet-400'
-                    : 'text-muted-foreground hover:bg-accent'
-                }`}
-              >
-                Все
-              </button>
-              {filterCategories.map(cat => (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                    selectedCategory === cat.id
-                      ? 'bg-violet-100 dark:bg-violet-950 ring-2 ring-violet-600'
-                      : 'hover:bg-accent'
-                  }`}
-                >
-                  <div
-                    className="w-4 h-4 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: cat.color }}
-                  />
-                  <span className="truncate">{cat.name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* По дате */}
-          <div className="px-4 py-4">
-            <label className="text-sm font-medium mb-3 block">Период</label>
-            <div className="flex gap-2">
-              <div className="flex-1 flex items-center gap-2 p-3 bg-muted rounded-xl">
-                <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                <input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  className="flex-1 bg-transparent outline-none text-sm"
-                />
-              </div>
-              <span className="text-muted-foreground self-center">—</span>
-              <div className="flex-1 flex items-center gap-2 p-3 bg-muted rounded-xl">
-                <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                <input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="flex-1 bg-transparent outline-none text-sm"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Кнопки */}
-          <div className="px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom)+4rem)] flex gap-3">
-            <button
-              onClick={() => { clearAllFilters(); setIsFilterOpen(false); }}
-              className="flex-1 py-3 bg-muted rounded-xl font-medium text-sm"
-            >
-              Сбросить
-            </button>
-            <button
-              onClick={() => setIsFilterOpen(false)}
-              className="flex-[2] py-3 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-xl font-semibold text-sm"
-            >
-              Применить
-            </button>
-          </div>
-        </div>
-      </BottomSheet>
+        filterType={filterType}
+        setFilterType={setFilterType}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
+        dateFrom={dateFrom}
+        setDateFrom={setDateFrom}
+        dateTo={dateTo}
+        setDateTo={setDateTo}
+        filterCategories={filterCategories}
+        onClearAll={clearAllFilters}
+      />
     </div>
   );
 };

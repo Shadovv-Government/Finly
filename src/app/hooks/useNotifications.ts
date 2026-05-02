@@ -16,12 +16,14 @@ import {
   deleteNotification,
   clearReadNotifications,
   clearAllNotifications,
+  clearExpiredNotifications,
 } from '../../db/operations/notifications';
 
 export function useNotifications() {
-  // Запрос разрешения при монтировании
+  // Запрос разрешения и очистка просроченных уведомлений при монтировании
   useEffect(() => {
     requestPermission();
+    clearExpiredNotifications().catch(() => {});
   }, []);
 
   const notify = useCallback((title: string, body: string, icon?: string) => {

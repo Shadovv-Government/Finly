@@ -28,6 +28,9 @@ vi.mock('../db', () => ({
       toArray: vi.fn(),
       where: vi.fn(),
     },
+    transactions: {
+      where: vi.fn(),
+    },
   },
 }));
 
@@ -131,11 +134,23 @@ describe('categories operations', () => {
 
   describe('deleteCategory', () => {
     it('должен удалять категорию', async () => {
-      (db.categories.delete as Mocked<any>).mockResolvedValue();
+      const mockChain = { equals: vi.fn().mockReturnValue({ count: vi.fn().mockResolvedValue(0) }) };
+      (db.transactions.where as Mocked<any>).mockReturnValue(mockChain);
+      (db.categories.delete as Mocked<any>).mockResolvedValue(undefined);
 
       await deleteCategory('cat-1');
 
+      expect(db.transactions.where).toHaveBeenCalledWith('categoryId');
+      expect(mockChain.equals).toHaveBeenCalledWith('cat-1');
       expect(db.categories.delete).toHaveBeenCalledWith('cat-1');
+    });
+
+    it('должен бросать ошибку если есть транзакции с этой категорией', async () => {
+      const mockChain = { equals: vi.fn().mockReturnValue({ count: vi.fn().mockResolvedValue(3) }) };
+      (db.transactions.where as Mocked<any>).mockReturnValue(mockChain);
+
+      await expect(deleteCategory('cat-1')).rejects.toThrow('Нельзя удалить категорию');
+      expect(db.categories.delete).not.toHaveBeenCalled();
     });
   });
 
