@@ -19,7 +19,7 @@ vi.mock('../../db/analytics', () => ({
   getIncomePattern:         vi.fn(),
 }));
 
-const m = analytics as Record<string, ReturnType<typeof vi.fn>>;
+const m = analytics as unknown as Record<string, ReturnType<typeof vi.fn>>;
 const CTX = {};
 
 const dummyBalance  = { income: 80000, expenses: 50000, balance: 30000, periodStart: 0, periodEnd: 1 };
@@ -293,7 +293,7 @@ describe('answerQuery — маршрутизация интентов', () => {
     ]);
     const ctx = {
       lastTopic: 'category',
-      lastPeriod: { start: 0, end: 1, label: 'В этом месяце', unit: 'month' as const, offset: 0 },
+      lastPeriod: { start: 0, end: 1, label: 'В этом месяце', key: 'this-month', unit: 'month' as const, offset: 0 },
       lastCategoryName: 'Еда',
       lastCategoryId: 'cat-food',
     };

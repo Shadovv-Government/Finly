@@ -36,9 +36,9 @@ describe('getActiveBudgets', () => {
   });
   afterEach(() => vi.useRealTimers());
 
-  const past: Budget   = { id: 1, categoryId: 'a', amount: 1000, period: 'month', startDate: FROZEN - 86400000 };
-  const exact: Budget  = { id: 2, categoryId: 'b', amount: 2000, period: 'month', startDate: FROZEN };
-  const future: Budget = { id: 3, categoryId: 'c', amount: 3000, period: 'month', startDate: FROZEN + 86400000 };
+  const past: Budget   = { id: 1, categoryId: 'a', amount: 1000, period: 'month', startDate: FROZEN - 86400000, currency: 'RUB' };
+  const exact: Budget  = { id: 2, categoryId: 'b', amount: 2000, period: 'month', startDate: FROZEN, currency: 'RUB' };
+  const future: Budget = { id: 3, categoryId: 'c', amount: 3000, period: 'month', startDate: FROZEN + 86400000, currency: 'RUB' };
 
   function mockFilter(budgets: Budget[]) {
     budgetTable().filter.mockImplementation((fn: (b: Budget) => boolean) => ({
@@ -88,6 +88,7 @@ describe('addBudget', () => {
       amount: 15000,
       period: 'month',
       startDate: FROZEN,
+      currency: 'RUB',
     };
     const id = await addBudget(budget);
     expect(id).toBe(42);
@@ -104,7 +105,7 @@ describe('getBudget', () => {
   });
 
   it('возвращает бюджет по id', async () => {
-    const budget: Budget = { id: 5, categoryId: 'cat-food', amount: 5000, period: 'month', startDate: FROZEN };
+    const budget: Budget = { id: 5, categoryId: 'cat-food', amount: 5000, period: 'month', startDate: FROZEN, currency: 'RUB' };
     budgetTable().get.mockResolvedValue(budget);
     expect(await getBudget(5)).toEqual(budget);
   });

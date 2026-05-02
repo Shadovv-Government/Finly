@@ -82,6 +82,7 @@ function makeTemplate(overrides: Partial<{
   id: number;
   nextDate: number;
   interval: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  categoryId: string;
 }> = {}) {
   return {
     id: 1,
