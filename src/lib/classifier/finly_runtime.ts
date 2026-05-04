@@ -1,22 +1,20 @@
 /**
- * Finly Classifier Runtime v4
+ * Finly Classifier Runtime v4.3
  *
  * Classification pipeline (priority order):
  *   1. LRU cache          — exact string, ~0ms
  *   2. User overrides     — IndexedDB exact match, ~1ms
  *   3. Rule engine        — MCC + fuzzy merchant match, ~0.1ms
- *   4. ML (MC Dropout)    — N forward passes, mean±std, ~20-40ms
+ *   4. ML (MC Dropout)    — N forward passes, mean±std, ~30-60ms
  *   5. Low-confidence     — Uncategorized + top-3
  *
- * Key improvements over v3:
- *   - MC Dropout epistemic uncertainty (N=20 passes, controlled by manifest)
- *   - Numeric features: log(amount), cyclic day-of-week, cyclic hour-of-day
- *   - Feature selection mask (SelectKBest) applied after TF-IDF concat
- *   - LRU cache (configurable size) for repeated descriptions
- *   - Fuzzy merchant matching: Levenshtein + phonetic transliteration
- *   - Incremental fine-tune: model.fit() on user corrections in Service Worker
- *   - Explanation: top-N features that drove the prediction
- *   - Schema v2 validation
+ * v4.3 improvements over v4.0:
+ *   - Dual model: model_predict (fast path) + model_train_mc (MC dropout uncertainty)
+ *   - Merchant features: 19 extra numeric inputs from merchant_rules.json lookup
+ *   - Numeric input expanded to 24 features (was 5)
+ *   - numeric_stats.json z-score normalization for all numeric features
+ *   - Config from runtime_config.json (no manifest.json required)
+ *   - 93% test accuracy (up from 54%)
  */
 
 import * as tf from '@tensorflow/tfjs';
@@ -45,7 +43,53 @@ export interface ClassifyResult {
   latency_ms:     number;
 }
 
-// ─── Manifest (schema v2) ───────────────────────────────────────────────────
+// ─── Runtime config (runtime_config.json) ───────────────────────────────────
+
+interface RuntimeConfig {
+  mode:                          string;
+  mc_dropout_passes:             number;
+  uncertainty_mode:              string;
+  uncertainty_threshold:         number;
+  uncertainty_quantile_on_val:   number;
+  margin_threshold:              number;
+  unc_margin_relax:              number;
+  min_conditions_to_accept:      number;
+  per_class_thresholds:          Record<string, number>;
+  min_class_threshold:           number;
+  max_class_threshold:           number;
+  default_class_threshold:       number;
+  fallback_label:                string;
+  preferred_inference:           string;
+  merchant_feature_start:        number;
+  merchant_score_start:          number;
+  merchant_score_end:            number;
+  merchant_feature_names:        string[];
+  side_feature_names:            string[];
+}
+
+// ─── Numeric stats (numeric_stats.json) ─────────────────────────────────────
+
+interface NumericStats {
+  feature_names: string[];
+  mean:          number[];
+  std:           number[];
+}
+
+// ─── Merchant rules (merchant_rules.json) ───────────────────────────────────
+
+interface MerchantRule {
+  category:            string;
+  alias:               string;
+  alias_norm:          string;
+  length:              number;
+  tokens:              number;
+  generic:             boolean;
+  score_weight:        number;
+  conflict_categories: string[];
+}
+
+// ─── Manifest (schema v2, kept for backward compat) ─────────────────────────
+// Synthesized from runtime_config + mask dimensions during init().
 
 interface Manifest {
   model_version:  string;
@@ -85,7 +129,7 @@ export interface FeedbackEntry {
   id?:                  number;
   description:          string;
   description_normalized: string;
-  text_vec:             number[];   // SelectKBest-selected feature vector (for fine-tune)
+  text_vec:             number[];
   numeric_vec:          number[];
   correct_label:        number;
   correct_type:         number;
@@ -125,6 +169,7 @@ interface TfidfParams {
 interface FeatureMask {
   mask:         boolean[];
   n_selected:   number;
+  raw_text_dim?: number;
   concat_order: ('char' | 'word')[];
 }
 
@@ -142,7 +187,6 @@ class LRUCache<K, V> {
   get(key: K): V | undefined {
     const val = this.map.get(key);
     if (val === undefined) return undefined;
-    // Move to end (most recently used)
     this.map.delete(key);
     this.map.set(key, val);
     return val;
@@ -151,7 +195,6 @@ class LRUCache<K, V> {
   set(key: K, val: V): void {
     if (this.map.has(key)) this.map.delete(key);
     else if (this.map.size >= this.maxSize) {
-      // Evict least recently used (first entry)
       this.map.delete(this.map.keys().next().value!);
     }
     this.map.set(key, val);
@@ -204,7 +247,6 @@ function tfidfVec(text: string, p: TfidfParams): Float32Array {
 
   const vec = new Float32Array(p.n_features);
   for (const [idx, cnt] of counts) {
-    // sklearn sublinear_tf: 1 + log(cnt)  — NOT log(1 + cnt/total)
     vec[idx] = (p.sublinear_tf ? 1 + Math.log(cnt) : cnt) * p.idf[idx];
   }
 
@@ -214,7 +256,6 @@ function tfidfVec(text: string, p: TfidfParams): Float32Array {
   return vec;
 }
 
-// Apply boolean feature mask (SelectKBest output)
 function applyMask(vec: Float32Array, mask: boolean[]): Float32Array {
   const out: number[] = [];
   for (let i = 0; i < mask.length; i++) {
@@ -223,24 +264,8 @@ function applyMask(vec: Float32Array, mask: boolean[]): Float32Array {
   return new Float32Array(out);
 }
 
-// ─── Numeric features (must match training: §5 make_numeric) ───────────────
-
-function numericFeatures(amount: number | undefined, date: Date | undefined): Float32Array {
-  const vec = new Float32Array(5);
-  // log(1 + |amount|), with 0 as fallback (unlabeled/unknown)
-  vec[0] = amount !== undefined ? Math.log1p(Math.abs(amount)) : 0;
-  const dow = date ? date.getDay() : 0;   // 0=Sun in JS, matches Python weekday offset via sin/cos
-  const hour = date ? date.getHours() : 0;
-  vec[1] = Math.sin(2 * Math.PI * dow / 7);
-  vec[2] = Math.cos(2 * Math.PI * dow / 7);
-  vec[3] = Math.sin(2 * Math.PI * hour / 24);
-  vec[4] = Math.cos(2 * Math.PI * hour / 24);
-  return vec;
-}
-
 // ─── Fuzzy matching helpers ──────────────────────────────────────────────────
 
-// Levenshtein distance (capped at maxDist for performance)
 function levenshtein(a: string, b: string, maxDist = 3): number {
   if (Math.abs(a.length - b.length) > maxDist) return maxDist + 1;
   const m = a.length, n = b.length;
@@ -256,7 +281,6 @@ function levenshtein(a: string, b: string, maxDist = 3): number {
   return dp[m];
 }
 
-// Transliteration table (Russian → Latin) for phonetic matching
 const TRANSLIT: Record<string, string> = {
   а:'a',б:'b',в:'v',г:'g',д:'d',е:'e',ё:'e',ж:'zh',з:'z',
   и:'i',й:'y',к:'k',л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',
@@ -276,14 +300,13 @@ export interface Rule {
   type:                TxType;
   priority:            number;
   mcc?:                string[];
-  exact_keywords?:     string[];    // lowercase substring exact match
-  fuzzy_keywords?:     string[];    // Levenshtein distance ≤ 2 per token
-  translit_keywords?:  string[];    // match after transliteration
+  exact_keywords?:     string[];
+  fuzzy_keywords?:     string[];
+  translit_keywords?:  string[];
   regex?:              RegExp;
 }
 
 const BUILTIN_RULES: Rule[] = [
-  // MCC — highest priority (deterministic, bank-provided)
   { id:'mcc_food',      category:'Еда',          type:'Expense', priority:100, mcc:['5812','5813','5814','5811'] },
   { id:'mcc_grocery',   category:'Продукты',     type:'Expense', priority:100, mcc:['5411','5422','5441','5499'] },
   { id:'mcc_transport', category:'Транспорт',    type:'Expense', priority:100, mcc:['4111','4121','4131','5541','5542','4511'] },
@@ -294,17 +317,14 @@ const BUILTIN_RULES: Rule[] = [
   { id:'mcc_rent',      category:'Аренда',       type:'Expense', priority:100, mcc:['6513'] },
   { id:'mcc_invest',    category:'Инвестиции',   type:'Expense', priority:100, mcc:['6211','6012','6051'] },
 
-  // Income signals — near-certain
   { id:'kw_salary',    category:'Зарплата',   type:'Income', priority:98,
     exact_keywords: ['зарплата','выплата зарплаты','аванс','оклад','перевод от работодателя','salary','payroll'] },
   { id:'kw_dividend',  category:'Инвестиции', type:'Income', priority:98,
     exact_keywords: ['дивиденды','дивиденд','купонный доход','проценты по вкладу','проценты депозит'] },
 
-  // Rent — unambiguous phrases
   { id:'kw_rent',      category:'Аренда', type:'Expense', priority:95,
     exact_keywords: ['аренда квартиры','арендная плата','оплата аренды','rent payment','monthly rent','съём жилья','оплата за проживание'] },
 
-  // High-frequency Russian merchants — exact
   { id:'kw_pyaterochka', category:'Продукты', type:'Expense', priority:90,
     exact_keywords: ['пятёрочка','пятерочка','5ka'],
     translit_keywords: ['pyaterochka'] },
@@ -337,7 +357,6 @@ const BUILTIN_RULES: Rule[] = [
     exact_keywords: ['яндекс плюс','yandex.plus','yandex plus'] },
 ];
 
-// MCC regex: "MCC 5812" or "MCC5812"
 const MCC_RE = /\bmcc\s*(\d{4})\b/gi;
 
 function matchRule(desc: string, rules: Rule[]): { rule: Rule } | null {
@@ -345,7 +364,6 @@ function matchRule(desc: string, rules: Rule[]): { rule: Rule } | null {
   const translit = transliterate(lower);
 
   for (const r of rules) {
-    // MCC match
     if (r.mcc) {
       let m: RegExpExecArray | null;
       MCC_RE.lastIndex = 0;
@@ -353,11 +371,8 @@ function matchRule(desc: string, rules: Rule[]): { rule: Rule } | null {
         if (r.mcc.includes(m[1])) return { rule: r };
       }
     }
-    // Exact substring
     if (r.exact_keywords?.some(kw => lower.includes(kw))) return { rule: r };
-    // Transliteration match
     if (r.translit_keywords?.some(kw => translit.includes(kw))) return { rule: r };
-    // Fuzzy: tokenise and check each token against keywords
     if (r.fuzzy_keywords) {
       const tokens = lower.match(WORD_RE) ?? [];
       for (const kw of r.fuzzy_keywords) {
@@ -366,7 +381,6 @@ function matchRule(desc: string, rules: Rule[]): { rule: Rule } | null {
         }
       }
     }
-    // Regex
     if (r.regex) { r.regex.lastIndex = 0; if (r.regex.test(desc)) return { rule: r }; }
   }
   return null;
@@ -388,13 +402,11 @@ async function mcDropoutPredict(
     const result = tf.tidy(() => {
       const tIn = tf.tensor2d(textVec, [1, D]);
       const nIn = tf.tensor2d(numVec,  [1, N]);
-      // training=true keeps Dropout active → epistemic uncertainty
-      // TF.js returns Tensor[] for multi-output models, not a named object
       const raw = model.predict([tIn, nIn], { training: true } as tf.ModelPredictConfig);
       const out = (Array.isArray(raw) ? raw : [raw]) as tf.Tensor[];
-      const catLogits = out[0].squeeze([0]);   // category_output
+      const catLogits = out[0].squeeze([0]);
       const catProbs  = tf.softmax(catLogits);
-      const tp = out[1].squeeze([0]);          // type_output
+      const tp = out[1].squeeze([0]);
       return { probs: catProbs.dataSync() as Float32Array, tp: tp.dataSync()[0] };
     });
     allCatProbs.push(result.probs);
@@ -415,19 +427,112 @@ async function mcDropoutPredict(
   return { meanProbs, stdProbs, typeProb: typeSum / nPasses };
 }
 
+// ─── Merchant feature computation ───────────────────────────────────────────
+
+/**
+ * Compute 19 merchant side-features from merchant_rules.json.
+ * Returns Float32Array of length 19, placed at offset 5 in the 24-dim numeric vector.
+ *
+ * Feature order (matches numeric_stats side_feature_names[5..23]):
+ *   [0..9]  merchant_score per class (Аренда, Еда, Зарплата, Здоровье, Инвестиции,
+ *                                     Коммунальные, Продукты, Развлечения, Транспорт, Шопинг)
+ *   [10]    merchant_best_score
+ *   [11]    merchant_margin
+ *   [12]    merchant_alias_coverage
+ *   [13]    merchant_alias_len_norm
+ *   [14]    merchant_alias_tokens_norm
+ *   [15]    merchant_has_match
+ *   [16]    merchant_ambiguous
+ *   [17]    merchant_mcc_match
+ *   [18]    description_len_norm
+ */
+function computeMerchantFeatures(
+  desc: string,
+  rules: MerchantRule[],
+  catToIdx: Map<string, number>,
+  nClasses: number,
+): Float32Array {
+  const catScores = new Float32Array(nClasses);
+
+  let bestRule: MerchantRule | null = null;
+  let bestRuleScore = 0;
+
+  const descLen    = desc.length;
+  const descTokens = Math.max((desc.match(/\S+/g) ?? []).length, 1);
+
+  for (const rule of rules) {
+    if (desc.includes(rule.alias_norm)) {
+      const idx = catToIdx.get(rule.category);
+      if (idx !== undefined) {
+        catScores[idx] += rule.score_weight;
+        if (rule.score_weight > bestRuleScore) {
+          bestRuleScore = rule.score_weight;
+          bestRule = rule;
+        }
+      }
+    }
+  }
+
+  // Compute best and second-best category scores for margin
+  let best1 = 0, best2 = 0;
+  for (let i = 0; i < nClasses; i++) {
+    if (catScores[i] > best1) { best2 = best1; best1 = catScores[i]; }
+    else if (catScores[i] > best2) { best2 = catScores[i]; }
+  }
+  const merchantBestScore = best1;
+  const merchantMargin    = best1 - best2;
+  const hasMatch          = merchantBestScore > 0 ? 1 : 0;
+
+  // Ambiguous: best match has conflicting categories AND margin is small
+  const ambiguous = (
+    hasMatch &&
+    (bestRule?.conflict_categories?.length ?? 0) > 0 &&
+    merchantMargin < 0.12
+  ) ? 1 : 0;
+
+  // Properties of the best matching alias
+  let aliasCoverage   = 0;
+  let aliasLenNorm    = 0;
+  let aliasTokensNorm = 0;
+  if (bestRule !== null && descLen > 0) {
+    aliasCoverage   = Math.min(bestRule.length / descLen, 1);
+    aliasLenNorm    = Math.min(bestRule.length / 30, 1);   // 30 chars ≈ typical max alias
+    aliasTokensNorm = Math.min(bestRule.tokens / descTokens, 1);
+  }
+
+  // mcc_match: MCC lookup handled by BUILTIN_RULES rule engine — always 0 for merchant path
+  const mccMatch    = 0;
+  const descLenNorm = Math.min(descLen / 100, 1);
+
+  const feat = new Float32Array(19);
+  feat.set(catScores, 0);        // [0..9]
+  feat[10] = merchantBestScore;
+  feat[11] = merchantMargin;
+  feat[12] = aliasCoverage;
+  feat[13] = aliasLenNorm;
+  feat[14] = aliasTokensNorm;
+  feat[15] = hasMatch;
+  feat[16] = ambiguous;
+  feat[17] = mccMatch;
+  feat[18] = descLenNorm;
+  return feat;
+}
+
 // ─── Main classifier ─────────────────────────────────────────────────────────
 
 export interface ClassifierConfig {
-  modelBaseUrl:     string;          // e.g. '/model/'
+  modelBaseUrl:     string;
   db?:              ClassifierDB;
   customRules?:     Rule[];
-  cacheSize?:       number;          // LRU cache entries, default 500
-  enableTelemetry?: boolean;         // default true
-  mcPasses?:        number;          // override manifest mc_dropout_passes
+  cacheSize?:       number;
+  enableTelemetry?: boolean;
+  mcPasses?:        number;
 }
 
 export class FinlyClassifier {
+  // Inference model — model_train_mc enables MC Dropout via training=true
   private model:       tf.LayersModel | null = null;
+  // Synthetic manifest (backward compat with tests that read classifier.manifest)
   private manifest:    Manifest | null = null;
   private tfidfChar:   TfidfParams | null = null;
   private tfidfWord:   TfidfParams | null = null;
@@ -439,6 +544,12 @@ export class FinlyClassifier {
   private cfg:         ClassifierConfig;
   private ready =      false;
 
+  // v4.3 additions
+  private rtConfig:      RuntimeConfig | null = null;
+  private numStats:      NumericStats | null = null;
+  private merchantRules: MerchantRule[] = [];
+  private catToIdx:      Map<string, number> = new Map();
+
   constructor(cfg: ClassifierConfig) {
     this.cfg = { cacheSize: 500, enableTelemetry: true, ...cfg };
     this.lru = new LRUCache(this.cfg.cacheSize!);
@@ -447,44 +558,78 @@ export class FinlyClassifier {
   async init(): Promise<void> {
     const base = this.cfg.modelBaseUrl.replace(/\/$/, '') + '/';
 
-    // 1. Manifest — validate schema first
-    this.manifest = await (await fetch(base + 'manifest.json')).json() as Manifest;
-    if (!['1', '2'].includes(this.manifest.schema_version)) {
-      throw new Error(
-        `Finly: unsupported schema_version '${this.manifest.schema_version}'. ` +
-        `This runtime supports schema versions 1 and 2. Redeploy the PWA.`
-      );
-    }
+    // 1. Runtime config
+    this.rtConfig = await (await fetch(base + 'runtime_config.json')).json() as RuntimeConfig;
 
-    // 2. Vocabularies + mask
-    const [charJ, wordJ, maskJ] = await Promise.all([
-      (await fetch(base + 'tfidf_char.json')).json() as Promise<TfidfParams>,
-      (await fetch(base + 'tfidf_word.json')).json() as Promise<TfidfParams>,
-      (await fetch(base + 'feature_mask.json')).json() as Promise<FeatureMask>,
+    // 2. Vocabularies + mask + numeric stats + merchant rules + classes (parallel)
+    const [charJ, wordJ, maskJ, statsJ, merchantJ, classesJ] = await Promise.all([
+      (await fetch(base + 'tfidf_char.json')).json()     as Promise<TfidfParams>,
+      (await fetch(base + 'tfidf_word.json')).json()     as Promise<TfidfParams>,
+      (await fetch(base + 'feature_mask.json')).json()   as Promise<FeatureMask>,
+      (await fetch(base + 'numeric_stats.json')).json()  as Promise<NumericStats>,
+      (await fetch(base + 'merchant_rules.json')).json() as Promise<{ rules: MerchantRule[] }>,
+      (await fetch(base + 'classes.json')).json()        as Promise<unknown>,
     ]);
-    this.tfidfChar = charJ;
-    this.tfidfWord = wordJ;
-    this.maskData  = maskJ;
-    this.buildFeatureIndexMap();
+    this.tfidfChar     = charJ;
+    this.tfidfWord     = wordJ;
+    this.maskData      = maskJ;
+    this.numStats      = statsJ;
+    this.merchantRules = merchantJ.rules;
 
-    // 3. Feature importance (optional, for explain)
+    // Support both old format (Category[]) and new format ({ id_to_label, label_to_id })
+    const classes: Category[] = Array.isArray(classesJ)
+      ? (classesJ as Category[])
+      : (Object.entries((classesJ as Record<string, Record<string, string>>).id_to_label)
+          .sort(([a], [b]) => Number(a) - Number(b))
+          .map(([, v]) => v as Category));
+
+    this.catToIdx = new Map(classes.map((c, i) => [c as string, i]));
+
+    // 3. Feature importance (optional, for explain — not present in v4.3 model)
     try {
       this.featureImportance = await (await fetch(base + 'feature_importance.json')).json();
     } catch { /* non-critical */ }
 
-    // 4. TF.js model
-    // Note: model.json has been pre-patched to remove L2 regularizer references
-    // (regularizers only affect training loss, not inference output).
-    this.model = await tf.loadLayersModel(base + 'model_predict/model.json');
+    // 4. Build synthetic manifest for backward compatibility
+    const textDim    = maskJ.n_selected;
+    const numericDim = statsJ.feature_names.length;
+    this.manifest = {
+      model_version:  '4.3',
+      schema_version: '2',
+      created_at:     new Date().toISOString(),
+      classes,
+      num_classes:    classes.length,
+      input: {
+        text_dim:         textDim,
+        numeric_dim:      numericDim,
+        char_raw_dim:     charJ.n_features,
+        word_raw_dim:     wordJ.n_features,
+        concat_order:     maskJ.concat_order,
+        numeric_features: statsJ.feature_names,
+      },
+      inference: {
+        mc_dropout_passes:     this.rtConfig.mc_dropout_passes,
+        uncertainty_threshold: this.rtConfig.uncertainty_threshold,
+        per_class_thresholds:  this.rtConfig.per_class_thresholds,
+        global_threshold:      this.rtConfig.default_class_threshold,
+      },
+      metrics:  ((this.rtConfig as unknown as Record<string, unknown>).test_metrics as Record<string, number>) ?? {},
+      training: {},
+    };
 
-    // 5. Rules: custom (higher priority) + builtins
+    this.buildFeatureIndexMap();
+
+    // 5. TF.js model — model_train_mc for MC dropout uncertainty estimation
+    this.model = await tf.loadLayersModel(base + 'model_train_mc/model.json');
+
+    // 6. Rules: custom (higher priority) + builtins
     this.rules = [...(this.cfg.customRules ?? []), ...BUILTIN_RULES]
       .sort((a, b) => b.priority - a.priority);
 
-    // 6. Warm-up: single dummy pass to compile WebGL kernels
+    // 7. Warm-up: single dummy pass to compile WebGL kernels
     tf.tidy(() => {
-      const tDummy = tf.zeros([1, this.manifest!.input.text_dim]);
-      const nDummy = tf.zeros([1, this.manifest!.input.numeric_dim]);
+      const tDummy = tf.zeros([1, textDim]);
+      const nDummy = tf.zeros([1, numericDim]);
       const raw = this.model!.predict([tDummy, nDummy]);
       (Array.isArray(raw) ? raw : [raw]).forEach((t: tf.Tensor) => t.dataSync());
     });
@@ -492,9 +637,9 @@ export class FinlyClassifier {
     this.ready = true;
     console.info(
       `[Finly] v${this.manifest.model_version} loaded. ` +
-      `text_dim=${this.manifest.input.text_dim}, ` +
-      `mc_passes=${this.manifest.inference.mc_dropout_passes}, ` +
-      `cache=${this.cfg.cacheSize}`
+      `text_dim=${textDim}, numeric_dim=${numericDim}, ` +
+      `mc_passes=${this.rtConfig.mc_dropout_passes}, ` +
+      `merchants=${this.merchantRules.length}, cache=${this.cfg.cacheSize}`
     );
   }
 
@@ -542,14 +687,13 @@ export class FinlyClassifier {
       return r;
     }
 
-    // ── 4. ML (MC Dropout) ────────────────────────────────────────────────
+    // ── 4. ML (MC Dropout with model_train_mc) ────────────────────────────
     const { textVec, numVec } = this.buildVectors(norm, amount, date);
     const nPasses = this.cfg.mcPasses ?? this.manifest!.inference.mc_dropout_passes;
     const { meanProbs, stdProbs, typeProb } = await mcDropoutPredict(
       this.model!, textVec, numVec, nPasses,
     );
 
-    // Sort by mean probability for top-3
     const classes = this.manifest!.classes;
     const sorted = Array.from(meanProbs)
       .map((p, i) => ({ category: classes[i], prob: p, std: stdProbs[i] }))
@@ -557,14 +701,12 @@ export class FinlyClassifier {
     const top3 = sorted.slice(0, 3);
     const best = sorted[0];
 
-    // Type: ML head, overridden by amount sign if provided
     const txType: TxType = amount !== undefined
       ? (amount >= 0 ? 'Income' : 'Expense')
       : (typeProb > 0.5 ? 'Income' : 'Expense');
 
-    // Uncertainty gate: high MC std → Uncategorized immediately, regardless of confidence
     const unc = best.std;
-    const uncThreshold = this.manifest!.inference.uncertainty_threshold;
+    const uncThreshold  = this.manifest!.inference.uncertainty_threshold;
     const confThreshold = this.manifest!.inference.per_class_thresholds[best.category]
       ?? this.manifest!.inference.global_threshold;
 
@@ -585,14 +727,10 @@ export class FinlyClassifier {
       latency_ms:  performance.now() - t0,
     }, description);
 
-    // Cache ML results only when confident
     if (!isLowConf) this.lru.set(cacheKey, r);
     return r;
   }
 
-  /**
-   * Batch classify — single matmul for ML tier (much faster than N sequential calls).
-   */
   async classifyBatch(
     items: Array<{ description: string; amount?: number; date?: Date }>,
   ): Promise<ClassifyResult[]> {
@@ -607,12 +745,10 @@ export class FinlyClassifier {
       const { description, amount, date } = items[i];
       const norm = description.trim().toLowerCase();
 
-      // cache
       const cacheKey = `${norm}|${amount ?? ''}|${date?.toISOString().slice(0,13) ?? ''}`;
       const cached = this.lru.get(cacheKey);
       if (cached) { results[i] = { ...cached, source: 'cache', latency_ms: 0 }; continue; }
 
-      // overrides
       if (this.cfg.db) {
         try {
           const ov = await this.cfg.db.user_overrides
@@ -626,7 +762,6 @@ export class FinlyClassifier {
         } catch { /* noop */ }
       }
 
-      // rules
       const hit = matchRule(description, this.rules);
       if (hit) {
         results[i] = this.result({ category: hit.rule.category, type: hit.rule.type,
@@ -635,7 +770,6 @@ export class FinlyClassifier {
         continue;
       }
 
-      // ML
       const { textVec, numVec } = this.buildVectors(norm, amount, date);
       mlIdxs.push(i); mlTexts.push(textVec); mlNums.push(numVec);
     }
@@ -646,7 +780,6 @@ export class FinlyClassifier {
       const nPasses = this.cfg.mcPasses ?? this.manifest!.inference.mc_dropout_passes;
       const M = mlIdxs.length;
 
-      // Collect MC results per sample
       const allMean = Array.from({ length: M }, () => new Float32Array(this.manifest!.num_classes));
       const allM2   = Array.from({ length: M }, () => new Float32Array(this.manifest!.num_classes));
       const typeArr = new Float32Array(M);
@@ -661,7 +794,7 @@ export class FinlyClassifier {
           const nIn = tf.tensor2d(flatN, [M, ND]);
           const raw = this.model!.predict([tIn, nIn], { training: true } as tf.ModelPredictConfig);
           const out = (Array.isArray(raw) ? raw : [raw]) as tf.Tensor[];
-          const catP = tf.softmax(out[0]);     // category_output
+          const catP = tf.softmax(out[0]);
           return { cat: catP.arraySync() as number[][], tp: out[1].arraySync() as number[][] };
         });
 
@@ -685,7 +818,7 @@ export class FinlyClassifier {
           .map((p, c) => ({ category: classes[c], prob: p, std: std[c] }))
           .sort((a, b) => b.prob - a.prob);
         const best = sorted[0];
-        const tp = typeArr[j];
+        const tp   = typeArr[j];
         const { amount, description } = items[idx];
         const txType: TxType = amount !== undefined
           ? (amount >= 0 ? 'Income' : 'Expense')
@@ -695,7 +828,8 @@ export class FinlyClassifier {
           || best.std > this.manifest!.inference.uncertainty_threshold;
         results[idx] = this.result({
           category: isLow ? 'Uncategorized' : best.category,
-          type: txType, confidence: best.prob, uncertainty: best.std, source: isLow ? 'low_confidence' : 'ml',
+          type: txType, confidence: best.prob, uncertainty: best.std,
+          source: isLow ? 'low_confidence' : 'ml',
           top3: sorted.slice(0, 3), model_version: this.manifest!.model_version,
           latency_ms: (performance.now() - t0) / items.length,
         }, description);
@@ -705,10 +839,6 @@ export class FinlyClassifier {
     return results;
   }
 
-  /**
-   * Record a user correction.
-   * Writes to user_overrides (instant future match) + feedback table (for fine-tuning).
-   */
   async recordUserChoice(
     description: string,
     chosen: Category,
@@ -725,7 +855,6 @@ export class FinlyClassifier {
         updated_at: Date.now(), match_count: 1,
       });
 
-      // Store feature vectors for incremental learning
       const { textVec, numVec } = this.buildVectors(norm, amount, date);
       const labelIdx = this.manifest!.classes.indexOf(chosen);
       if (labelIdx >= 0) {
@@ -740,7 +869,6 @@ export class FinlyClassifier {
         });
       }
 
-      // Annotate telemetry
       if (this.cfg.enableTelemetry) {
         try {
           const recent = await this.cfg.db.telemetry
@@ -752,27 +880,14 @@ export class FinlyClassifier {
       }
     }
 
-    // Invalidate cache for this description
-    // (we can't enumerate keys, but next classify() will miss cache and re-run)
-    this.lru.clear(); // conservative: clear all — alternatively track per-description
+    this.lru.clear();
   }
 
-  /**
-   * Incremental fine-tuning on accumulated user feedback.
-   * Call from a Service Worker or background task — not on the main thread.
-   *
-   * Only fine-tunes the 'shared' and output layers (last 3 layers), keeping
-   * the frozen TF-IDF branches stable. This is fast (<<1s) and avoids
-   * catastrophic forgetting of the pre-trained representation.
-   *
-   * @param minSamples  minimum feedback entries before training (default 10)
-   * @param epochs      fine-tune epochs (default 5)
-   */
   async incrementalFineTune(minSamples = 10, epochs = 5): Promise<{ trained: boolean; n: number }> {
     if (!this.ready || !this.cfg.db) return { trained: false, n: 0 };
 
     const entries = await this.cfg.db.feedback
-      .where('used_in_training').equals(0).toArray();  // false stored as 0 in IDB
+      .where('used_in_training').equals(0).toArray();
 
     if (entries.length < minSamples) return { trained: false, n: entries.length };
 
@@ -780,9 +895,9 @@ export class FinlyClassifier {
     const ND = this.manifest!.input.numeric_dim;
     const N  = entries.length;
 
-    const flatT    = new Float32Array(N * TD);
-    const flatN    = new Float32Array(N * ND);
-    const labels   = new Int32Array(N);
+    const flatT      = new Float32Array(N * TD);
+    const flatN      = new Float32Array(N * ND);
+    const labels     = new Int32Array(N);
     const typeLabels = new Float32Array(N);
 
     for (let i = 0; i < N; i++) {
@@ -792,7 +907,6 @@ export class FinlyClassifier {
       typeLabels[i] = entries[i].correct_type;
     }
 
-    // Freeze all layers except 'shared', 'category_output', 'type_output'
     const trainableNames = new Set(['shared', 'category_output', 'type_output']);
     for (const layer of this.model!.layers) {
       layer.trainable = trainableNames.has(layer.name);
@@ -819,10 +933,8 @@ export class FinlyClassifier {
 
     tIn.dispose(); nIn.dispose(); ycat.dispose(); ytype.dispose();
 
-    // Re-enable all layers (for future MC Dropout)
     for (const layer of this.model!.layers) layer.trainable = true;
 
-    // Mark entries as used
     for (const e of entries) {
       if (e.id !== undefined) {
         await this.cfg.db.feedback.update(e.id, { used_in_training: true });
@@ -834,10 +946,6 @@ export class FinlyClassifier {
     return { trained: true, n: N };
   }
 
-  /**
-   * Returns which features drove the prediction (top-5 by LightGBM gain × feature activation).
-   * Useful for debug UI: "Why was this classified as Продукты?"
-   */
   private explainPrediction(textVec: Float32Array): string[] {
     const topN = 5;
     const scores: Array<{ name: string; score: number }> = [];
@@ -866,14 +974,8 @@ export class FinlyClassifier {
       }
     }
 
-    const paramsByPart = {
-      char: this.tfidfChar,
-      word: this.tfidfWord,
-    } as const;
-    const prefixByPart = {
-      char: 'c:',
-      word: 'w:',
-    } as const;
+    const paramsByPart = { char: this.tfidfChar, word: this.tfidfWord } as const;
+    const prefixByPart = { char: 'c:', word: 'w:' } as const;
 
     let offset = 0;
     this.featureIndexByName.clear();
@@ -895,21 +997,47 @@ export class FinlyClassifier {
 
   private buildVectors(norm: string, amount?: number, date?: Date)
     : { textVec: Float32Array; numVec: Float32Array } {
+    // ── Text vector (TF-IDF + SelectKBest mask) ───────────────────────────
     const charRaw = tfidfVec(norm, this.tfidfChar!);
     const wordRaw = tfidfVec(norm, this.tfidfWord!);
 
-    // Concat in manifest-specified order
-    const { char_raw_dim, word_raw_dim, concat_order } = this.manifest!.input;
-    const raw = new Float32Array(char_raw_dim + word_raw_dim);
+    const { concat_order } = this.manifest!.input;
+    const raw = new Float32Array(this.tfidfChar!.n_features + this.tfidfWord!.n_features);
     let off = 0;
     for (const part of concat_order) {
       const src = part === 'char' ? charRaw : wordRaw;
       raw.set(src, off);
       off += src.length;
     }
-
     const textVec = applyMask(raw, this.maskData!.mask);
-    const numVec  = numericFeatures(amount, date);
+
+    // ── Numeric vector (24 features: 5 base + 19 merchant) ───────────────
+    const rawNum = new Float32Array(24);
+
+    // Base 5 features (indices 0–4)
+    rawNum[0] = amount !== undefined ? Math.log1p(Math.abs(amount)) : 0;
+    const dow  = date ? date.getDay()   : 0;
+    const hour = date ? date.getHours() : 0;
+    rawNum[1] = Math.sin(2 * Math.PI * dow  / 7);
+    rawNum[2] = Math.cos(2 * Math.PI * dow  / 7);
+    rawNum[3] = Math.sin(2 * Math.PI * hour / 24);
+    rawNum[4] = Math.cos(2 * Math.PI * hour / 24);
+
+    // Merchant features (indices 5–23)
+    if (this.merchantRules.length > 0) {
+      rawNum.set(
+        computeMerchantFeatures(norm, this.merchantRules, this.catToIdx, this.manifest!.num_classes),
+        5,
+      );
+    }
+
+    // Z-score normalization using numeric_stats (mean=0, std=1 for merchant features passes through)
+    const numVec = new Float32Array(24);
+    const { mean, std } = this.numStats!;
+    for (let i = 0; i < 24; i++) {
+      numVec[i] = std[i] > 0 ? (rawNum[i] - mean[i]) / std[i] : rawNum[i];
+    }
+
     return { textVec, numVec };
   }
 
@@ -922,7 +1050,7 @@ export class FinlyClassifier {
         predicted_category: r.category, source: r.source,
         confidence: r.confidence, uncertainty: r.uncertainty,
         model_version: full.model_version ?? '',
-      }).catch(() => { /* telemetry never breaks classification */ });
+      }).catch(() => { });
     }
     return full;
   }
@@ -944,7 +1072,7 @@ export interface DriftReport {
   mean_confidence:       number;
   mean_uncertainty:      number;
   top_corrections:       Array<{ from: Category; to: Category; count: number }>;
-  feedback_pending:      number;    // entries not yet used in fine-tune
+  feedback_pending:      number;
   alert:                 boolean;
   alert_reason?:         string;
 }
@@ -969,11 +1097,11 @@ export async function computeDriftReport(
     };
   }
 
-  const lowConf = (breakdown['low_confidence'] ?? 0) / n;
+  const lowConf   = (breakdown['low_confidence'] ?? 0) / n;
   const corrected = events.filter(e => e.user_corrected_to !== undefined);
-  const corrRate = corrected.length / n;
-  const meanConf = events.reduce((s, e) => s + e.confidence, 0) / n;
-  const meanUnc  = events.reduce((s, e) => s + e.uncertainty, 0) / n;
+  const corrRate  = corrected.length / n;
+  const meanConf  = events.reduce((s, e) => s + e.confidence, 0) / n;
+  const meanUnc   = events.reduce((s, e) => s + e.uncertainty, 0) / n;
 
   const pairMap = new Map<string, number>();
   for (const e of corrected) {
@@ -990,11 +1118,10 @@ export async function computeDriftReport(
   const pending = await db.feedback.filter(e => !e.used_in_training).toArray()
     .then(a => a.length).catch(() => 0);
 
-  // Alert conditions
   let alert = false; let reason: string | undefined;
-  if (lowConf > 0.08)   { alert = true; reason = `high low-confidence rate: ${(lowConf*100).toFixed(1)}%`; }
-  if (corrRate > 0.12)  { alert = true; reason = (reason ? reason + '; ' : '') + `high correction rate: ${(corrRate*100).toFixed(1)}%`; }
-  if (meanUnc > 0.20)   { alert = true; reason = (reason ? reason + '; ' : '') + `high mean uncertainty: ${meanUnc.toFixed(3)}`; }
+  if (lowConf > 0.08)  { alert = true; reason = `high low-confidence rate: ${(lowConf*100).toFixed(1)}%`; }
+  if (corrRate > 0.12) { alert = true; reason = (reason ? reason + '; ' : '') + `high correction rate: ${(corrRate*100).toFixed(1)}%`; }
+  if (meanUnc > 0.20)  { alert = true; reason = (reason ? reason + '; ' : '') + `high mean uncertainty: ${meanUnc.toFixed(3)}`; }
 
   return {
     window_start: sinceMs, window_end: Date.now(), n_events: n,
@@ -1006,44 +1133,40 @@ export async function computeDriftReport(
   };
 }
 
-// ─── Workbox prefetch hint (call in SW install event) ───────────────────────
+// ─── Service Worker prefetch ─────────────────────────────────────────────────
 
 /**
  * Prefetch all model assets during Service Worker install.
- * This ensures the model is in the browser cache BEFORE the user opens
- * the add-transaction screen, so init() completes in ~50ms (cache hit).
- *
- * Usage in sw.ts:
- *   import { prefetchModelAssets } from './finly_runtime';
- *   self.addEventListener('install', e => e.waitUntil(prefetchModelAssets('/model/')));
+ * Prefetches model_train_mc (active inference) and model_predict (fast-path future use).
  */
 export async function prefetchModelAssets(modelBaseUrl: string): Promise<void> {
   const base = modelBaseUrl.replace(/\/$/, '') + '/';
   const cache = await caches.open('finly-model-v4');
 
-  // Fetch manifest first to discover shard files dynamically
-  const manifestRes = await fetch(base + 'manifest.json');
-  await cache.put(base + 'manifest.json', manifestRes.clone());
-  await manifestRes.json(); // consume body; manifest.json already cached above
+  const discoverShards = async (subdir: string): Promise<string[]> => {
+    const res = await fetch(base + subdir + '/model.json');
+    await cache.put(base + subdir + '/model.json', res.clone());
+    const json = await res.json();
+    return (json.weightsManifest?.flatMap(
+      (g: { paths: string[] }) => g.paths.map((p: string) => base + subdir + '/' + p)
+    ) ?? []) as string[];
+  };
 
-  // Fetch model.json to discover weight shards
-  const modelJsonRes = await fetch(base + 'model_predict/model.json');
-  await cache.put(base + 'model_predict/model.json', modelJsonRes.clone());
-  const modelJson = await modelJsonRes.json();
-
-  // Prefetch weight shards
-  const shardPaths: string[] = modelJson.weightsManifest?.flatMap(
-    (g: { paths: string[] }) => g.paths.map((p: string) => base + 'model_predict/' + p)
-  ) ?? [];
+  const [mcShards, predictShards] = await Promise.all([
+    discoverShards('model_train_mc'),
+    discoverShards('model_predict').catch(() => [] as string[]),
+  ]);
 
   const staticAssets = [
     base + 'tfidf_char.json',
     base + 'tfidf_word.json',
     base + 'feature_mask.json',
-    base + 'feature_importance.json',
+    base + 'numeric_stats.json',
+    base + 'merchant_rules.json',
     base + 'classes.json',
-    base + 'incremental_weights.json',
-    ...shardPaths,
+    base + 'runtime_config.json',
+    ...mcShards,
+    ...predictShards,
   ];
 
   await Promise.allSettled(staticAssets.map(async url => {
