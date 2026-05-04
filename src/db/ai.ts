@@ -165,6 +165,8 @@ function convertRuNumeralsToDigits(text: string): string {
  */
 export function parseNaturalLanguage(text: string): ParsedTransaction | null {
   text = convertRuNumeralsToDigits(text);
+  // Нормализуем числа с пробелами как разделителями тысяч: "5 000 000" → "5000000"
+  text = text.replace(/\b(\d{1,3})(?:\s(\d{3}))+\b/g, (match) => match.replace(/\s/g, ''));
   // Паттерны для извлечения суммы (от специфичного к общему)
   const amountPatterns = [
     /(\d+(?:[.,]\d+)?)\s*(?:рублей|рубля|рублю|руб\.?|р\.?(?=\s|$)|₽|rub|r(?=\s|$)|usd|\$|eur|€)/i,
