@@ -1,0 +1,54 @@
+<h2>В каком направлении прокачать AI?</h2>
+<p class="subtitle">Выбери одно или несколько — начнём с самого важного</p>
+
+<div class="options" data-multiselect>
+  <div class="option" data-choice="llm" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>🧠 Подключить LLM (Claude / GPT)</h3>
+      <p>Настоящий разговорный AI вместо шаблонных ответов. Ответы на любые финансовые вопросы, объяснения трат, советы. Требует API-ключ.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="ml" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>📈 Прокачать ML-классификатор</h3>
+      <p>Больше категорий, лучше точность. Добавить обучение на реальных данных пользователя, улучшить self-learning pipeline, добавить мерчант-распознавание.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="proactive" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>🔔 Проактивный AI (предсказания и алерты)</h3>
+      <p>Предсказывать траты до конца месяца, предупреждать о превышении бюджета заранее, находить аномалии, напоминать о регулярных платежах.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="ocr" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content">
+      <h3>📷 Распознавание чеков (OCR)</h3>
+      <p>Сфотографировал чек — AI сам разобрал сумму, дату, магазин и категорию. Работает на устройстве или через API.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="forecast" onclick="toggleSelect(this)">
+    <div class="letter">E</div>
+    <div class="content">
+      <h3>📊 Финансовое прогнозирование</h3>
+      <p>Предсказание трат на следующий месяц, анализ сезонности, прогноз достижения целей с учётом динамики расходов.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="voice" onclick="toggleSelect(this)">
+    <div class="letter">F</div>
+    <div class="content">
+      <h3>🎤 Умный голосовой ввод</h3>
+      <p>Понимать сложные фразы ("записать как позавчера", "раздели на двоих"), поддержка контекста между фразами.</p>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:1.5rem">Можно выбрать несколько. Затем ответь в терминале.</p>
