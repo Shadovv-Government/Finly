@@ -530,8 +530,10 @@ export interface ClassifierConfig {
 }
 
 export class FinlyClassifier {
-  // Inference model — model_train_mc enables MC Dropout via training=true
-  private model:       tf.LayersModel | null = null;
+  // Fast-path model: single forward pass, Dropout frozen (inference mode)
+  private modelPredict: tf.LayersModel | null = null;
+  // MC Dropout model: N passes with training=true → epistemic uncertainty
+  private modelMc:      tf.LayersModel | null = null;
   // Synthetic manifest (backward compat with tests that read classifier.manifest)
   private manifest:    Manifest | null = null;
   private tfidfChar:   TfidfParams | null = null;
@@ -619,20 +621,27 @@ export class FinlyClassifier {
 
     this.buildFeatureIndexMap();
 
-    // 5. TF.js model — model_train_mc for MC dropout uncertainty estimation
-    this.model = await tf.loadLayersModel(base + 'model_train_mc/model.json');
+    // 5. TF.js models — load both in parallel
+    //    model_predict : fast single-pass classification (main inference path)
+    //    model_train_mc: MC Dropout uncertainty estimation (fallback for uncertain cases)
+    [this.modelPredict, this.modelMc] = await Promise.all([
+      tf.loadLayersModel(base + 'model_predict/model.json'),
+      tf.loadLayersModel(base + 'model_train_mc/model.json'),
+    ]);
 
     // 6. Rules: custom (higher priority) + builtins
     this.rules = [...(this.cfg.customRules ?? []), ...BUILTIN_RULES]
       .sort((a, b) => b.priority - a.priority);
 
-    // 7. Warm-up: single dummy pass to compile WebGL kernels
-    tf.tidy(() => {
-      const tDummy = tf.zeros([1, textDim]);
-      const nDummy = tf.zeros([1, numericDim]);
-      const raw = this.model!.predict([tDummy, nDummy]);
+    // 7. Warm-up: dummy pass through both models to compile WebGL kernels
+    const warmup = (m: tf.LayersModel) => tf.tidy(() => {
+      const tD = tf.zeros([1, textDim]);
+      const nD = tf.zeros([1, numericDim]);
+      const raw = m.predict([tD, nD]);
       (Array.isArray(raw) ? raw : [raw]).forEach((t: tf.Tensor) => t.dataSync());
     });
+    warmup(this.modelPredict!);
+    warmup(this.modelMc!);
 
     this.ready = true;
     console.info(
@@ -687,14 +696,51 @@ export class FinlyClassifier {
       return r;
     }
 
-    // ── 4. ML (MC Dropout with model_train_mc) ────────────────────────────
+    // ── 4. ML inference: fast path (model_predict) → MC fallback (model_train_mc) ──
     const { textVec, numVec } = this.buildVectors(norm, amount, date);
-    const nPasses = this.cfg.mcPasses ?? this.manifest!.inference.mc_dropout_passes;
-    const { meanProbs, stdProbs, typeProb } = await mcDropoutPredict(
-      this.model!, textVec, numVec, nPasses,
-    );
+    const classes       = this.manifest!.classes;
+    const uncThreshold  = this.manifest!.inference.uncertainty_threshold;
+    const marginThresh  = this.rtConfig!.margin_threshold;
 
-    const classes = this.manifest!.classes;
+    // Stage 1: single forward pass through model_predict (Dropout frozen, ~10ms)
+    const fastResult = tf.tidy(() => {
+      const tIn = tf.tensor2d(textVec, [1, textVec.length]);
+      const nIn = tf.tensor2d(numVec,  [1, numVec.length]);
+      const raw = this.modelPredict!.predict([tIn, nIn]) as tf.Tensor[];
+      const out = Array.isArray(raw) ? raw : [raw];
+      const probs = tf.softmax(out[0].squeeze([0])).dataSync() as Float32Array;
+      const tp    = out[1].squeeze([0]).dataSync()[0];
+      return { probs, typeProb: tp };
+    });
+
+    const fastSorted = Array.from(fastResult.probs)
+      .map((p, i) => ({ category: classes[i], prob: p, std: 0 }))
+      .sort((a, b) => b.prob - a.prob);
+    const fastBest   = fastSorted[0];
+    const fastMargin = fastBest.prob - fastSorted[1].prob;
+    const confThreshFast = this.manifest!.inference.per_class_thresholds[fastBest.category]
+      ?? this.manifest!.inference.global_threshold;
+
+    // Stage 2: MC Dropout only when fast-pass is not confident enough
+    const needsMC = fastBest.prob < confThreshFast || fastMargin < marginThresh;
+
+    let meanProbs: Float32Array;
+    let stdProbs:  Float32Array;
+    let typeProb:  number;
+
+    if (needsMC) {
+      // Run model_train_mc with training=true for epistemic uncertainty estimate
+      const nPasses = this.cfg.mcPasses ?? this.manifest!.inference.mc_dropout_passes;
+      ({ meanProbs, stdProbs, typeProb } = await mcDropoutPredict(
+        this.modelMc!, textVec, numVec, nPasses,
+      ));
+    } else {
+      // Confident: use fast-path result, uncertainty = 0
+      meanProbs = fastResult.probs;
+      stdProbs  = new Float32Array(classes.length);
+      typeProb  = fastResult.typeProb;
+    }
+
     const sorted = Array.from(meanProbs)
       .map((p, i) => ({ category: classes[i], prob: p, std: stdProbs[i] }))
       .sort((a, b) => b.prob - a.prob);
@@ -706,11 +752,10 @@ export class FinlyClassifier {
       : (typeProb > 0.5 ? 'Income' : 'Expense');
 
     const unc = best.std;
-    const uncThreshold  = this.manifest!.inference.uncertainty_threshold;
     const confThreshold = this.manifest!.inference.per_class_thresholds[best.category]
       ?? this.manifest!.inference.global_threshold;
 
-    const isLowConf = best.prob < confThreshold || unc > uncThreshold;
+    const isLowConf = best.prob < confThreshold || (needsMC && unc > uncThreshold);
 
     const explanation = this.featureImportance.length > 0
       ? this.explainPrediction(textVec) : undefined;
@@ -777,58 +822,50 @@ export class FinlyClassifier {
     if (mlIdxs.length > 0) {
       const TD = this.manifest!.input.text_dim;
       const ND = this.manifest!.input.numeric_dim;
-      const nPasses = this.cfg.mcPasses ?? this.manifest!.inference.mc_dropout_passes;
-      const M = mlIdxs.length;
+      const M  = mlIdxs.length;
 
-      const allMean = Array.from({ length: M }, () => new Float32Array(this.manifest!.num_classes));
-      const allM2   = Array.from({ length: M }, () => new Float32Array(this.manifest!.num_classes));
-      const typeArr = new Float32Array(M);
+      // Batch fast pass: single matmul through model_predict (training=false)
+      const flatT = new Float32Array(M * TD);
+      const flatN = new Float32Array(M * ND);
+      for (let j = 0; j < M; j++) { flatT.set(mlTexts[j], j*TD); flatN.set(mlNums[j], j*ND); }
 
-      for (let pass = 0; pass < nPasses; pass++) {
-        const flatT = new Float32Array(M * TD);
-        const flatN = new Float32Array(M * ND);
-        for (let j = 0; j < M; j++) { flatT.set(mlTexts[j], j*TD); flatN.set(mlNums[j], j*ND); }
+      const batchResult = tf.tidy(() => {
+        const tIn = tf.tensor2d(flatT, [M, TD]);
+        const nIn = tf.tensor2d(flatN, [M, ND]);
+        const raw = this.modelPredict!.predict([tIn, nIn]) as tf.Tensor[];
+        const out = Array.isArray(raw) ? raw : [raw];
+        const catP = tf.softmax(out[0]);
+        return {
+          cat: catP.arraySync() as number[][],
+          tp:  out[1].arraySync() as number[][],
+        };
+      });
 
-        const probs = tf.tidy(() => {
-          const tIn = tf.tensor2d(flatT, [M, TD]);
-          const nIn = tf.tensor2d(flatN, [M, ND]);
-          const raw = this.model!.predict([tIn, nIn], { training: true } as tf.ModelPredictConfig);
-          const out = (Array.isArray(raw) ? raw : [raw]) as tf.Tensor[];
-          const catP = tf.softmax(out[0]);
-          return { cat: catP.arraySync() as number[][], tp: out[1].arraySync() as number[][] };
-        });
+      const classes      = this.manifest!.classes;
+      const marginThresh = this.rtConfig!.margin_threshold;
 
-        for (let j = 0; j < M; j++) {
-          const C = probs.cat[j].length;
-          for (let c = 0; c < C; c++) {
-            const v = probs.cat[j][c];
-            allMean[j][c] += v / nPasses;
-            allM2[j][c]   += v * v / nPasses;
-          }
-          typeArr[j] += probs.tp[j][0] / nPasses;
-        }
-      }
-
-      const classes = this.manifest!.classes;
       for (let j = 0; j < M; j++) {
-        const idx = mlIdxs[j];
-        const mean = allMean[j];
-        const std  = allM2[j].map((m2, c) => Math.sqrt(Math.max(0, m2 - mean[c]**2)));
-        const sorted = Array.from(mean)
-          .map((p, c) => ({ category: classes[c], prob: p, std: std[c] }))
-          .sort((a, b) => b.prob - a.prob);
-        const best = sorted[0];
-        const tp   = typeArr[j];
+        const idx         = mlIdxs[j];
         const { amount, description } = items[idx];
+        const probs       = batchResult.cat[j];
+        const typeProb    = batchResult.tp[j][0];
+
+        const sorted = probs
+          .map((p, c) => ({ category: classes[c], prob: p, std: 0 }))
+          .sort((a, b) => b.prob - a.prob);
+        const best   = sorted[0];
+        const margin = best.prob - sorted[1].prob;
+        const confThresh = this.manifest!.inference.per_class_thresholds[best.category]
+          ?? this.manifest!.inference.global_threshold;
+
         const txType: TxType = amount !== undefined
           ? (amount >= 0 ? 'Income' : 'Expense')
-          : (tp > 0.5 ? 'Income' : 'Expense');
-        const isLow = best.prob < (this.manifest!.inference.per_class_thresholds[best.category]
-          ?? this.manifest!.inference.global_threshold)
-          || best.std > this.manifest!.inference.uncertainty_threshold;
+          : (typeProb > 0.5 ? 'Income' : 'Expense');
+
+        const isLow = best.prob < confThresh || margin < marginThresh;
         results[idx] = this.result({
           category: isLow ? 'Uncategorized' : best.category,
-          type: txType, confidence: best.prob, uncertainty: best.std,
+          type: txType, confidence: best.prob, uncertainty: 0,
           source: isLow ? 'low_confidence' : 'ml',
           top3: sorted.slice(0, 3), model_version: this.manifest!.model_version,
           latency_ms: (performance.now() - t0) / items.length,
@@ -907,12 +944,13 @@ export class FinlyClassifier {
       typeLabels[i] = entries[i].correct_type;
     }
 
+    // Fine-tune modelMc (has Dropout layers, matches training architecture)
     const trainableNames = new Set(['shared', 'category_output', 'type_output']);
-    for (const layer of this.model!.layers) {
+    for (const layer of this.modelMc!.layers) {
       layer.trainable = trainableNames.has(layer.name);
     }
 
-    this.model!.compile({
+    this.modelMc!.compile({
       optimizer: tf.train.adam(1e-4),
       loss: {
         category_output: 'sparseCategoricalCrossentropy',
@@ -925,7 +963,7 @@ export class FinlyClassifier {
     const ycat  = tf.tensor1d(labels, 'int32');
     const ytype = tf.tensor2d(typeLabels, [N, 1]);
 
-    await this.model!.fit([tIn, nIn], { category_output: ycat, type_output: ytype }, {
+    await this.modelMc!.fit([tIn, nIn], { category_output: ycat, type_output: ytype }, {
       epochs,
       batchSize: Math.min(32, N),
       verbose: 0,
@@ -933,7 +971,7 @@ export class FinlyClassifier {
 
     tIn.dispose(); nIn.dispose(); ycat.dispose(); ytype.dispose();
 
-    for (const layer of this.model!.layers) layer.trainable = true;
+    for (const layer of this.modelMc!.layers) layer.trainable = true;
 
     for (const e of entries) {
       if (e.id !== undefined) {
