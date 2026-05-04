@@ -53,10 +53,20 @@ function TypingBubble() {
   );
 }
 
-function ChatBubble({ role, message }: { role: 'user' | 'assistant'; message: string }) {
+function ChatBubble({
+  role,
+  message,
+  suggestions,
+  onSuggestion,
+}: {
+  role: 'user' | 'assistant';
+  message: string;
+  suggestions?: string[];
+  onSuggestion?: (text: string) => void;
+}) {
   const isUser = role === 'user';
   return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+    <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
       <div
         className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap leading-relaxed ${
           isUser
@@ -66,6 +76,19 @@ function ChatBubble({ role, message }: { role: 'user' | 'assistant'; message: st
       >
         {message}
       </div>
+      {!isUser && suggestions && suggestions.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-2 max-w-[85%]">
+          {suggestions.map(s => (
+            <button
+              key={s}
+              onClick={() => onSuggestion?.(s)}
+              className="text-xs px-3 py-1.5 bg-muted rounded-full hover:bg-accent transition-colors"
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -187,7 +210,13 @@ export const AIAssistant = () => {
               <h2 className="font-bold text-sm mb-3">Чат</h2>
               <div className="space-y-2">
                 {chatHistory.map((chat, index) => (
-                  <ChatBubble key={index} role={chat.role} message={chat.message} />
+                  <ChatBubble
+                    key={index}
+                    role={chat.role}
+                    message={chat.message}
+                    suggestions={chat.suggestions}
+                    onSuggestion={sendMessage}
+                  />
                 ))}
                 {isTyping && <TypingBubble />}
               </div>
