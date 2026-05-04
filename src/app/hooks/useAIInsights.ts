@@ -17,6 +17,7 @@ export interface OverviewData {
 export interface ChatMessage {
   role: 'user' | 'assistant';
   message: string;
+  suggestions?: string[];
 }
 
 export interface AIInsightsData {
@@ -71,9 +72,9 @@ export function useAIInsights(): AIInsightsData {
     setChatHistory(prev => [...prev, { role: 'user', message: text }]);
     setIsTyping(true);
     try {
-      const { answer, newCtx } = await answerQuery(text, ctxRef.current);
+      const { answer, newCtx, suggestions } = await answerQuery(text, ctxRef.current);
       ctxRef.current = newCtx;
-      setChatHistory(prev => [...prev, { role: 'assistant', message: answer }]);
+      setChatHistory(prev => [...prev, { role: 'assistant', message: answer, suggestions }]);
     } finally {
       setIsTyping(false);
     }

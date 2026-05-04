@@ -310,4 +310,20 @@ describe('answerQuery — маршрутизация интентов', () => {
     expect(answer).toContain('Не понял');
     expect(answer).toContain('помощь');
   });
+
+  // ---- Suggestions --------------------------------------------------
+
+  it('suggestions: всегда возвращает непустой массив', async () => {
+    m.getBalanceByPeriod.mockResolvedValue(dummyBalance);
+    const { suggestions } = await answerQuery('баланс', CTX);
+    expect(suggestions).toBeInstanceOf(Array);
+    expect(suggestions.length).toBeGreaterThan(0);
+  });
+
+  it('suggestions: возвращает массив даже на fallback', async () => {
+    m.findCategoryByName.mockResolvedValue(null);
+    const { suggestions } = await answerQuery('абракадабра xyz', CTX);
+    expect(suggestions).toBeInstanceOf(Array);
+    expect(suggestions.length).toBeGreaterThan(0);
+  });
 });

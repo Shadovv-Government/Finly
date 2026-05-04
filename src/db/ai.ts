@@ -167,10 +167,12 @@ export function parseNaturalLanguage(text: string): ParsedTransaction | null {
   text = convertRuNumeralsToDigits(text);
   // Нормализуем числа с пробелами как разделителями тысяч: "5 000 000" → "5000000"
   text = text.replace(/\b(\d{1,3})(?:\s(\d{3}))+\b/g, (match) => match.replace(/\s/g, ''));
+  // Суффиксы масштаба: млрд / млн / тыс / k / к / m / b
+  const SCALE_RE = /млрд|миллиард(?:ов|а)?|b(?=\s|$)|млн|миллион(?:ов|а)?|m(?=\s|$)|тыс(?:яч(?:и|у)?)?|k|к/i;
   // Паттерны для извлечения суммы (от специфичного к общему)
   const amountPatterns = [
-    /(\d+(?:[.,]\d+)?)\s*(?:рублей|рубля|рублю|руб\.?|р\.?(?=\s|$)|₽|rub|r(?=\s|$)|usd|\$|eur|€)/i,
-    /(\d+(?:[.,]\d+)?)\s*(?:тыс(?:яч(?:и|у)?)?|k|к)/i,
+    new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*(?:${SCALE_RE.source})?\\s*(?:рублей|рубля|рублю|руб\\.?|р\\.?(?=\\s|$)|₽|rub|r(?=\\s|$)|usd|\\$|eur|€)`, 'i'),
+    new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*(?:${SCALE_RE.source})`, 'i'),
     /(\d+(?:[.,]\d+)?)/,
   ];
 
@@ -186,15 +188,20 @@ export function parseNaturalLanguage(text: string): ParsedTransaction | null {
       amount = parseFloat(match[1].replace(',', '.'));
       matchedPatternIdx = i;
 
-      // Проверяем масштаб (тысячи)
-      if (match[0].toLowerCase().includes('тыс') || match[0].toLowerCase().includes('k')) {
-        amount *= 1000;
+      // Проверяем масштаб
+      const lower = match[0].toLowerCase();
+      if (/млрд|миллиард|b(\s|$)/.test(lower)) {
+        amount *= 1_000_000_000;
+      } else if (/млн|миллион|m(\s|$)/.test(lower)) {
+        amount *= 1_000_000;
+      } else if (/тыс|k|к/.test(lower)) {
+        amount *= 1_000;
       }
 
       // Определяем валюту
-      if (match[0].toLowerCase().includes('usd') || match[0].includes('$')) {
+      if (lower.includes('usd') || match[0].includes('$')) {
         currency = 'USD';
-      } else if (match[0].toLowerCase().includes('eur') || match[0].includes('€')) {
+      } else if (lower.includes('eur') || match[0].includes('€')) {
         currency = 'EUR';
       }
 
