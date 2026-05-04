@@ -404,8 +404,8 @@ async function mcDropoutPredict(
       const nIn = tf.tensor2d(numVec,  [1, N]);
       const raw = model.predict([tIn, nIn], { training: true } as tf.ModelPredictConfig);
       const out = (Array.isArray(raw) ? raw : [raw]) as tf.Tensor[];
-      const catLogits = out[0].squeeze([0]);
-      const catProbs  = tf.softmax(catLogits);
+      // out[0] = category_probs: already has softmax activation from the model
+      const catProbs = out[0].squeeze([0]);
       const tp = out[1].squeeze([0]);
       return { probs: catProbs.dataSync() as Float32Array, tp: tp.dataSync()[0] };
     });
@@ -708,7 +708,8 @@ export class FinlyClassifier {
       const nIn = tf.tensor2d(numVec,  [1, numVec.length]);
       const raw = this.modelPredict!.predict([tIn, nIn]) as tf.Tensor[];
       const out = Array.isArray(raw) ? raw : [raw];
-      const probs = tf.softmax(out[0].squeeze([0])).dataSync() as Float32Array;
+      // out[0] = category_probs: already has softmax activation from the model
+      const probs = out[0].squeeze([0]).dataSync() as Float32Array;
       const tp    = out[1].squeeze([0]).dataSync()[0];
       return { probs, typeProb: tp };
     });
@@ -834,9 +835,9 @@ export class FinlyClassifier {
         const nIn = tf.tensor2d(flatN, [M, ND]);
         const raw = this.modelPredict!.predict([tIn, nIn]) as tf.Tensor[];
         const out = Array.isArray(raw) ? raw : [raw];
-        const catP = tf.softmax(out[0]);
+        // out[0] = category_probs: already has softmax activation from the model
         return {
-          cat: catP.arraySync() as number[][],
+          cat: out[0].arraySync() as number[][],
           tp:  out[1].arraySync() as number[][],
         };
       });
