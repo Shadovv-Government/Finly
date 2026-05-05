@@ -9,11 +9,12 @@ interface BootstrapAppOptions {
 }
 
 export async function bootstrapApp({ root, App, seedDatabase }: BootstrapAppOptions): Promise<void> {
-  await seedDatabase();
-
   root.render(
     <React.StrictMode>
       <App />
     </React.StrictMode>
   );
+  seedDatabase().catch((error) => {
+    console.error('[seed] failed:', error);
+  });
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { FinlyClassifier, type Category, type ClassifyResult } from '../../lib/classifier/finly_runtime';
+import type { FinlyClassifier as FinlyClassifierType, Category, ClassifyResult } from '../../lib/classifier/finly_runtime';
 import { createClassifierDB } from '../../lib/classifier/finly_db';
 
 export interface MLClassifyResult {
@@ -12,7 +12,7 @@ export interface MLClassifyResult {
 }
 
 // Module-level singleton — one classifier shared across all hook instances
-let sharedClassifier: FinlyClassifier | null = null;
+let sharedClassifier: FinlyClassifierType | null = null;
 let sharedInitPromise: Promise<void> | null = null;
 
 // Register SW message listener once at module load
@@ -46,18 +46,21 @@ async function requestFineTuneSync(): Promise<void> {
   } catch { /* not supported or SW not yet active */ }
 }
 
-async function getSharedClassifier(): Promise<FinlyClassifier | null> {
+async function getSharedClassifier(): Promise<FinlyClassifierType | null> {
   if (sharedClassifier?.isReady()) return sharedClassifier;
 
   if (!sharedInitPromise) {
-    const db = createClassifierDB();
-    sharedClassifier = new FinlyClassifier({
-      modelBaseUrl: '/model/',
-      db,
-      cacheSize: 500,
-      enableTelemetry: true,
-    });
-    sharedInitPromise = sharedClassifier.init().catch(e => {
+    sharedInitPromise = (async () => {
+      const db = createClassifierDB();
+      const { FinlyClassifier } = await import('../../lib/classifier/finly_runtime');
+      sharedClassifier = new FinlyClassifier({
+        modelBaseUrl: '/model/',
+        db,
+        cacheSize: 500,
+        enableTelemetry: true,
+      });
+      await sharedClassifier.init();
+    })().catch(e => {
       console.warn('[ML] init failed:', e);
       sharedClassifier = null;
       sharedInitPromise = null;
