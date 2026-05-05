@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Search, Filter, X, Calendar, ChevronDown } from 'lucide-react';
+import { Search, Filter, X, Calendar, ChevronDown, Wallet } from 'lucide-react';
 import { CategoryBadge } from '../components/CategoryBadge';
 import { AmountDisplay } from '../components/AmountDisplay';
 import { BottomSheet } from '../components/BottomSheet';
@@ -7,6 +7,8 @@ import { SwipeableRow } from '../components/SwipeableRow';
 import { useTransactions } from '../hooks/useTransactions';
 import { useCategories } from '../hooks/useCategories';
 import { Transaction, Category } from '../../db/types';
+import { formatDateInputValue, parseDateInputValue, formatAmountInput } from '../utils/formatCurrency';
+import { getLucideIcon } from '../utils/lucideIcons';
 
 const PAGE_SIZE = 50;
 
@@ -17,12 +19,13 @@ interface TransactionItemProps {
   category: Category | undefined;
   isLast: boolean;
   onDelete: () => void;
+  onEdit: () => void;
 }
 
-function TransactionItem({ transaction, category, isLast, onDelete }: TransactionItemProps) {
+function TransactionItem({ transaction, category, isLast, onDelete, onEdit }: TransactionItemProps) {
   const time = new Date(transaction.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
   return (
-    <SwipeableRow onDelete={onDelete}>
+    <SwipeableRow onDelete={onDelete} onEdit={onEdit}>
       <div className={`flex items-center gap-3 p-4 bg-card ${isLast ? '' : 'border-b border-border'}`}>
         <CategoryBadge categoryId={transaction.categoryId as string | undefined} size="md" />
         <div className="flex-1 min-w-0">
@@ -37,6 +40,173 @@ function TransactionItem({ transaction, category, isLast, onDelete }: Transactio
         </div>
       </div>
     </SwipeableRow>
+  );
+}
+
+// ==================== EditTransactionSheet ====================
+
+interface EditTransactionSheetProps {
+  transaction: Transaction | null;
+  categories: Category[];
+  onClose: () => void;
+  onSave: (id: number, updates: Partial<Transaction>) => Promise<void>;
+}
+
+function CategoryIcon({ name, className, color }: { name: string; className?: string; color?: string }) {
+  const Icon = getLucideIcon(name, Wallet);
+  return <Icon className={className} style={{ color }} />;
+}
+
+function parseRuAmount(v: string): number {
+  const s = v.replace(/\s/g, '');
+  if (!s) return 0;
+  // comma = decimal separator → dots are thousands separators
+  if (s.includes(',')) return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
+  // dot followed by exactly 3 digits = thousands separator (Russian "4.000")
+  const dotIdx = s.lastIndexOf('.');
+  if (dotIdx !== -1 && s.length - dotIdx - 1 === 3) return parseFloat(s.replace(/\./g, '')) || 0;
+  return parseFloat(s) || 0;
+}
+
+function EditTransactionSheet({ transaction, categories, onClose, onSave }: EditTransactionSheetProps) {
+  const [type, setType] = useState<'income' | 'expense'>(transaction?.type ?? 'expense');
+  const [amount, setAmount] = useState(transaction ? String(transaction.amount) : '');
+  const [categoryId, setCategoryId] = useState(transaction?.categoryId ?? '');
+  const [date, setDate] = useState<Date>(transaction ? new Date(transaction.date) : new Date());
+  const [comment, setComment] = useState(transaction?.comment ?? '');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!transaction) return;
+    setType(transaction.type);
+    setAmount(String(transaction.amount));
+    setCategoryId(transaction.categoryId ?? '');
+    setDate(new Date(transaction.date));
+    setComment(transaction.comment ?? '');
+  }, [transaction?.id]);
+
+  const filteredCategories = useMemo(
+    () => categories.filter(c => c.type === type),
+    [categories, type],
+  );
+
+  const handleTypeChange = (newType: 'income' | 'expense') => {
+    setType(newType);
+    setCategoryId('');
+  };
+
+  const handleSave = async () => {
+    if (!transaction?.id || !amount || !categoryId) return;
+    setSaving(true);
+    try {
+      await onSave(transaction.id, {
+        type,
+        amount: parseRuAmount(amount),
+        categoryId,
+        date: date.getTime(),
+        comment: comment.trim() || undefined,
+      });
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <BottomSheet isOpen={!!transaction} onClose={onClose} title="Редактировать" side="top">
+      <div className="flex flex-col pb-4">
+        {/* Тип */}
+        <div className="px-4 py-4">
+          <div className="flex gap-2 p-1 bg-muted rounded-xl">
+            {(['expense', 'income'] as const).map(t => (
+              <button
+                key={t}
+                onClick={() => handleTypeChange(t)}
+                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                  type === t
+                    ? 'bg-white dark:bg-card shadow-sm text-violet-600 dark:text-violet-400'
+                    : 'text-muted-foreground'
+                }`}
+              >
+                {t === 'expense' ? 'Расход' : 'Доход'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Сумма и дата */}
+        <div className="px-4 pb-4 flex gap-3">
+          <div className="flex-1 flex items-center gap-3 p-3 bg-muted rounded-xl">
+            <span className="text-muted-foreground text-sm">₽</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder="0"
+              value={formatAmountInput(amount)}
+              onChange={e => setAmount(e.target.value.replace(/\s/g, ''))}
+              className="flex-1 bg-transparent focus-visible:outline-none text-sm font-medium"
+            />
+          </div>
+          <div className="flex items-center gap-2 p-3 bg-muted rounded-xl">
+            <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            <input
+              type="date"
+              value={formatDateInputValue(date)}
+              onChange={e => setDate(parseDateInputValue(e.target.value))}
+              className="bg-transparent focus-visible:outline-none text-sm"
+            />
+          </div>
+        </div>
+
+        {/* Категории */}
+        <div className="px-4 pb-4">
+          <label className="text-sm font-medium mb-3 block">Категория</label>
+          <div className="grid grid-cols-3 gap-2 max-h-44 overflow-y-auto">
+            {filteredCategories.map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => setCategoryId(cat.id)}
+                className={`flex flex-col items-center gap-1.5 p-3 rounded-xl text-xs font-medium transition-all ${
+                  categoryId === cat.id
+                    ? 'bg-violet-100 dark:bg-violet-950 ring-2 ring-violet-600'
+                    : 'bg-muted hover:bg-accent'
+                }`}
+              >
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: cat.color + '22' }}>
+                  <CategoryIcon name={cat.icon} className="w-4 h-4" color={cat.color} />
+                </div>
+                <span className="truncate w-full text-center">{cat.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Комментарий */}
+        <div className="px-4 pb-4">
+          <input
+            type="text"
+            placeholder="Комментарий (необязательно)"
+            value={comment}
+            onChange={e => setComment(e.target.value)}
+            className="w-full px-4 py-3 bg-muted rounded-xl text-sm outline-none focus:ring-2 focus:ring-violet-600"
+          />
+        </div>
+
+        {/* Кнопки */}
+        <div className="px-4 pb-[calc(1rem+env(safe-area-inset-bottom)+4rem)] flex gap-3">
+          <button onClick={onClose} className="flex-1 py-3 bg-muted rounded-xl font-medium text-sm">
+            Отмена
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={!amount || !categoryId || saving}
+            className="flex-[2] py-3 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-xl font-semibold text-sm disabled:opacity-50"
+          >
+            Сохранить
+          </button>
+        </div>
+      </div>
+    </BottomSheet>
   );
 }
 
@@ -171,8 +341,9 @@ function TransactionFilters({
 // ==================== TransactionHistory ====================
 
 export const TransactionHistory = () => {
-  const { transactions, remove } = useTransactions();
+  const { transactions, remove, update } = useTransactions();
   const { categories } = useCategories();
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -352,6 +523,7 @@ export const TransactionHistory = () => {
                         category={categories.find(c => c.id === transaction.categoryId)}
                         isLast={index === dayTransactions.length - 1}
                         onDelete={() => transaction.id !== undefined && remove(transaction.id)}
+                        onEdit={() => setEditingTransaction(transaction)}
                       />
                     ))}
                   </div>
@@ -405,6 +577,13 @@ export const TransactionHistory = () => {
         setDateTo={setDateTo}
         filterCategories={filterCategories}
         onClearAll={clearAllFilters}
+      />
+
+      <EditTransactionSheet
+        transaction={editingTransaction}
+        categories={categories}
+        onClose={() => setEditingTransaction(null)}
+        onSave={async (id, updates) => { await update(id, updates); }}
       />
     </div>
   );

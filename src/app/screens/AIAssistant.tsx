@@ -119,63 +119,57 @@ export const AIAssistant = () => {
   return (
     <div className="pb-20 bg-background min-h-screen flex flex-col">
       {/* Header */}
-      <div className="px-4 py-4 bg-card border-b border-border">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-violet-100 dark:bg-violet-950 flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-violet-600 dark:text-violet-400" />
-          </div>
+      <div className="px-4 pt-6 pb-4 bg-gradient-to-br from-violet-600 to-indigo-700 text-white">
+        <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-lg font-bold leading-tight">AI Ассистент</h1>
-            <p className="text-xs text-muted-foreground">Умный анализ финансов</p>
+            <p className="text-sm opacity-90">Умный анализ финансов</p>
+            <h1 className="text-xl font-bold">AI Ассистент</h1>
+          </div>
+          <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+            <Sparkles className="w-5 h-5" />
           </div>
         </div>
+
+        {/* Weekly Overview */}
+        {loading || !overview ? (
+          <div className="bg-white/10 rounded-2xl p-4 flex items-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin opacity-80" />
+            <span className="text-sm opacity-80">Анализирую данные…</span>
+          </div>
+        ) : (
+          <div className="bg-white/10 rounded-2xl p-4">
+            <p className="text-xs opacity-70 mb-3">Обзор за 7 дней</p>
+            <div className="flex gap-3 mb-3">
+              <div className="flex-1 bg-white/10 rounded-xl p-3">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <ArrowUpRight className="w-3.5 h-3.5 text-emerald-300" />
+                  <span className="text-xs opacity-70">Доходы</span>
+                </div>
+                <p className="text-base font-bold">{fmt(overview.weekIncome)} ₽</p>
+              </div>
+              <div className="flex-1 bg-white/10 rounded-xl p-3">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <ArrowDownRight className="w-3.5 h-3.5 text-red-300" />
+                  <span className="text-xs opacity-70">Расходы</span>
+                </div>
+                <p className="text-base font-bold">{fmt(overview.weekExpenses)} ₽</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="opacity-80">
+                {overview.weekBalance >= 0
+                  ? `Баланс +${fmt(overview.weekBalance)} ₽`
+                  : `Дефицит ${fmt(Math.abs(overview.weekBalance))} ₽`}
+              </span>
+              <span className="font-medium opacity-90">
+                Экономия {overview.savingsRate}%
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {/* Weekly Overview */}
-        <div className="px-4 pt-4">
-          <div className="bg-card border border-border rounded-2xl p-4">
-            <p className="text-xs text-muted-foreground mb-3">Обзор за 7 дней</p>
-
-            {loading || !overview ? (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-sm">Анализирую данные…</span>
-              </div>
-            ) : (
-              <>
-                <div className="flex gap-3 mb-4">
-                  <div className="flex-1 bg-muted/60 rounded-xl p-3">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <ArrowUpRight className="w-3.5 h-3.5 text-emerald-500" />
-                      <span className="text-xs text-muted-foreground">Доходы</span>
-                    </div>
-                    <p className="text-base font-bold">{fmt(overview.weekIncome)} ₽</p>
-                  </div>
-                  <div className="flex-1 bg-muted/60 rounded-xl p-3">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <ArrowDownRight className="w-3.5 h-3.5 text-red-500" />
-                      <span className="text-xs text-muted-foreground">Расходы</span>
-                    </div>
-                    <p className="text-base font-bold">{fmt(overview.weekExpenses)} ₽</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    {overview.weekBalance >= 0
-                      ? `Баланс +${fmt(overview.weekBalance)} ₽`
-                      : `Дефицит ${fmt(Math.abs(overview.weekBalance))} ₽`}
-                  </span>
-                  <span className="font-medium text-violet-600 dark:text-violet-400">
-                    Экономия {overview.savingsRate}%
-                  </span>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
         {/* Insights */}
         {(loading || insights.length > 0) && (
           <div className="px-4 pt-4">
@@ -187,7 +181,6 @@ export const AIAssistant = () => {
                 </span>
               )}
             </div>
-
             {loading ? (
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Loader2 className="w-4 h-4 animate-spin" />

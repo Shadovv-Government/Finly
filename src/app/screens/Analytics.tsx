@@ -184,6 +184,10 @@ export const Analytics = () => {
                 <BarChart data={weeklyData}>
                   <XAxis dataKey="week" stroke="currentColor" className="text-muted-foreground" fontSize={12} />
                   <YAxis stroke="currentColor" className="text-muted-foreground" fontSize={12} tickFormatter={formatShort} />
+                  <Tooltip
+                    formatter={(v: number, name: string) => [`${v.toLocaleString('ru-RU')} ₽`, name === 'income' ? 'Доходы' : 'Расходы']}
+                    contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                  />
                   <Bar dataKey="income" name="Доходы" fill="#22c55e" radius={[8, 8, 0, 0]} cursor="pointer" onClick={(_, index) => setSelectedWeekIdx(index)} />
                   <Bar dataKey="expense" name="Расходы" fill="#ef4444" radius={[8, 8, 0, 0]} cursor="pointer" onClick={(_, index) => setSelectedWeekIdx(index)} />
                 </BarChart>
@@ -292,7 +296,10 @@ export const Analytics = () => {
                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.color }} />
                       <span className="text-sm">{category.name}</span>
                     </div>
-                    <span className="text-sm font-semibold">{category.value.toLocaleString('ru-RU')} ₽</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">{category.percentage.toFixed(1)}%</span>
+                      <span className="text-sm font-semibold">{category.value.toLocaleString('ru-RU')} ₽</span>
+                    </div>
                   </div>
                 ))}
               </div>

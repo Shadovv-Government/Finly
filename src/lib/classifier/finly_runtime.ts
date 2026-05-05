@@ -404,8 +404,8 @@ async function mcDropoutPredict(
       const nIn = tf.tensor2d(numVec,  [1, N]);
       const raw = model.predict([tIn, nIn], { training: true } as tf.ModelPredictConfig);
       const out = (Array.isArray(raw) ? raw : [raw]) as tf.Tensor[];
-      // out[0] = category_probs: already has softmax activation from the model
-      const catProbs = out[0].squeeze([0]);
+      // model_train_mc outputs logits (no softmax layer) — apply softmax before averaging
+      const catProbs = tf.softmax(out[0].squeeze([0]));
       const tp = out[1].squeeze([0]);
       return { probs: catProbs.dataSync() as Float32Array, tp: tp.dataSync()[0] };
     });

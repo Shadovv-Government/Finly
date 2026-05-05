@@ -1,4 +1,4 @@
-import { Bell, Camera, Calendar } from 'lucide-react';
+import { Bell, Camera, Calendar, TrendingUp } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
@@ -11,6 +11,7 @@ import { useCategories } from '../hooks/useCategories';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotificationPanel } from '../hooks/useNotificationPanel';
 import { useBudgetNotifications } from '../hooks/useBudgetNotifications';
+import { useBudgets } from '../hooks/useBudgets';
 import {
   Dialog,
   DialogContent,
@@ -18,6 +19,7 @@ import {
   DialogTitle,
 } from '../components/ui/dialog';
 import { NotificationsPanel } from '../components/NotificationsPanel';
+import { BottomSheet } from '../components/BottomSheet';
 import { MS_PER_MONTH, MS_PER_WEEK } from '../constants';
 import { formatDateInputValue, parseDateInputValue } from '../utils/formatCurrency';
 import { Transaction, Category } from '../../db/types';
@@ -73,6 +75,7 @@ interface ExpenseBreakdownProps {
 }
 
 function ExpenseBreakdown({ data }: ExpenseBreakdownProps) {
+  const total = data.reduce((sum, item) => sum + item.value, 0);
   return (
     <div className="px-4 py-4">
       <h2 className="font-bold mb-4">Расходы по категориям</h2>
@@ -99,17 +102,23 @@ function ExpenseBreakdown({ data }: ExpenseBreakdownProps) {
               </ResponsiveContainer>
             </div>
             <div className="space-y-2">
-              {data.slice(0, 5).map((item) => (
-                <div key={item.name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                    <span className="text-sm">{item.name}</span>
+              {data.slice(0, 5).map((item) => {
+                const pct = total > 0 ? ((item.value / total) * 100).toFixed(1) : '0';
+                return (
+                  <div key={item.name} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
+                      <span className="text-sm">{item.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">{pct}%</span>
+                      <span className="text-sm font-semibold">
+                        {item.value.toLocaleString('ru-RU')} ₽
+                      </span>
+                    </div>
                   </div>
-                  <span className="text-sm font-semibold">
-                    {item.value.toLocaleString('ru-RU')} ₽
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </>
         ) : (
@@ -170,6 +179,73 @@ function RecentTransactions({ transactions, categories }: RecentTransactionsProp
   );
 }
 
+// ==================== BudgetProgressSection ====================
+
+interface BudgetProgressSectionProps {
+  expensesByCategory: Array<{ name: string; value: number; color: string; categoryId?: string }>;
+  categories: Category[];
+}
+
+function BudgetProgressSection({ expensesByCategory, categories }: BudgetProgressSectionProps) {
+  const { budgets } = useBudgets();
+
+  const activeBudgets = useMemo(() => {
+    return budgets
+      .map(budget => {
+        const cat = categories.find(c => c.id === budget.categoryId);
+        const spent = expensesByCategory.find(e => e.categoryId === budget.categoryId)?.value ?? 0;
+        const pct = budget.amount > 0 ? Math.min((spent / budget.amount) * 100, 100) : 0;
+        return { budget, cat, spent, pct };
+      })
+      .filter(b => b.cat)
+      .sort((a, b) => b.pct - a.pct)
+      .slice(0, 3);
+  }, [budgets, categories, expensesByCategory]);
+
+  if (activeBudgets.length === 0) return null;
+
+  const getBarColor = (pct: number) =>
+    pct > 90 ? '#ef4444' : pct >= 70 ? '#f59e0b' : '#22c55e';
+
+  return (
+    <div className="px-4 pb-2">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="font-bold">Бюджеты</h2>
+        <Link to="/budgets" className="text-sm text-violet-600 dark:text-violet-400 flex items-center gap-1">
+          <TrendingUp className="w-3.5 h-3.5" />
+          Все
+        </Link>
+      </div>
+      <div className="bg-card rounded-2xl border border-border overflow-hidden">
+        {activeBudgets.map(({ budget, cat, spent, pct }, index) => (
+          <div
+            key={budget.id}
+            className={`p-4 ${index !== activeBudgets.length - 1 ? 'border-b border-border' : ''}`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cat!.color }} />
+                <span className="text-sm font-medium">{cat!.name}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">{spent.toLocaleString('ru-RU')} ₽</span>
+                <span className="text-xs text-muted-foreground">/</span>
+                <span className="text-xs font-medium">{budget.amount.toLocaleString('ru-RU')} ₽</span>
+              </div>
+            </div>
+            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{ width: `${pct}%`, backgroundColor: getBarColor(pct) }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ==================== Dashboard ====================
 
 const AVATAR_COLORS = [
@@ -213,7 +289,7 @@ export const Dashboard = () => {
   const expense = balance?.expenses ?? analyticsExpenses.reduce((sum, c) => sum + c.amount, 0);
 
   const expensesByCategory = useMemo(() =>
-    analyticsExpenses.map(c => ({ name: c.categoryName, value: c.amount, color: c.color })),
+    analyticsExpenses.map(c => ({ name: c.categoryName, value: c.amount, color: c.color, categoryId: c.categoryId })),
     [analyticsExpenses]
   );
 
@@ -298,6 +374,8 @@ export const Dashboard = () => {
 
       <ExpenseBreakdown data={expensesByCategory} />
 
+      <BudgetProgressSection expensesByCategory={expensesByCategory} categories={categories} />
+
       {/* Quick Links */}
       <div className="px-4 py-4">
         <div className="grid grid-cols-2 gap-3">
@@ -377,61 +455,61 @@ export const Dashboard = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Custom Period Dialog */}
-      <Dialog open={isCustomPeriodOpen} onOpenChange={setIsCustomPeriodOpen}>
-        <DialogContent className="rounded-2xl">
-          <DialogHeader>
-            <DialogTitle>Выберите период</DialogTitle>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Дата начала</label>
-              <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
-                <Calendar className="w-5 h-5 text-muted-foreground" />
-                <input
-                  aria-label="Дата начала периода"
-                  type="date"
-                  value={formatDateInputValue(customStartDate)}
-                  onChange={(e) => setCustomStartDate(parseDateInputValue(e.target.value))}
-                  className="flex-1 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-md"
-                />
-              </div>
+      {/* Custom Period BottomSheet */}
+      <BottomSheet
+        isOpen={isCustomPeriodOpen}
+        onClose={() => setIsCustomPeriodOpen(false)}
+        title="Выберите период"
+        side="top"
+      >
+        <div className="px-4 py-4 pb-8 space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Дата начала</label>
+            <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
+              <Calendar className="w-5 h-5 text-muted-foreground" />
+              <input
+                aria-label="Дата начала периода"
+                type="date"
+                value={formatDateInputValue(customStartDate)}
+                onChange={(e) => setCustomStartDate(parseDateInputValue(e.target.value))}
+                className="flex-1 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-md"
+              />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Дата окончания</label>
-              <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
-                <Calendar className="w-5 h-5 text-muted-foreground" />
-                <input
-                  aria-label="Дата окончания периода"
-                  type="date"
-                  value={formatDateInputValue(customEndDate)}
-                  onChange={(e) => setCustomEndDate(parseDateInputValue(e.target.value))}
-                  className="flex-1 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-md"
-                />
-              </div>
-            </div>
-            <div className="flex gap-2 pt-4">
-              <button
-                onClick={() => {
-                  setCustomStartDate(new Date(Date.now() - MS_PER_WEEK));
-                  setCustomEndDate(new Date());
-                }}
-                className="flex-1 py-2 bg-muted rounded-xl font-medium"
-              >
-                Неделя
-              </button>
-              <button
-                onClick={() => {
-                  setCustomStartDate(new Date(Date.now() - MS_PER_MONTH));
-                  setCustomEndDate(new Date());
-                }}
-                className="flex-1 py-2 bg-muted rounded-xl font-medium"
-              >
-                Месяц
-              </button>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Дата окончания</label>
+            <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
+              <Calendar className="w-5 h-5 text-muted-foreground" />
+              <input
+                aria-label="Дата окончания периода"
+                type="date"
+                value={formatDateInputValue(customEndDate)}
+                onChange={(e) => setCustomEndDate(parseDateInputValue(e.target.value))}
+                className="flex-1 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-md"
+              />
             </div>
           </div>
           <div className="flex gap-2">
+            <button
+              onClick={() => {
+                setCustomStartDate(new Date(Date.now() - MS_PER_WEEK));
+                setCustomEndDate(new Date());
+              }}
+              className="flex-1 py-2 bg-muted rounded-xl font-medium"
+            >
+              Неделя
+            </button>
+            <button
+              onClick={() => {
+                setCustomStartDate(new Date(Date.now() - MS_PER_MONTH));
+                setCustomEndDate(new Date());
+              }}
+              className="flex-1 py-2 bg-muted rounded-xl font-medium"
+            >
+              Месяц
+            </button>
+          </div>
+          <div className="flex gap-2 pt-2">
             <button
               onClick={() => setIsCustomPeriodOpen(false)}
               className="flex-1 py-3 bg-muted rounded-xl font-medium"
@@ -445,8 +523,8 @@ export const Dashboard = () => {
               Применить
             </button>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </BottomSheet>
 
       <NotificationsPanel
         isOpen={isNotificationsOpen}
