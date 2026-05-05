@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 describe('bootstrapApp', () => {
-  it('waits for database seeding before rendering the app', async () => {
+  it('renders the app before database seeding completes', async () => {
     const callOrder: string[] = [];
     const root = {
       render: vi.fn(() => {
@@ -25,6 +25,6 @@ describe('bootstrapApp', () => {
 
     expect(seedDatabase).toHaveBeenCalledTimes(1);
     expect(root.render).toHaveBeenCalledTimes(1);
-    expect(callOrder).toEqual(['seed:start', 'seed:end', 'render']);
+    expect(callOrder).toEqual(['render', 'seed:start', 'seed:end']);
   });
 });
