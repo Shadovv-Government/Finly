@@ -1,0 +1,91 @@
+name: Quality Gates
+
+on:
+  push:
+    branches: [main, 'feature/**']
+  pull_request:
+    branches: [main]
+
+jobs:
+
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: 'npm' }
+      - run: npm ci
+      - run: npm audit --audit-level=high
+        continue-on-error: true
+
+  bundle-size:
+    name: Bundle Size Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: 'npm' }
+      - run: npm ci
+      - run: npm run build
+      - name: Assert total JS < 2MB
+        run: |
+          total=$(find dist/assets -name '*.js' | xargs cat | wc -c)
+          limit=$((2 * 1024 * 1024))
+          echo "Total JS: ${total} bytes"
+          if [ $total -gt $limit ]; then
+            echo "::error::Bundle size exceeds 2MB!"
+            exit 1
+          fi
+      - name: Bundle report
+        run: |
+          echo "### Bundle Size" >> $GITHUB_STEP_SUMMARY
+          echo "| File | Size |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|------|" >> $GITHUB_STEP_SUMMARY
+          for f in dist/assets/*.js; do
+            size=$(du -sh "$f" | cut -f1)
+            echo "| $(basename $f) | $size |" >> $GITHUB_STEP_SUMMARY
+          done
+
+  coverage:
+    name: Test Coverage
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with: { node-version: 20, cache: 'npm' }
+    - run: npm ci
+    - run: npm run test:coverage
+
+    - name: Coverage summary
+      run: |
+        echo "### Test Coverage" >> $GITHUB_STEP_SUMMARY
+        node -e "
+          const s = require('./coverage/coverage-summary.json').total;
+          console.log('| Metric | Coverage |');
+          console.log('|--------|----------|');
+          Object.entries(s).forEach(([k,v]) => {
+            if(v.pct !== undefined) console.log('| ' + k + ' | ' + v.pct + '% |');
+          });
+        " >> $GITHUB_STEP_SUMMARY
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report-${{ github.run_number }}
+        path: coverage/
+        retention-days: 14
+
+  pwa-check:
+    name: PWA Manifest Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: 'npm' }
+      - run: npm ci
+      - run: npm run build
+      - name: Validate manifest & SW
+        run: |
+          [ -f dist/manifest.webmanifest ] || { echo "::error::No manifest!"; exit 1; }
+          echo "manifest found"
+          ls dist/sw.js 2>/dev/null && echo "sw.js found" || echo "::warning::No SW found"
