@@ -22,8 +22,17 @@ vi.mock('../validators', () => ({
   assertValid: vi.fn(),
 }));
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const budgetTable = () => (db as any).budgets;
+type BudgetTableMock = {
+  add: ReturnType<typeof vi.fn>;
+  get: ReturnType<typeof vi.fn>;
+  update: ReturnType<typeof vi.fn>;
+  delete: ReturnType<typeof vi.fn>;
+  toArray: ReturnType<typeof vi.fn>;
+  filter: ReturnType<typeof vi.fn>;
+  where: ReturnType<typeof vi.fn>;
+};
+
+const budgetTable = (): BudgetTableMock => db.budgets as unknown as BudgetTableMock;
 
 // Freeze Date.now() so the predicate inside getActiveBudgets is deterministic.
 const FROZEN = new Date('2026-05-01T12:00:00.000Z').getTime();

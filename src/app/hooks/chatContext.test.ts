@@ -145,7 +145,7 @@ describe('answerQuery — маршрутизация интентов', () => {
     m.getAverageDailySpend.mockResolvedValue(2500);
     const { answer } = await answerQuery('средний расход в день', CTX);
     expect(m.getAverageDailySpend).toHaveBeenCalled();
-    expect(answer).toMatch(/2[\s  ]500/);
+    expect(answer).toMatch(/2[\s\u202F\u00A0]500/);
   });
 
   // ---- Цели ---------------------------------------------------------
