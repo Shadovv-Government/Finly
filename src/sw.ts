@@ -12,11 +12,17 @@ clientsClaim();
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 
+// Delete stale model caches from previous deployments
+self.addEventListener('activate', (event: ExtendableEvent) => {
+  const stale = ['finly-model-v4', 'finly-model-v3', 'finly-model-v2', 'finly-model-v1'];
+  event.waitUntil(Promise.all(stale.map(name => caches.delete(name))));
+});
+
 // Model assets are immutable once deployed — serve from cache for a year
 registerRoute(
   ({ url }) => url.pathname.startsWith('/model/'),
   new CacheFirst({
-    cacheName: 'finly-model-v4',
+    cacheName: 'finly-model-v5',
     plugins: [
       new ExpirationPlugin({ maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 365 }),
       new CacheableResponsePlugin({ statuses: [0, 200] }),

@@ -1180,7 +1180,7 @@ export async function computeDriftReport(
  */
 export async function prefetchModelAssets(modelBaseUrl: string): Promise<void> {
   const base = modelBaseUrl.replace(/\/$/, '') + '/';
-  const cache = await caches.open('finly-model-v4');
+  const cache = await caches.open('finly-model-v5');
 
   const discoverShards = async (subdir: string): Promise<string[]> => {
     const res = await fetch(base + subdir + '/model.json');
