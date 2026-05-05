@@ -27,13 +27,25 @@ export default defineConfig({
         icons: [
           {
             src: 'icon.png',
-            sizes: '2048x2048',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: 'icon.png',
+            sizes: '512x512',
             type: 'image/png',
             purpose: 'any',
           },
           {
             src: 'icon.png',
             sizes: '2048x2048',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: 'icon.png',
+            sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',
           },
