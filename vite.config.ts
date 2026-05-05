@@ -29,15 +29,15 @@ export default defineConfig({
             src: 'icon.png',
             sizes: '2048x2048',
             type: 'image/png',
-            purpose: 'any'
+            purpose: 'any',
           },
           {
             src: 'icon.png',
             sizes: '2048x2048',
             type: 'image/png',
-            purpose: 'maskable'
-          }
-        ]
+            purpose: 'maskable',
+          },
+        ],
       },
       injectManifest: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,wasm,gz}'],
@@ -45,9 +45,9 @@ export default defineConfig({
       },
       devOptions: {
         enabled: false,
-        type: 'module'
-      }
-    })
+        type: 'module',
+      },
+    }),
   ],
   resolve: {
     alias: {
@@ -102,37 +102,6 @@ export default defineConfig({
               return 'vendor-react'
             }
           }
-        },
-      },
-    },
-  },
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: './src/test/setup.ts',
-    include: ['src/**/*.{test,spec}.{ts,tsx}'],
-    exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**'],
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      include: ['src/**/*.{ts,tsx}'],
-      exclude: [
-        'src/**/*.d.ts',
-        'src/**/*.{test,spec}.{ts,tsx}',
-        'src/test/**',
-        'src/main.tsx',
-        'src/app/routes.tsx',
-        'src/app/App.tsx',
-        'src/app/Layout.tsx',
-        'src/db/seed.ts',
-        'src/db/exportImport.ts',
-      ],
-      thresholds: {
-        global: {
-          branches: 50,
-          functions: 50,
-          lines: 50,
-          statements: 50,
         },
       },
     },

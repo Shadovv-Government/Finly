@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   ci: {
     collect: {
       staticDistDir: './dist',
@@ -23,4 +23,4 @@ export default {
       target: 'temporary-public-storage',
     },
   },
-};
+}

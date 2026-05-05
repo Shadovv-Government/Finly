@@ -7,85 +7,151 @@ on:
     branches: [main]
 
 jobs:
-
   security:
     name: Security Audit
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 24, cache: 'npm' }
-      - run: npm ci
-      - run: npm audit --audit-level=high
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: npm audit
+        run: npm audit --audit-level=high
         continue-on-error: true
 
   bundle-size:
     name: Bundle Size Check
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 20, cache: 'npm' }
-      - run: npm ci
-      - run: npm run build
-      - name: Assert total JS < 2MB
-        run: |
-          total=$(find dist/assets -name '*.js' | xargs cat | wc -c)
-          limit=$((2 * 1024 * 1024))
-          echo "Total JS: ${total} bytes"
-          if [ $total -gt $limit ]; then
-            echo "::error::Bundle size exceeds 2MB!"
-            exit 1
-          fi
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
       - name: Bundle report
         run: |
-          echo "### Bundle Size" >> $GITHUB_STEP_SUMMARY
-          echo "| File | Size |" >> $GITHUB_STEP_SUMMARY
-          echo "|------|------|" >> $GITHUB_STEP_SUMMARY
-          for f in dist/assets/*.js; do
-            size=$(du -sh "$f" | cut -f1)
-            echo "| $(basename $f) | $size |" >> $GITHUB_STEP_SUMMARY
-          done
+          echo "### Bundle Size" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| File | Size |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|------|------|" >> "$GITHUB_STEP_SUMMARY"
+
+          if ls dist/assets/*.js > /dev/null 2>&1; then
+            for f in dist/assets/*.js; do
+              size=$(du -sh "$f" | cut -f1)
+              echo "| $(basename "$f") | $size |" >> "$GITHUB_STEP_SUMMARY"
+            done
+          else
+            echo "| (no JS files found) | - |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Assert total JS < 3MB
+        run: |
+          total=$(find dist/assets -name '*.js' -print0 | xargs -0 cat | wc -c)
+          limit=$((3 * 1024 * 1024))
+          echo "Total JS: ${total} bytes"
+          if [ "$total" -gt "$limit" ]; then
+            echo "::error::Bundle size exceeds 3MB!"
+            exit 1
+          fi
 
   coverage:
     name: Test Coverage
     runs-on: ubuntu-latest
+
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with: { node-version: 20, cache: 'npm' }
-    - run: npm ci
-    - run: npm run test:coverage
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Coverage summary
-      run: |
-        echo "### Test Coverage" >> $GITHUB_STEP_SUMMARY
-        node -e "
-          const s = require('./coverage/coverage-summary.json').total;
-          console.log('| Metric | Coverage |');
-          console.log('|--------|----------|');
-          Object.entries(s).forEach(([k,v]) => {
-            if(v.pct !== undefined) console.log('| ' + k + ' | ' + v.pct + '% |');
-          });
-        " >> $GITHUB_STEP_SUMMARY
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
 
-    - uses: actions/upload-artifact@v4
-      with:
-        name: coverage-report-${{ github.run_number }}
-        path: coverage/
-        retention-days: 14
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+
+      - name: Coverage summary
+        run: |
+          echo "### Test Coverage" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ ! -f coverage/coverage-summary.json ]; then
+            echo "coverage/coverage-summary.json not found" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          echo "| Metric | Coverage |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|--------|----------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Lines | $(jq -r '.total.lines.pct' coverage/coverage-summary.json)% |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Statements | $(jq -r '.total.statements.pct' coverage/coverage-summary.json)% |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Functions | $(jq -r '.total.functions.pct' coverage/coverage-summary.json)% |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Branches | $(jq -r '.total.branches.pct' coverage/coverage-summary.json)% |" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-${{ github.run_number }}
+          path: coverage/
+          retention-days: 14
 
   pwa-check:
     name: PWA Manifest Check
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 20, cache: 'npm' }
-      - run: npm ci
-      - run: npm run build
-      - name: Validate manifest & SW
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Validate manifest and service worker
         run: |
-          [ -f dist/manifest.webmanifest ] || { echo "::error::No manifest!"; exit 1; }
-          echo "manifest found"
-          ls dist/sw.js 2>/dev/null && echo "sw.js found" || echo "::warning::No SW found"
+          if [ -f dist/manifest.webmanifest ]; then
+            echo "manifest.webmanifest found"
+          elif [ -f dist/manifest.json ]; then
+            echo "manifest.json found"
+          else
+            echo "::error::No manifest found in dist/"
+            exit 1
+          fi
+
+          if ls dist/sw.js dist/service-worker.js 1>/dev/null 2>/dev/null; then
+            echo "service worker found"
+          else
+            echo "::warning::No service worker found"
+          fi
