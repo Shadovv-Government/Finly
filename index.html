@@ -10,9 +10,25 @@
     <meta name="theme-color" content="#7c3aed" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data: blob:; worker-src 'self';" />
     <link rel="manifest" href="/manifest.json" />
+    <style>
+      #root-loading {
+        position: fixed; inset: 0;
+        display: flex; align-items: center; justify-content: center;
+        background: #fff;
+      }
+      @media (prefers-color-scheme: dark) { #root-loading { background: #09090b; } }
+      #root-loading span {
+        width: 32px; height: 32px; border-radius: 50%;
+        border: 2px solid #7c3aed; border-top-color: transparent;
+        animation: spin 0.7s linear infinite;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      #root:not(:empty) ~ #root-loading { display: none; }
+    </style>
   </head>
   <body>
     <div id="root"></div>
+    <div id="root-loading" aria-hidden="true"><span></span></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

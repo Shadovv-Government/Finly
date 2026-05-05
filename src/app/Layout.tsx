@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation } from 'react-router';
 import { BottomNav } from './components/BottomNav';
 import { BottomSheet } from './components/BottomSheet';
-import { AIQuickInput } from './components/AIQuickInput';
-import { AddTransactionForm } from './components/AddTransactionForm';
 import { ErrorBoundary } from './components/ErrorBoundary';
+
+const AIQuickInput = lazy(() => import('./components/AIQuickInput').then(m => ({ default: m.AIQuickInput })));
+const AddTransactionForm = lazy(() => import('./components/AddTransactionForm').then(m => ({ default: m.AddTransactionForm })));
 
 type QuickInputTab = 'ai' | 'manual';
 
@@ -105,14 +106,16 @@ export const Layout = () => {
             </div>
           </div>
 
-          {quickInputTab === 'ai' ? (
-            <AIQuickInput
-              onClose={closeQuickInput}
-              autoStartVoice={quickInputAutoStartVoice}
-            />
-          ) : (
-            <AddTransactionForm onClose={closeQuickInput} />
-          )}
+          <Suspense fallback={<div className="h-32" />}>
+            {quickInputTab === 'ai' ? (
+              <AIQuickInput
+                onClose={closeQuickInput}
+                autoStartVoice={quickInputAutoStartVoice}
+              />
+            ) : (
+              <AddTransactionForm onClose={closeQuickInput} />
+            )}
+          </Suspense>
         </div>
       </BottomSheet>
     </div>
