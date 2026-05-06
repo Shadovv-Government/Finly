@@ -2,12 +2,18 @@
 @import './tailwind.css';
 @import './theme.css';
 
-/* Disable text selection globally */
+/* Disable text selection globally + hide scrollbars (PWA — native-like feel) */
 * {
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
 }
 
 input, textarea, [contenteditable] {
