@@ -1,6 +1,18 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 
 describe('bootstrapApp', () => {
+  beforeEach(() => {
+    // JSDOM doesn't implement requestIdleCallback — run callback immediately
+    vi.stubGlobal('requestIdleCallback', (cb: IdleRequestCallback) => {
+      cb({ didTimeout: false, timeRemaining: () => 50 });
+      return 0;
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it('renders the app before database seeding completes', async () => {
     const callOrder: string[] = [];
     const root = {
@@ -22,6 +34,9 @@ describe('bootstrapApp', () => {
       App,
       seedDatabase,
     });
+
+    // Flush microtasks so the fire-and-forget seedDatabase promise resolves
+    await Promise.resolve();
 
     expect(seedDatabase).toHaveBeenCalledTimes(1);
     expect(root.render).toHaveBeenCalledTimes(1);
