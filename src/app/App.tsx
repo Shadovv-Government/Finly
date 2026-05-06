@@ -5,24 +5,15 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Toaster } from './components/ui/sonner';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { router } from './routes';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { processRecurringIfNeeded } from './utils/recurringProcessor';
 import { useReducedMotion } from './hooks/useReducedMotion';
 
-const AUTH_TIMEOUT_MS = 8000;
-
-function AuthGuard({ children }: { children: React.ReactNode }) {
+function AppContent() {
   const { isLoading } = useAuth();
-  const [timedOut, setTimedOut] = useState(false);
-
   useReducedMotion();
 
-  useEffect(() => {
-    if (!isLoading) return;
-    const id = setTimeout(() => setTimedOut(true), AUTH_TIMEOUT_MS);
-    return () => clearTimeout(id);
-  }, [isLoading]);
-
+  // Run recurring processor once auth is ready
   useEffect(() => {
     if (!isLoading) {
       processRecurringIfNeeded().catch((err: unknown) => {
@@ -31,23 +22,9 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [isLoading]);
 
-  if (isLoading && !timedOut) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-muted-foreground">Загрузка...</div>
-      </div>
-    );
-  }
-
-  return <>{children}</>;
-}
-
-function AppContent() {
-  return (
-    <AuthGuard>
-      <RouterProvider router={router} />
-    </AuthGuard>
-  );
+  // RouterProvider renders immediately — ProtectedRoute handles isLoading internally
+  // so there is no global auth gate delaying the router and LCP.
+  return <RouterProvider router={router} />;
 }
 
 export default function App() {

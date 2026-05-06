@@ -32,7 +32,14 @@ export function resolveProtectedRoute({
 
 // Protected route wrapper
 function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { user, biometric, onboardingComplete } = useAuth();
+  const { user, isLoading, biometric, onboardingComplete } = useAuth();
+
+  // Show spinner while auth loads — avoids premature redirect to /register
+  // and keeps the router active so LCP is not gated on the old 8 s AuthGuard timeout.
+  if (isLoading) {
+    return <AppLoading />;
+  }
+
   const redirect = resolveProtectedRoute({
     user,
     onboardingComplete,
