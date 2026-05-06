@@ -40,15 +40,11 @@ export async function seedDatabase() {
   const count = await db.categories.count();
 
   if (count === 0) {
-    // Первая инициализация БД
+    // Первая инициализация БД — только категории.
+    // theme/baseCurrency хранятся в localStorage (ThemeContext, SettingsContext).
+    // onboardingComplete не сеялся: AuthContext читает из DB и корректно обрабатывает undefined → false,
+    // а write-lock на settings блокировал getSetting() в loadUser() на 8+ секунд.
     await db.categories.bulkAdd(defaultCategories);
-
-    // Базовые настройки
-    await db.settings.bulkAdd([
-      { key: 'theme', value: 'light' },
-      { key: 'baseCurrency', value: 'RUB' },
-      { key: 'onboardingComplete', value: false },
-    ]);
   } else {
     const categories = await db.categories.toArray();
     const existingIds = new Set(categories.map(c => c.id));
