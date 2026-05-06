@@ -1,8 +1,9 @@
-import type { ComponentType, ReactNode } from 'react';
+import { lazy, Suspense, type ComponentType, type ReactNode } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { Layout } from './Layout';
 import { useAuth } from './contexts/AuthContext';
-import { LockScreen } from './screens/LockScreen';
+
+const LockScreen = lazy(() => import('./screens/LockScreen').then(m => ({ default: m.LockScreen })));
 
 const lazyRoute = <T extends Record<string, ComponentType<any>>>(
   loader: () => Promise<T>,
@@ -43,7 +44,7 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
     return <Navigate to={redirect} replace />;
   }
   if (redirect === 'lock') {
-    return <LockScreen />;
+    return <Suspense fallback={null}><LockScreen /></Suspense>;
   }
   return <>{children}</>;
 }

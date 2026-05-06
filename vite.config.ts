@@ -107,6 +107,10 @@ export default defineConfig({
               return 'vendor-charts'
             }
 
+            if (id.includes('dexie')) {
+              return 'vendor-dexie'
+            }
+
             if (id.includes('@radix-ui')) {
               return 'vendor-radix'
             }
