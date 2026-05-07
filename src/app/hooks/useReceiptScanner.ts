@@ -56,14 +56,52 @@ declare class BarcodeDetector {
 }
 
 async function tryQrCode(file: File): Promise<ReceiptData | null> {
-  if (typeof window === 'undefined' || !('BarcodeDetector' in window)) return null;
+  // Try native BarcodeDetector first (fast, Chrome/Edge/Safari 17.4+).
+  if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
+    try {
+      const detector = new BarcodeDetector({ formats: ['qr_code'] });
+      const bitmap = await createImageBitmap(file);
+      const codes = await detector.detect(bitmap);
+      bitmap.close();
+      if (codes.length) {
+        const result = parseFiscalQr(codes[0].rawValue);
+        if (result) return result;
+      }
+    } catch {
+      // fall through to jsQR
+    }
+  }
+
+  // Universal fallback: jsQR — pure JS, works in any browser including Firefox.
+  // Downscale to ≤1000px so jsQR stays fast even on large photos.
+  return tryQrCodeJsQR(file);
+}
+
+async function tryQrCodeJsQR(file: File): Promise<ReceiptData | null> {
   try {
-    const detector = new BarcodeDetector({ formats: ['qr_code'] });
+    const { default: jsQR } = await import('jsqr');
+
     const bitmap = await createImageBitmap(file);
-    const codes = await detector.detect(bitmap);
+    const MAX = 1000;
+    let w = bitmap.width;
+    let h = bitmap.height;
+    if (Math.max(w, h) > MAX) {
+      const s = MAX / Math.max(w, h);
+      w = Math.round(w * s);
+      h = Math.round(h * s);
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d')!;
+    ctx.drawImage(bitmap, 0, 0, w, h);
     bitmap.close();
-    if (!codes.length) return null;
-    return parseFiscalQr(codes[0].rawValue);
+
+    const imageData = ctx.getImageData(0, 0, w, h);
+    const code = jsQR(imageData.data, w, h, { inversionAttempts: 'attemptBoth' });
+    if (!code) return null;
+    return parseFiscalQr(code.data);
   } catch {
     return null;
   }
@@ -76,12 +114,15 @@ function parseFiscalQr(raw: string): ReceiptData | null {
 
   const s = p.get('s');
   const t = p.get('t');
+  const fn = p.get('fn'); // fiscal drive number
+  const fp = p.get('fp'); // fiscal sign
 
-  // Require at least a sum to consider this a fiscal receipt QR.
-  if (!s) return null;
+  // Require both a sum AND at least one fiscal identifier (fn or fp).
+  // This prevents misreading promo/URL QR codes that happen to have an "s" param.
+  if (!s || (!fn && !fp)) return null;
 
   const amount = parseFloat(s.replace(',', '.'));
-  if (isNaN(amount)) return null;
+  if (isNaN(amount) || amount <= 0) return null;
 
   let date: string | null = null;
   if (t) {
