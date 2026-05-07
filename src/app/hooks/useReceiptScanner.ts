@@ -56,42 +56,26 @@ declare class BarcodeDetector {
 }
 
 async function tryQrCode(file: File): Promise<ReceiptData | null> {
-  console.group('[QR] Начинаю поиск QR-кода');
-  console.log('[QR] Файл:', file.name, `${(file.size / 1024).toFixed(1)} KB`, file.type);
-
   // Try native BarcodeDetector first (fast, Chrome/Edge/Safari 17.4+).
   const hasBarcodeDetector = typeof window !== 'undefined' && 'BarcodeDetector' in window;
-  console.log('[QR] BarcodeDetector доступен:', hasBarcodeDetector);
 
   if (hasBarcodeDetector) {
     try {
       const detector = new BarcodeDetector({ formats: ['qr_code'] });
       const bitmap = await createImageBitmap(file);
-      console.log('[QR] BarcodeDetector: размер изображения', bitmap.width, '×', bitmap.height);
       const codes = await detector.detect(bitmap);
       bitmap.close();
-      console.log('[QR] BarcodeDetector: найдено кодов:', codes.length);
       if (codes.length) {
-        console.log('[QR] BarcodeDetector: raw =', codes[0].rawValue);
         const result = parseFiscalQr(codes[0].rawValue);
-        if (result) {
-          console.log('[QR] BarcodeDetector: успешно распознан фискальный QR', result);
-          console.groupEnd();
-          return result;
-        }
-        console.warn('[QR] BarcodeDetector: QR найден, но не фискальный — пробую jsQR');
+        if (result) return result;
       }
-    } catch (err) {
-      console.warn('[QR] BarcodeDetector: ошибка —', err);
+    } catch {
+      // fall through to jsQR
     }
   }
 
   // Universal fallback: jsQR — pure JS, works in any browser including Firefox.
-  console.log('[QR] Пробую jsQR...');
-  const result = await tryQrCodeJsQR(file);
-  console.log('[QR] jsQR результат:', result ?? 'не найдено');
-  console.groupEnd();
-  return result;
+  return tryQrCodeJsQR(file);
 }
 
 // Quick pre-filter: a Russian ФНС fiscal QR always has t=, s=, fn=.
@@ -141,8 +125,6 @@ async function tryQrCodeJsQR(file: File): Promise<ReceiptData | null> {
       h = Math.round(h * scale);
     }
 
-    console.log(`[QR] jsQR: обрабатываю ${w}×${h} (исходный ${srcW}×${srcH})`);
-
     const canvas = document.createElement('canvas');
     canvas.width = w;
     canvas.height = h;
@@ -160,15 +142,7 @@ async function tryQrCodeJsQR(file: File): Promise<ReceiptData | null> {
       // so we need true luma and high contrast before handing off.
       toGrayscaleContrast(data.data);
       const code = jsQR(data.data, sw, sh, { inversionAttempts: 'attemptBoth' });
-      if (!code) {
-        console.log(`[QR] jsQR ${label}: не найден`);
-        return null;
-      }
-      console.log(`[QR] jsQR ${label}: raw =`, code.data);
-      if (!isFiscalQrString(code.data)) {
-        console.warn(`[QR] jsQR ${label}: QR найден, но не является фискальным чеком`);
-        return null;
-      }
+      if (!code || !isFiscalQrString(code.data)) return null;
       return parseFiscalQr(code.data);
     };
 
@@ -187,10 +161,8 @@ async function tryQrCodeJsQR(file: File): Promise<ReceiptData | null> {
     const roi50 = tryRegion(0, y50, w, h - y50, `нижние 50% (y=${y50})`);
     if (roi50) return roi50;
 
-    console.log('[QR] jsQR: QR-код не найден ни в одной области');
     return null;
-  } catch (err) {
-    console.error('[QR] jsQR: ошибка —', err);
+  } catch {
     return null;
   }
 }
@@ -206,21 +178,13 @@ function parseFiscalQr(raw: string): ReceiptData | null {
   const fp = p.get('fp'); // fiscal sign
   const i  = p.get('i');  // document number
 
-  console.log('[QR] parseFiscalQr params:', { s, t, fn, fp, i });
-
   // Need a sum + at least two fiscal identifiers to avoid false positives on promo QRs.
   // Accepted combos: (fn+fp), (fn+i), (fn+t), (fp+t)
   const fiscalCount = [fn, fp, i, t].filter(Boolean).length;
-  if (!s || fiscalCount < 2) {
-    console.warn('[QR] parseFiscalQr: недостаточно фискальных полей', { s, fiscalCount });
-    return null;
-  }
+  if (!s || fiscalCount < 2) return null;
 
   const amount = parseFloat(s.replace(',', '.'));
-  if (isNaN(amount) || amount <= 0) {
-    console.warn('[QR] parseFiscalQr: некорректная сумма:', s);
-    return null;
-  }
+  if (isNaN(amount) || amount <= 0) return null;
 
   let date: string | null = null;
   if (t) {
@@ -408,8 +372,7 @@ export function useReceiptScanner() {
             setError('low_confidence');
           }
           return;
-        } catch (geminiErr) {
-          console.warn('[ReceiptScanner] Gemini failed, trying next engine', geminiErr);
+        } catch {
           setStatusMessage('Переключаюсь на другой движок...');
         }
       }
@@ -426,8 +389,7 @@ export function useReceiptScanner() {
             setError('low_confidence');
           }
           return;
-        } catch (claudeErr) {
-          console.warn('[ReceiptScanner] Claude failed, falling back to OCR', claudeErr);
+        } catch {
           setStatusMessage('Переключаюсь на OCR...');
         }
       }
@@ -464,7 +426,6 @@ export function useReceiptScanner() {
         setError('low_confidence');
       }
     } catch (err) {
-      console.error('[ReceiptScanner] failed', err);
       setError('ocr_error');
       setErrorMessage(err instanceof Error ? err.message : String(err));
     } finally {

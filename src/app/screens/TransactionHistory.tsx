@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Search, Filter, X, Calendar, ChevronDown, Wallet } from 'lucide-react';
+import { Search, Filter, X, Calendar, ChevronDown, Wallet, MessageSquare } from 'lucide-react';
 import { CategoryBadge } from '../components/CategoryBadge';
 import { AmountDisplay } from '../components/AmountDisplay';
 import { BottomSheet } from '../components/BottomSheet';
@@ -124,7 +124,9 @@ function EditTransactionSheet({ transaction, categories, onClose, onSave }: Edit
                 onClick={() => handleTypeChange(t)}
                 className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
                   type === t
-                    ? 'bg-white dark:bg-card shadow-sm text-violet-600 dark:text-violet-400'
+                    ? t === 'expense'
+                      ? 'bg-red-600 text-white'
+                      : 'bg-green-600 text-white'
                     : 'text-muted-foreground'
                 }`}
               >
@@ -134,62 +136,66 @@ function EditTransactionSheet({ transaction, categories, onClose, onSave }: Edit
           </div>
         </div>
 
-        {/* Сумма и дата */}
-        <div className="px-4 pb-4 flex gap-3">
-          <div className="flex-1 flex items-center gap-3 p-3 bg-muted rounded-xl">
-            <span className="text-muted-foreground text-sm">₽</span>
-            <input
-              type="text"
-              inputMode="decimal"
-              placeholder="0"
-              value={formatAmountInput(amount)}
-              onChange={e => setAmount(e.target.value.replace(/\s/g, ''))}
-              className="flex-1 bg-transparent focus-visible:outline-none text-sm font-medium"
-            />
-          </div>
-          <div className="flex items-center gap-2 p-3 bg-muted rounded-xl">
-            <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-            <input
-              type="date"
-              value={formatDateInputValue(date)}
-              onChange={e => setDate(parseDateInputValue(e.target.value))}
-              className="bg-transparent focus-visible:outline-none text-sm"
-            />
-          </div>
+        {/* Сумма */}
+        <div className="px-4 py-6">
+          <input
+            type="text"
+            inputMode="decimal"
+            placeholder="0"
+            value={formatAmountInput(amount)}
+            onChange={e => setAmount(e.target.value.replace(/\s/g, ''))}
+            className="w-full text-4xl font-bold text-center bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-lg"
+          />
+          <p className="text-center text-muted-foreground mt-2">₽</p>
         </div>
 
         {/* Категории */}
-        <div className="px-4 pb-4">
-          <label className="text-sm font-medium mb-3 block">Категория</label>
-          <div className="grid grid-cols-3 gap-2 max-h-44 overflow-y-auto">
+        <div className="px-4 py-4">
+          <h3 className="text-sm font-medium mb-3">Категория</h3>
+          <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto p-2 bg-muted rounded-xl">
             {filteredCategories.map(cat => (
               <button
                 key={cat.id}
                 onClick={() => setCategoryId(cat.id)}
-                className={`flex flex-col items-center gap-1.5 p-3 rounded-xl text-xs font-medium transition-all ${
+                className={`flex flex-col items-center gap-2 p-2 rounded-lg transition-all ${
                   categoryId === cat.id
                     ? 'bg-violet-100 dark:bg-violet-950 ring-2 ring-violet-600'
-                    : 'bg-muted hover:bg-accent'
+                    : 'hover:bg-accent'
                 }`}
               >
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: cat.color + '22' }}>
-                  <CategoryIcon name={cat.icon} className="w-4 h-4" color={cat.color} />
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center"
+                  style={{ backgroundColor: cat.color + '20' }}
+                >
+                  <CategoryIcon name={cat.icon} className="w-6 h-6" color={cat.color} />
                 </div>
-                <span className="truncate w-full text-center">{cat.name}</span>
+                <span className="text-xs text-center leading-tight truncate w-full">{cat.name}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Комментарий */}
-        <div className="px-4 pb-4">
-          <input
-            type="text"
-            placeholder="Комментарий (необязательно)"
-            value={comment}
-            onChange={e => setComment(e.target.value)}
-            className="w-full px-4 py-3 bg-muted rounded-xl text-sm outline-none focus:ring-2 focus:ring-violet-600"
-          />
+        {/* Дата и комментарий */}
+        <div className="px-4 py-4 space-y-3">
+          <div className="flex items-center gap-3 p-4 bg-card rounded-xl border border-border">
+            <Calendar className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+            <input
+              type="date"
+              value={formatDateInputValue(date)}
+              onChange={e => setDate(parseDateInputValue(e.target.value))}
+              className="flex-1 bg-transparent focus-visible:outline-none"
+            />
+          </div>
+          <div className="flex items-center gap-3 p-4 bg-card rounded-xl border border-border">
+            <MessageSquare className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+            <input
+              type="text"
+              placeholder="Комментарий (необязательно)"
+              value={comment}
+              onChange={e => setComment(e.target.value)}
+              className="flex-1 bg-transparent focus-visible:outline-none"
+            />
+          </div>
         </div>
 
         {/* Кнопки */}
@@ -200,7 +206,7 @@ function EditTransactionSheet({ transaction, categories, onClose, onSave }: Edit
           <button
             onClick={handleSave}
             disabled={!amount || !categoryId || saving}
-            className="flex-[2] py-3 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-xl font-semibold text-sm disabled:opacity-50"
+            className="flex-[2] py-4 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-xl font-semibold text-sm disabled:opacity-50"
           >
             Сохранить
           </button>
