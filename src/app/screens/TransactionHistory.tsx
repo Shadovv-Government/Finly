@@ -113,7 +113,7 @@ function EditTransactionSheet({ transaction, categories, onClose, onSave }: Edit
   };
 
   return (
-    <BottomSheet isOpen={!!transaction} onClose={onClose} title="Редактировать" side="top">
+    <BottomSheet isOpen={!!transaction} onClose={onClose} title="Редактировать">
       <div className="flex flex-col pb-4">
         {/* Тип */}
         <div className="px-4 py-4">
