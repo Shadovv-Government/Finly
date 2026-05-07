@@ -1,6 +1,7 @@
 import {
   Sun, Moon, Monitor, ChevronRight, Download, Upload, Bell, Repeat, LogOut,
   Pencil, Fingerprint, AlertTriangle, Target, FileJson, FileSpreadsheet, Sparkles,
+  Eye, EyeOff, Camera,
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useSettings } from '../contexts/SettingsContext';
@@ -21,6 +22,8 @@ import { Input } from '../components/ui/input';
 import { BottomSheet } from '../components/BottomSheet';
 import { exportToFile, exportCSVToFile, importFromFile, ImportResult } from '../../db/exportImport';
 import { useNotifications } from '../hooks/useNotifications';
+import { getAnthropicApiKey, setAnthropicApiKey } from '../lib/claudeReceiptParser';
+import { getGeminiApiKey, setGeminiApiKey } from '../lib/geminiReceiptParser';
 
 // ==================== Helpers ====================
 
@@ -208,6 +211,180 @@ function AppearanceSection() {
         </div>
       </div>
     </>
+  );
+}
+
+// ==================== AISection ====================
+
+function ApiKeyRow({
+  label,
+  sublabel,
+  badge,
+  placeholder,
+  savedMask,
+  accentClass,
+  initialSaved,
+  onSave,
+  onClear,
+}: {
+  label: string;
+  sublabel: string;
+  badge?: string;
+  placeholder: string;
+  savedMask: string;
+  accentClass: string;
+  initialSaved: boolean;
+  onSave: (key: string) => void;
+  onClear: () => void;
+}) {
+  const [keyInput, setKeyInput] = useState('');
+  const [showKey, setShowKey] = useState(false);
+  const [saved, setSaved] = useState(initialSaved);
+
+  const handleSave = () => {
+    if (keyInput.trim()) {
+      onSave(keyInput.trim());
+      setKeyInput('');
+      setSaved(true);
+    }
+  };
+
+  const handleClear = () => {
+    onClear();
+    setKeyInput('');
+    setSaved(false);
+  };
+
+  return (
+    <div className="p-4 border-b border-border last:border-b-0">
+      <div className="flex items-center gap-3 mb-3">
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <p className="font-medium text-sm">{label}</p>
+            {badge && (
+              <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${accentClass}`}>
+                {badge}
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">{sublabel}</p>
+        </div>
+        {saved && (
+          <div className="flex items-center gap-1 rounded-full bg-green-100 dark:bg-green-950 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400">
+            <Sparkles className="w-3 h-3" />
+            Активен
+          </div>
+        )}
+      </div>
+
+      {saved ? (
+        <div className="flex gap-2">
+          <div className="flex-1 rounded-xl bg-muted px-4 py-3 text-sm text-muted-foreground font-mono">
+            {savedMask}
+          </div>
+          <button
+            type="button"
+            onClick={handleClear}
+            className="rounded-xl bg-red-50 dark:bg-red-950/40 px-4 py-3 text-sm font-medium text-red-600 dark:text-red-400"
+          >
+            Удалить
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <input
+                type={showKey ? 'text' : 'password'}
+                value={keyInput}
+                onChange={(e) => setKeyInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+                placeholder={placeholder}
+                className="w-full rounded-xl bg-muted px-4 py-3 pr-11 font-mono text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600"
+              />
+              <button
+                type="button"
+                onClick={() => setShowKey((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              >
+                {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={!keyInput.trim()}
+              className="rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-40"
+            >
+              Сохранить
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AISection() {
+  const [expanded, setExpanded] = useState(false);
+  const hasAnyKey = !!getGeminiApiKey() || !!getAnthropicApiKey();
+
+  return (
+    <div className="px-4 py-4">
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="w-full flex items-center gap-3 bg-card rounded-2xl border border-border p-4"
+      >
+        <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-950 flex items-center justify-center shrink-0">
+          <Camera className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+        </div>
+        <div className="flex-1 text-left">
+          <p className="font-medium text-sm">Улучшенное AI-сканирование</p>
+          <p className="text-xs text-muted-foreground">
+            {hasAnyKey ? 'Ключ настроен — AI активен' : 'Опционально — работает только онлайн'}
+          </p>
+        </div>
+        {hasAnyKey && (
+          <div className="flex items-center gap-1 rounded-full bg-green-100 dark:bg-green-950 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400">
+            <Sparkles className="w-3 h-3" />
+            Активно
+          </div>
+        )}
+        <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${expanded ? 'rotate-90' : ''}`} />
+      </button>
+
+      {expanded && (
+        <div className="mt-2 bg-card rounded-2xl border border-border overflow-hidden">
+          <div className="px-4 py-3 border-b border-border">
+            <p className="text-xs text-muted-foreground">
+              Оффлайн-сканер работает без ключей. AI-ключи нужны только для онлайн-режима — они позволяют читать любые иностранные чеки и сложные форматы.
+            </p>
+          </div>
+          <ApiKeyRow
+            label="Google Gemini"
+            sublabel="Бесплатно — до 200 сканирований в день. aistudio.google.com"
+            badge="Бесплатно"
+            placeholder="AIza..."
+            savedMask="AIza••••••••••••••••"
+            accentClass="bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400"
+            initialSaved={!!getGeminiApiKey()}
+            onSave={setGeminiApiKey}
+            onClear={() => setGeminiApiKey(null)}
+          />
+          <ApiKeyRow
+            label="Anthropic Claude"
+            sublabel="Платный. console.anthropic.com"
+            placeholder="sk-ant-..."
+            savedMask="sk-ant-••••••••••••••••"
+            accentClass=""
+            initialSaved={!!getAnthropicApiKey()}
+            onSave={setAnthropicApiKey}
+            onClear={() => setAnthropicApiKey(null)}
+          />
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -417,6 +594,7 @@ export const Settings = () => {
 
       <ProfileSection />
       <AppearanceSection />
+      <AISection />
       <DataSection />
       <SecuritySection />
 

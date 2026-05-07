@@ -148,15 +148,28 @@ export const AddTransaction = () => {
     e.target.value = '';
   };
 
+  const CATEGORY_HINT_MAP: Record<string, string> = {
+    'Продукты': 'cat_groceries',
+    'Ресторан/Кафе': 'cat_food',
+    'Транспорт': 'cat_transport',
+    'Здоровье': 'cat_health',
+    'Шопинг': 'cat_shopping',
+    'Развлечения': 'cat_fun',
+    'Коммунальные': 'cat_utilities',
+    'АЗС': 'cat_transport',
+  };
+
   const handleReceiptConfirm = (data: ReceiptData) => {
-    if (data.amount !== null) {
-      setAmount(String(data.amount));
-    }
-    if (data.merchant) {
-      setComment(data.merchant);
-    }
-    if (data.date) {
-      setSelectedDate(parseDateInputValue(data.date));
+    if (data.amount !== null) setAmount(String(data.amount));
+    if (data.merchant) setComment(data.merchant);
+    if (data.date) setSelectedDate(parseDateInputValue(data.date));
+
+    if (data.categoryHint) {
+      const catId = CATEGORY_HINT_MAP[data.categoryHint];
+      if (catId && categories.some((c) => c.id === catId && c.type === 'expense')) {
+        setSelectedCategory(catId);
+        setType('expense');
+      }
     }
 
     setShowReceiptModal(false);
@@ -357,6 +370,7 @@ export const AddTransaction = () => {
           isLoading={scanner.isLoading}
           error={scanner.error}
           errorMessage={scanner.errorMessage}
+          statusMessage={scanner.statusMessage}
           onConfirm={handleReceiptConfirm}
           onClose={handleReceiptClose}
         />
