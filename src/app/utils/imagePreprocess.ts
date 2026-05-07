@@ -53,7 +53,8 @@ export async function preprocessReceiptImage(file: File): Promise<File> {
 
 // Step 1: grayscale + percentile contrast stretch.
 // Pulls the 1st/99th percentile to 0/255 — handles yellowed or faded paper.
-function toGrayscaleContrast(data: Uint8ClampedArray) {
+// Exported for use in QR scanning pipeline (without Otsu binarization).
+export function toGrayscaleContrast(data: Uint8ClampedArray) {
   const n = data.length / 4;
   const hist = new Uint32Array(256);
 

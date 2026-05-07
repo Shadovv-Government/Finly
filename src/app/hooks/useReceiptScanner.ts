@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { preprocessReceiptImage, fileToBase64 } from '../utils/imagePreprocess';
+import { preprocessReceiptImage, fileToBase64, toGrayscaleContrast } from '../utils/imagePreprocess';
 import { parseReceiptWithGemini, getGeminiApiKey } from '../lib/geminiReceiptParser';
 import { parseReceiptWithClaude, getAnthropicApiKey } from '../lib/claudeReceiptParser';
 
@@ -56,53 +56,141 @@ declare class BarcodeDetector {
 }
 
 async function tryQrCode(file: File): Promise<ReceiptData | null> {
+  console.group('[QR] Начинаю поиск QR-кода');
+  console.log('[QR] Файл:', file.name, `${(file.size / 1024).toFixed(1)} KB`, file.type);
+
   // Try native BarcodeDetector first (fast, Chrome/Edge/Safari 17.4+).
-  if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
+  const hasBarcodeDetector = typeof window !== 'undefined' && 'BarcodeDetector' in window;
+  console.log('[QR] BarcodeDetector доступен:', hasBarcodeDetector);
+
+  if (hasBarcodeDetector) {
     try {
       const detector = new BarcodeDetector({ formats: ['qr_code'] });
       const bitmap = await createImageBitmap(file);
+      console.log('[QR] BarcodeDetector: размер изображения', bitmap.width, '×', bitmap.height);
       const codes = await detector.detect(bitmap);
       bitmap.close();
+      console.log('[QR] BarcodeDetector: найдено кодов:', codes.length);
       if (codes.length) {
+        console.log('[QR] BarcodeDetector: raw =', codes[0].rawValue);
         const result = parseFiscalQr(codes[0].rawValue);
-        if (result) return result;
+        if (result) {
+          console.log('[QR] BarcodeDetector: успешно распознан фискальный QR', result);
+          console.groupEnd();
+          return result;
+        }
+        console.warn('[QR] BarcodeDetector: QR найден, но не фискальный — пробую jsQR');
       }
-    } catch {
-      // fall through to jsQR
+    } catch (err) {
+      console.warn('[QR] BarcodeDetector: ошибка —', err);
     }
   }
 
   // Universal fallback: jsQR — pure JS, works in any browser including Firefox.
-  // Downscale to ≤1000px so jsQR stays fast even on large photos.
-  return tryQrCodeJsQR(file);
+  console.log('[QR] Пробую jsQR...');
+  const result = await tryQrCodeJsQR(file);
+  console.log('[QR] jsQR результат:', result ?? 'не найдено');
+  console.groupEnd();
+  return result;
+}
+
+// Quick pre-filter: a Russian ФНС fiscal QR always has t=, s=, fn=.
+// Avoids calling parseFiscalQr on promo/loyalty/URL QR codes.
+function isFiscalQrString(str: string): boolean {
+  return str.includes('t=') && str.includes('s=') && str.includes('fn=');
 }
 
 async function tryQrCodeJsQR(file: File): Promise<ReceiptData | null> {
   try {
     const { default: jsQR } = await import('jsqr');
 
-    const bitmap = await createImageBitmap(file);
-    const MAX = 1000;
-    let w = bitmap.width;
-    let h = bitmap.height;
-    if (Math.max(w, h) > MAX) {
-      const s = MAX / Math.max(w, h);
-      w = Math.round(w * s);
-      h = Math.round(h * s);
+    // createImageBitmap throws InvalidStateError on SVG — load via <img> instead.
+    let source: HTMLImageElement | ImageBitmap;
+    if (file.type === 'image/svg+xml') {
+      source = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('SVG не декодируется')); };
+        img.src = url;
+      });
+    } else {
+      source = await createImageBitmap(file);
     }
+
+    const srcW = 'naturalWidth' in source ? source.naturalWidth : source.width;
+    const srcH = 'naturalHeight' in source ? source.naturalHeight : source.height;
+
+    // Upscale narrow images so QR modules have at least ~3px each.
+    // We anchor on the SHORT side: receipts are portrait, so width limits module density.
+    // DNS receipt at 250px → 800px (3.2×), Пятёрочка at 607px → 800px (1.3×).
+    // Cap the long side at 2000px to avoid excessive memory.
+    const MIN_SHORT = 800;
+    const MAX_LONG  = 2000;
+    let w = srcW;
+    let h = srcH;
+    const shortSide = Math.min(w, h);
+    const longSide  = Math.max(w, h);
+    if (shortSide < MIN_SHORT) {
+      const scale = MIN_SHORT / shortSide;
+      w = Math.round(w * scale);
+      h = Math.round(h * scale);
+    } else if (longSide > MAX_LONG) {
+      const scale = MAX_LONG / longSide;
+      w = Math.round(w * scale);
+      h = Math.round(h * scale);
+    }
+
+    console.log(`[QR] jsQR: обрабатываю ${w}×${h} (исходный ${srcW}×${srcH})`);
 
     const canvas = document.createElement('canvas');
     canvas.width = w;
     canvas.height = h;
-    const ctx = canvas.getContext('2d')!;
-    ctx.drawImage(bitmap, 0, 0, w, h);
-    bitmap.close();
+    // willReadFrequently keeps the canvas in CPU memory — without it each getImageData
+    // triggers a GPU→CPU transfer, which is slow when we call it 3 times per scan.
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+    ctx.drawImage(source as CanvasImageSource, 0, 0, w, h);
+    if ('close' in source) source.close();
 
-    const imageData = ctx.getImageData(0, 0, w, h);
-    const code = jsQR(imageData.data, w, h, { inversionAttempts: 'attemptBoth' });
-    if (!code) return null;
-    return parseFiscalQr(code.data);
-  } catch {
+    // Attempt jsQR on a region. Each call gets a fresh ImageData copy so
+    // toGrayscaleContrast mutations in one pass don't affect others.
+    const tryRegion = (sx: number, sy: number, sw: number, sh: number, label: string): ReceiptData | null => {
+      const data = ctx.getImageData(sx, sy, sw, sh);
+      // Grayscale + percentile contrast stretch: jsQR reads only the R byte,
+      // so we need true luma and high contrast before handing off.
+      toGrayscaleContrast(data.data);
+      const code = jsQR(data.data, sw, sh, { inversionAttempts: 'attemptBoth' });
+      if (!code) {
+        console.log(`[QR] jsQR ${label}: не найден`);
+        return null;
+      }
+      console.log(`[QR] jsQR ${label}: raw =`, code.data);
+      if (!isFiscalQrString(code.data)) {
+        console.warn(`[QR] jsQR ${label}: QR найден, но не является фискальным чеком`);
+        return null;
+      }
+      return parseFiscalQr(code.data);
+    };
+
+    // Pass 1: full image
+    const full = tryRegion(0, 0, w, h, 'полное изображение');
+    if (full) return full;
+
+    // Pass 2: bottom 30% — ФНС QR is almost always in the bottom strip of a receipt.
+    // Scanning a sub-region dramatically improves module density ratio for jsQR.
+    const y30 = Math.floor(h * 0.7);
+    const roi30 = tryRegion(0, y30, w, h - y30, `нижние 30% (y=${y30})`);
+    if (roi30) return roi30;
+
+    // Pass 3: bottom 50% — wider net for short receipts or unusual layouts.
+    const y50 = Math.floor(h * 0.5);
+    const roi50 = tryRegion(0, y50, w, h - y50, `нижние 50% (y=${y50})`);
+    if (roi50) return roi50;
+
+    console.log('[QR] jsQR: QR-код не найден ни в одной области');
+    return null;
+  } catch (err) {
+    console.error('[QR] jsQR: ошибка —', err);
     return null;
   }
 }
@@ -116,13 +204,23 @@ function parseFiscalQr(raw: string): ReceiptData | null {
   const t = p.get('t');
   const fn = p.get('fn'); // fiscal drive number
   const fp = p.get('fp'); // fiscal sign
+  const i  = p.get('i');  // document number
 
-  // Require both a sum AND at least one fiscal identifier (fn or fp).
-  // This prevents misreading promo/URL QR codes that happen to have an "s" param.
-  if (!s || (!fn && !fp)) return null;
+  console.log('[QR] parseFiscalQr params:', { s, t, fn, fp, i });
+
+  // Need a sum + at least two fiscal identifiers to avoid false positives on promo QRs.
+  // Accepted combos: (fn+fp), (fn+i), (fn+t), (fp+t)
+  const fiscalCount = [fn, fp, i, t].filter(Boolean).length;
+  if (!s || fiscalCount < 2) {
+    console.warn('[QR] parseFiscalQr: недостаточно фискальных полей', { s, fiscalCount });
+    return null;
+  }
 
   const amount = parseFloat(s.replace(',', '.'));
-  if (isNaN(amount) || amount <= 0) return null;
+  if (isNaN(amount) || amount <= 0) {
+    console.warn('[QR] parseFiscalQr: некорректная сумма:', s);
+    return null;
+  }
 
   let date: string | null = null;
   if (t) {
