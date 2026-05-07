@@ -136,7 +136,7 @@ async function tryQrCodeJsQR(file: File): Promise<ReceiptData | null> {
 
     // Attempt jsQR on a region. Each call gets a fresh ImageData copy so
     // toGrayscaleContrast mutations in one pass don't affect others.
-    const tryRegion = (sx: number, sy: number, sw: number, sh: number, label: string): ReceiptData | null => {
+    const tryRegion = (sx: number, sy: number, sw: number, sh: number, _label: string): ReceiptData | null => {
       const data = ctx.getImageData(sx, sy, sw, sh);
       // Grayscale + percentile contrast stretch: jsQR reads only the R byte,
       // so we need true luma and high contrast before handing off.
