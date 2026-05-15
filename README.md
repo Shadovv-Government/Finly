@@ -54,7 +54,7 @@ npm run test:coverage
 #### Аналитика
 - Баланс за выбранный период
 - Расходы по категориям с круговыми диаграммами
-- Графики динамики (Recharts, Chart.js)
+- Графики динамики (Recharts)
 - Тренды расходов
 
 ### Расширенные возможности
@@ -125,14 +125,14 @@ npm run test:coverage
 - **react-hook-form 7.55.0** — управление формами
 - **TensorFlow.js 4.22.0** — локальная ML-классификация
 - **Tesseract.js 7.0.0** — OCR для сканирования чеков
-- **UI-компоненты:** Radix UI (полный набор), shadcn/ui, cmdk, vaul (bottom sheets), embla-carousel, react-dnd
+- **UI-компоненты:** Radix UI (полный набор), shadcn/ui, cmdk, vaul (bottom sheets), embla-carousel
 - **Стили:** Tailwind CSS 4.1.12, class-variance-authority, tailwind-merge
-- **Графики:** Recharts 2.15.2, Chart.js 4.4.2 + react-chartjs-2
+- **Графики:** Recharts 2.15.2
 - **Иконки:** Lucide React 0.487.0, Material Icons 5.15.15
 - **Анимации:** motion 12.23.24, canvas-confetti
 - **Уведомления:** sonner 2.0.3
 - **Даты:** date-fns 3.6.0
-- **Drag & Drop:** react-dnd 16.0.1
+- **Жесты и свайпы:** кастомные компоненты (например, `SwipeableRow`)
 
 ### Хранение данных
 - **IndexedDB** — браузерная NoSQL-база
@@ -173,6 +173,7 @@ finly/
 │   │   │   └── ReceiptScannerModal.tsx
 │   │   ├── contexts/
 │   │   │   ├── AuthContext.tsx # Авторизация и профиль пользователя
+│   │   │   ├── SettingsContext.tsx # Настройки приложения (локальные/сессионные)
 │   │   │   └── ThemeContext.tsx # Темы (light/dark/system)
 │   │   ├── hooks/              # Кастомные React-хуки
 │   │   │   ├── useAnalytics.ts
@@ -289,6 +290,7 @@ CI/CD: сборка и тесты запускаются автоматичес�
 | `settings` | `key` (string) | — | Настройки приложения |
 | `aiPatterns` | `++id` | `pattern, categoryId` | Паттерны автокатегоризации |
 | `users` | `id` (string) | `createdAt` | Профиль пользователя |
+| `notifications` | `++id` | `type, read, createdAt, expiresAt` | Уведомления с persist/read-state |
 
 ### Сущности
 
@@ -300,6 +302,7 @@ CI/CD: сборка и тесты запускаются автоматичес�
 - **AppSettings** — key-value хранилище (theme, baseCurrency, onboardingComplete)
 - **AIPattern** — pattern, categoryId, confidence (0-1), usageCount
 - **User** — id (uuid), name, createdAt, deviceId, avatarColor
+- **NotificationItem** — type, title, subtitle, icon/meta, read, createdAt, expiresAt
 
 ## Особенности реализации
 

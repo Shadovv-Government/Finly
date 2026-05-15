@@ -198,4 +198,4 @@ navigator.credentials.get({
 | `src/app/routes.tsx` | Add lock check to ProtectedRoute |
 | `src/app/screens/Registration.tsx` | Add BiometricSetupCard step after register |
 | `src/app/screens/Settings.tsx` | Add "Безопасность" section |
-| `src/db/operations.ts` | Add helpers: `getBiometricSettings`, `setBiometricSettings`, `clearBiometricSettings` |
+| `src/db/operations/biometric.ts` | Add helpers: `getBiometricSettings`, `setBiometricSetting`, `clearBiometricSettings` |

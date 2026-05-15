@@ -127,11 +127,11 @@ CRUD-операции разделены по отдельным файлам д
 | `index.ts` | Ре-экспорт всех CRUD операций | — |
 | `transactions.ts` | CRUD транзакций | ✅ |
 | `categories.ts` | CRUD категорий | ✅ |
-| `budgets.ts` | CRUD бюджетов | — |
-| `goals.ts` | CRUD целей | — |
+| `budgets.ts` | CRUD бюджетов | ✅ |
+| `goals.ts` | CRUD целей | ✅ |
 | `settings.ts` | CRUD настроек | — |
 | `recurring.ts` | CRUD повторяющихся платежей | — |
-| `users.ts` | CRUD пользователей | — |
+| `users.ts` | CRUD пользователей | ✅ |
 | `aiPatterns.ts` | CRUD AI паттернов | — |
 | `biometric.ts` | Биометрические настройки в `settings` | — |
 | `notifications.ts` | CRUD уведомлений (+ persist, read/unread) | — |

@@ -18,11 +18,10 @@
 | React | ^18.3.1 | UI-фреймворк |
 | React Router | ^7.13.1 | Клиентская маршрутизация |
 | Zustand | ^4.5.2 | Глобальное состояние |
-| Radix UI | 0.487.0 | Headless UI-компоненты |
+| Radix UI | 1.x/2.x пакеты (@radix-ui/react-*) | Headless UI-компоненты |
 | shadcn/ui | — | Готовые компоненты |
 | Tailwind CSS | 4.1.12 | Утилитарные стили |
 | Recharts | 2.15.2 | Графики и визуализация |
-| Chart.js | ^4.4.2 | Альтернативная библиотека графиков |
 | Lucide React | 0.487.0 | Иконки |
 | Material Icons | ^5.15.15 | Дополнительные иконки |
 | Motion | 12.23.24 | Анимации |
@@ -57,7 +56,7 @@
 │   react-router-dom (ProtectedRoute)          │
 ├──────────────────────────────────────────────┤
 │        Data Access Layer  (src/db/)          │
-│   operations.ts → analytics.ts → ai.ts       │
+│   operations/index.ts → analytics.ts → ai.ts │
 │   recurring.ts → exportImport.ts             │
 │              ↓                               │
 │           Dexie.js ORM                       │
@@ -86,6 +85,7 @@
 | `settings` | `key` (string) | — | KV-хранилище настроек |
 | `aiPatterns` | `++id` (auto) | `pattern, categoryId` | Паттерны AI-категоризации |
 | `users` | `id` (string) | `createdAt` | Профиль пользователя |
+| `notifications` | `++id` (auto) | `type, read, createdAt, expiresAt` | Уведомления (persist/read-state) |
 
 ---
 
@@ -286,7 +286,7 @@ CRUD-операции разделены по отдельным файлам д
 
 Все функции экспортируются через `operations/index.ts`.
 
-**Тесты:** `transactions.test.ts`, `categories.test.ts`
+**Тесты:** `transactions.test.ts`, `categories.test.ts`, `budgets.test.ts`, `goals.test.ts`, `users.test.ts`
 
 ---
 
@@ -378,6 +378,7 @@ interface ValidationResult {
 |----------|------------|
 | `ThemeContext.tsx` | Темы: light/dark/system, сохранение в localStorage |
 | `AuthContext.tsx` | Авторизация: user, register, updateProfile, logout |
+| `SettingsContext.tsx` | Состояние и доступ к пользовательским настройкам |
 
 ### 8.3 Экраны (`screens/`)
 
@@ -414,7 +415,7 @@ interface ValidationResult {
 /recurring           → RecurringScreen
 /categories          → Categories
 /ai-assistant        → AIAssistant
-/components          → ComponentShowcase
+/components          → ComponentShowcase (только в development)
 /onboarding          → Onboarding
 /register            → Registration
 /privacy             → PrivacyPolicy
@@ -708,7 +709,7 @@ manifest: {
 | `/goals` | Goals |
 | `/categories` | Categories |
 | `/ai-assistant` | AIAssistant |
-| `/components` | ComponentShowcase |
+| `/components` | ComponentShowcase (development-only) |
 
 ### Публичные роуты
 
@@ -790,7 +791,7 @@ manifest: {
 
 1. **Типы:** Добавить интерфейс в `src/db/types.ts`
 2. **БД:** Обновить схему в `src/db/db.ts`
-3. **CRUD:** Функции в `src/db/operations.ts`
+3. **CRUD:** Функции в `src/db/operations/*` (ре-экспорт через `src/db/operations/index.ts`)
 4. **Хук:** Создать `src/app/hooks/useNewFeature.ts`
 5. **UI:** Компоненты в `src/app/components/`
 6. **Экран:** `src/app/screens/NewFeatureScreen.tsx`
@@ -834,7 +835,6 @@ this.version(3).stores({
 | canvas-confetti | 1.9.4 | Анимация конфетти |
 | vaul | 1.1.2 | Drawer-компоненты |
 | embla-carousel-react | 8.6.0 | Карусель |
-| react-dnd | 16.0.1 | Drag-and-drop |
 
 ### Дополнительные UI-компоненты (Radix UI + shadcn/ui)
 

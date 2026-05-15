@@ -139,7 +139,7 @@ interface Transaction {
   id?: number;          // autoIncrement
   amount: number;
   type: 'income' | 'expense';
-  categoryId: string;   // FK → categories.id
+  categoryId?: string;  // FK → categories.id (опционально, fallback на системную категорию "Другое")
   date: number;         // timestamp
   comment?: string;
   currency: string;     // код валюты (RUB, USD)
@@ -358,10 +358,13 @@ this.version(1).stores({
 });
 
 this.version(2).stores({
+  ...BASE_SCHEMA,
   users: 'id, createdAt',
 });
 
 this.version(3).stores({
+  ...BASE_SCHEMA,
+  users: 'id, createdAt',
   notifications: '++id, type, read, createdAt, expiresAt',
 });
 ```
