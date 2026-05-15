@@ -7,7 +7,7 @@ import {
   getSavingsRate,
 } from '../../db/analytics';
 
-const fmt = (n: number) => Math.round(n).toLocaleString('ru-RU').replace(/ /g, ' ');
+const fmt = (n: number) => Math.round(n).toLocaleString('ru-RU').replace(/\u00A0/g, ' ');
 
 export async function buildFinancialSnapshot(): Promise<string> {
   const now = new Date();
