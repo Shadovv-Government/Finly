@@ -1,21 +1,7 @@
-import { useRef, useEffect, useState } from 'react';
-import { Send, Sparkles, TrendingDown, AlertTriangle, Lightbulb, TrendingUp, Loader2, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Sparkles, TrendingDown, AlertTriangle, Lightbulb, TrendingUp, Loader2, Send, WifiOff } from 'lucide-react';
 import { useAIInsights, type Insight } from '../hooks/useAIInsights';
-
-function fmt(n: number) {
-  return new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 }).format(n);
-}
-
-const HINTS = [
-  'Сколько потратил сегодня?',
-  'Самые крупные траты',
-  'Прогноз расходов',
-  'Ближайшие платежи',
-  'Сравни с прошлым месяцем',
-  'Мои цели',
-  'Средние расходы в день',
-  'Что ты умеешь?',
-];
+import { useAIChat } from '../hooks/useAIChat';
 
 const INSIGHT_CONFIG = {
   alert:    { Icon: AlertTriangle, color: 'text-red-500',    bg: 'bg-red-50 dark:bg-red-950/40' },
@@ -23,6 +9,14 @@ const INSIGHT_CONFIG = {
   tip:      { Icon: Lightbulb,     color: 'text-violet-500', bg: 'bg-violet-50 dark:bg-violet-950/40' },
   positive: { Icon: TrendingUp,    color: 'text-emerald-500',bg: 'bg-emerald-50 dark:bg-emerald-950/40' },
 } as const;
+
+const SUGGESTIONS = [
+  'Мой баланс',
+  'Расходы за месяц',
+  'Состояние бюджетов',
+  'Мои цели',
+  'Прогноз до конца месяца',
+];
 
 function InsightCard({ insight }: { insight: Insight }) {
   const cfg = INSIGHT_CONFIG[insight.type];
@@ -41,71 +35,20 @@ function InsightCard({ insight }: { insight: Insight }) {
   );
 }
 
-function TypingBubble() {
-  return (
-    <div className="flex justify-start">
-      <div className="bg-card border border-border rounded-2xl px-4 py-3 flex gap-1 items-center">
-        <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce [animation-delay:0ms]" />
-        <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce [animation-delay:150ms]" />
-        <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce [animation-delay:300ms]" />
-      </div>
-    </div>
-  );
-}
-
-function ChatBubble({
-  role,
-  message,
-  suggestions,
-  onSuggestion,
-}: {
-  role: 'user' | 'assistant';
-  message: string;
-  suggestions?: string[];
-  onSuggestion?: (text: string) => void;
-}) {
-  const isUser = role === 'user';
-  return (
-    <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
-      <div
-        className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap leading-relaxed ${
-          isUser
-            ? 'bg-violet-600 text-white'
-            : 'bg-card border border-border text-foreground'
-        }`}
-      >
-        {message}
-      </div>
-      {!isUser && suggestions && suggestions.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mt-2 max-w-[85%]">
-          {suggestions.map(s => (
-            <button
-              key={s}
-              onClick={() => onSuggestion?.(s)}
-              className="text-xs px-3 py-1.5 bg-muted rounded-full hover:bg-accent transition-colors"
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export const AIAssistant = () => {
-  const { loading, isTyping, overview, insights, chatHistory, sendMessage } = useAIInsights();
-  const [message, setMessage] = useState('');
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  const { loading, insights } = useAIInsights();
+  const { messages, isLoading, isOffline, sendMessage } = useAIChat();
+  const [input, setInput] = useState('');
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatHistory, isTyping]);
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const handleSend = async () => {
-    const text = message.trim();
-    if (!text || isTyping) return;
-    setMessage('');
+    const text = input.trim();
+    if (!text || isLoading) return;
+    setInput('');
     await sendMessage(text);
   };
 
@@ -120,7 +63,7 @@ export const AIAssistant = () => {
     <div className="pb-20 bg-background min-h-screen flex flex-col">
       {/* Header */}
       <div className="px-4 pt-6 pb-4 bg-gradient-to-br from-violet-600 to-indigo-700 text-white">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between">
           <div>
             <p className="text-sm opacity-90">Умный анализ финансов</p>
             <h1 className="text-xl font-bold">AI Ассистент</h1>
@@ -129,130 +72,102 @@ export const AIAssistant = () => {
             <Sparkles className="w-5 h-5" />
           </div>
         </div>
-
-        {/* Weekly Overview */}
-        {loading || !overview ? (
-          <div className="bg-white/10 rounded-2xl p-4 flex items-center gap-2">
-            <Loader2 className="w-4 h-4 animate-spin opacity-80" />
-            <span className="text-sm opacity-80">Анализирую данные…</span>
-          </div>
-        ) : (
-          <div className="bg-white/10 rounded-2xl p-4">
-            <p className="text-xs opacity-70 mb-3">Обзор за 7 дней</p>
-            <div className="flex gap-3 mb-3">
-              <div className="flex-1 bg-white/10 rounded-xl p-3">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <ArrowUpRight className="w-3.5 h-3.5 text-emerald-300" />
-                  <span className="text-xs opacity-70">Доходы</span>
-                </div>
-                <p className="text-base font-bold">{fmt(overview.weekIncome)} ₽</p>
-              </div>
-              <div className="flex-1 bg-white/10 rounded-xl p-3">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <ArrowDownRight className="w-3.5 h-3.5 text-red-300" />
-                  <span className="text-xs opacity-70">Расходы</span>
-                </div>
-                <p className="text-base font-bold">{fmt(overview.weekExpenses)} ₽</p>
-              </div>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="opacity-80">
-                {overview.weekBalance >= 0
-                  ? `Баланс +${fmt(overview.weekBalance)} ₽`
-                  : `Дефицит ${fmt(Math.abs(overview.weekBalance))} ₽`}
-              </span>
-              <span className="font-medium opacity-90">
-                Экономия {overview.savingsRate}%
-              </span>
-            </div>
-          </div>
-        )}
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto flex flex-col">
         {/* Insights */}
-        {(loading || insights.length > 0) && (
-          <div className="px-4 pt-4">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="font-bold text-sm">Инсайты</h2>
-              {insights.length > 0 && (
-                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                  {insights.length}
-                </span>
-              )}
-            </div>
-            {loading ? (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-sm">Загрузка…</span>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {insights.map(insight => (
-                  <InsightCard key={insight.id} insight={insight} />
-                ))}
-              </div>
+        <div className="px-4 pt-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-bold text-sm">Инсайты</h2>
+            {!loading && insights.length > 0 && (
+              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                {insights.length}
+              </span>
             )}
           </div>
-        )}
+          {loading ? (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-sm">Загрузка…</span>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {insights.map(insight => (
+                <InsightCard key={insight.id} insight={insight} />
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Chat */}
-        <div className="px-4 pt-4 pb-2">
-          {chatHistory.length > 0 ? (
-            <>
-              <h2 className="font-bold text-sm mb-3">Чат</h2>
-              <div className="space-y-2">
-                {chatHistory.map((chat, index) => (
-                  <ChatBubble
-                    key={index}
-                    role={chat.role}
-                    message={chat.message}
-                    suggestions={chat.suggestions}
-                    onSuggestion={sendMessage}
-                  />
-                ))}
-                {isTyping && <TypingBubble />}
-              </div>
-              <div ref={chatEndRef} />
-            </>
-          ) : !loading && (
-            <>
-              <p className="text-xs text-muted-foreground mb-2">Попробуйте спросить:</p>
+        <div className="px-4 pt-5 flex-1 flex flex-col">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-bold text-sm">Спросить AI</h2>
+            {isOffline && (
+              <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                <WifiOff className="w-3 h-3" />
+                офлайн
+              </span>
+            )}
+          </div>
+
+          {/* Messages */}
+          <div className="flex-1 space-y-3 mb-3 min-h-[80px]">
+            {messages.length === 0 && (
               <div className="flex flex-wrap gap-2">
-                {HINTS.map(hint => (
+                {SUGGESTIONS.map(s => (
                   <button
-                    key={hint}
-                    onClick={() => sendMessage(hint)}
-                    className="text-xs px-3 py-1.5 bg-muted rounded-full hover:bg-accent transition-colors"
+                    key={s}
+                    onClick={() => { if (!isLoading) void sendMessage(s); }}
+                    className="text-xs px-3 py-1.5 rounded-full bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800 hover:bg-violet-100 dark:hover:bg-violet-900/40 transition-colors"
                   >
-                    {hint}
+                    {s}
                   </button>
                 ))}
               </div>
-            </>
-          )}
-        </div>
-      </div>
+            )}
+            {messages.map((msg, i) => (
+              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div
+                  className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm whitespace-pre-wrap ${
+                    msg.role === 'user'
+                      ? 'bg-violet-600 text-white rounded-br-sm'
+                      : 'bg-card border border-border text-foreground rounded-bl-sm'
+                  }`}
+                >
+                  {msg.content}
+                </div>
+              </div>
+            ))}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-card border border-border px-3 py-2 rounded-2xl rounded-bl-sm">
+                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                </div>
+              </div>
+            )}
+            <div ref={bottomRef} />
+          </div>
 
-      {/* Input */}
-      <div className="px-4 py-3 bg-card border-t border-border">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            placeholder="Спросите о ваших финансах…"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={isTyping}
-            className="flex-1 px-4 py-2.5 bg-muted rounded-xl text-sm outline-none focus:ring-2 focus:ring-violet-600 disabled:opacity-60"
-          />
-          <button
-            onClick={handleSend}
-            disabled={!message.trim() || isTyping}
-            className="w-10 h-10 bg-violet-600 text-white rounded-xl flex items-center justify-center disabled:opacity-40 transition-opacity"
-          >
-            {isTyping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-          </button>
+          {/* Input */}
+          <div className="flex gap-2 sticky bottom-0 pb-2 bg-background">
+            <input
+              type="text"
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Введите вопрос…"
+              className="flex-1 text-sm px-4 py-2.5 rounded-2xl bg-card border border-border focus:outline-none focus:ring-2 focus:ring-violet-500/50 placeholder:text-muted-foreground"
+              disabled={isLoading}
+            />
+            <button
+              onClick={handleSend}
+              disabled={!input.trim() || isLoading}
+              className="w-10 h-10 rounded-2xl bg-violet-600 text-white flex items-center justify-center disabled:opacity-40 transition-opacity hover:bg-violet-700"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
