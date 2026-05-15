@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { chatCompletion, AIClientError } from './aiClient';
+import { chatCompletion } from './aiClient';
 import type { AIClientConfig } from './aiClient';
 
 const CONFIG: AIClientConfig = {
