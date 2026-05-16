@@ -21,10 +21,6 @@ vi.mock('./chatContext', () => ({
   }),
 }));
 
-// Silence import.meta.env in tests
-vi.stubEnv('VITE_OPENROUTER_API_KEY', 'test-key');
-vi.stubEnv('VITE_AI_MODEL', 'openai/gpt-4o-mini');
-
 import { chatCompletion } from '../../services/ai/aiClient';
 import { answerQuery } from './chatContext';
 import { buildFinancialSnapshot } from '../../services/ai/contextBuilder';

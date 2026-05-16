@@ -1,8 +1,4 @@
-export interface AIClientConfig {
-  apiKey: string;
-  model: string;
-  baseUrl?: string;
-}
+const PROXY_URL = '/api/ai-chat';
 
 export interface AIMessage {
   role: 'user' | 'assistant' | 'system';
@@ -21,42 +17,27 @@ export class AIClientError extends Error {
 }
 
 export async function chatCompletion(
-  config: AIClientConfig,
   systemPrompt: string,
   messages: AIMessage[],
 ): Promise<string> {
-  const url = `${config.baseUrl ?? 'https://openrouter.ai/api/v1'}/chat/completions`;
-
   let res: Response;
   try {
-    res = await fetch(url, {
+    res = await fetch(PROXY_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${config.apiKey}`,
-        'HTTP-Referer': 'https://finly.app',
-        'X-Title': 'Finly',
-      },
-      body: JSON.stringify({
-        model: config.model,
-        messages: [{ role: 'system', content: systemPrompt }, ...messages],
-        temperature: 0.7,
-        max_tokens: 800,
-      }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ systemPrompt, messages }),
     });
   } catch {
     throw new AIClientError('Network request failed', 'network');
   }
 
-  if (res.status === 401) throw new AIClientError('Invalid API key', 'auth');
-  if (res.status === 429) throw new AIClientError('Rate limit exceeded', 'rate_limit');
+  if (res.status === 500) throw new AIClientError('Invalid API key', 'auth');
+  if (res.status === 503) throw new AIClientError('Rate limit exceeded', 'rate_limit');
   if (!res.ok) throw new AIClientError(`HTTP ${res.status}`, 'unknown');
 
-  const data = await res.json() as {
-    choices?: Array<{ message?: { content?: string } }>;
-  };
-  const content = data.choices?.[0]?.message?.content;
-  if (!content?.trim()) throw new AIClientError('Empty response from API', 'unknown');
+  const data = (await res.json()) as { content?: string; error?: string };
+  if (data.error) throw new AIClientError(data.error, 'unknown');
+  if (!data.content?.trim()) throw new AIClientError('Empty response', 'unknown');
 
-  return content;
+  return data.content;
 }

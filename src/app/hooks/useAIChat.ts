@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import { chatCompletion, type AIClientConfig, type AIMessage } from '../../services/ai/aiClient';
+import { chatCompletion, type AIMessage } from '../../services/ai/aiClient';
 import { buildFinancialSnapshot } from '../../services/ai/contextBuilder';
 import { answerQuery, type ChatCtx } from './chatContext';
 
@@ -8,11 +8,6 @@ export interface ChatMessage {
   content: string;
   isOffline?: boolean;
 }
-
-const AI_CONFIG: AIClientConfig = {
-  apiKey: import.meta.env.VITE_OPENROUTER_API_KEY ?? '',
-  model: import.meta.env.VITE_AI_MODEL ?? 'openai/gpt-4o-mini',
-};
 
 const SYSTEM_PERSONA =
   'Ты финансовый ассистент приложения Finly. Отвечай кратко и по делу на русском языке.\n' +
@@ -40,7 +35,7 @@ export function useAIChat() {
       const history: AIMessage[] = prevMessages.map(m => ({ role: m.role, content: m.content }));
       history.push({ role: 'user', content: text });
 
-      const reply = await chatCompletion(AI_CONFIG, systemPrompt, history);
+      const reply = await chatCompletion(systemPrompt, history);
       const withAssistant: ChatMessage[] = [...messagesRef.current, { role: 'assistant', content: reply }];
       messagesRef.current = withAssistant;
       setMessages(withAssistant);

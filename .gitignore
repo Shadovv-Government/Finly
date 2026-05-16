@@ -46,3 +46,5 @@ QWEN.md
 
 # Credentials
 gha-creds-*.json
+.vercel
+.env*.local
