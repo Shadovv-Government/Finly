@@ -20,15 +20,15 @@ beforeEach(() => {
     periodStart: 0, periodEnd: 1,
   });
   m.getExpensesByCategory.mockResolvedValue([
-    { categoryId: '1', categoryName: 'Продукты', amount: 12400, percent: 35, icon: '🛒', color: '#f00' },
-    { categoryId: '2', categoryName: 'Транспорт', amount: 5200, percent: 15, icon: '🚗', color: '#0f0' },
+    { categoryId: '1', categoryName: 'Продукты', amount: 12400, percent: 35, icon: 'ShoppingBasket', color: '#f00' },
+    { categoryId: '2', categoryName: 'Транспорт', amount: 5200, percent: 15, icon: 'Car', color: '#0f0' },
   ]);
   m.getAllBudgetsProgress.mockResolvedValue([
-    { categoryId: '1', categoryName: 'Продукты', spent: 12400, limit: 15000, percent: 83, isOverBudget: false, icon: '🛒', color: '#f00' },
-    { categoryId: '3', categoryName: 'Кафе', spent: 4100, limit: 4000, percent: 102, isOverBudget: true, icon: '☕', color: '#00f' },
+    { categoryId: '1', categoryName: 'Продукты', spent: 12400, limit: 15000, percent: 83, isOverBudget: false, icon: 'ShoppingBasket', color: '#f00' },
+    { categoryId: '3', categoryName: 'Кафе', spent: 4100, limit: 4000, percent: 102, isOverBudget: true, icon: 'Coffee', color: '#00f' },
   ]);
   m.getGoalsProgress.mockResolvedValue([
-    { id: 1, name: 'Отпуск', targetAmount: 60000, currentAmount: 18000, percent: 30, remaining: 42000, icon: '✈️', color: '#00f', isActive: true },
+    { id: 1, name: 'Отпуск', targetAmount: 60000, currentAmount: 18000, percent: 30, remaining: 42000, icon: 'Plane', color: '#00f', isActive: true },
   ]);
   m.getRecurringUpcoming.mockResolvedValue([
     { label: 'Spotify', amount: 299, daysUntil: 0 },
@@ -60,10 +60,10 @@ describe('buildFinancialSnapshot', () => {
     expect(snap).toContain('Транспорт');
   });
 
-  it('marks over-budget categories with ❌', async () => {
+  it('marks over-budget categories with [over]', async () => {
     const snap = await buildFinancialSnapshot();
     expect(snap).toContain('Кафе');
-    expect(snap).toContain('❌');
+    expect(snap).toContain('[over]');
   });
 
   it('includes active goals', async () => {

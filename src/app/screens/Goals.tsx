@@ -183,7 +183,7 @@ export const Goals = () => {
           );
         })}
         {goals.length === 0 && (
-          <EmptyState emoji="🎯" title="Нет целей" description="Поставьте финансовую цель и начните копить" action={{ label: 'Создать первую цель', onClick: () => setIsCreateFormOpen(true) }} />
+          <EmptyState icon="Target" title="Нет целей" description="Поставьте финансовую цель и начните копить" action={{ label: 'Создать первую цель', onClick: () => setIsCreateFormOpen(true) }} />
         )}
       </div>
 

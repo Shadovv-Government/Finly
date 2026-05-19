@@ -104,7 +104,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({
       });
 
       // Отправляем push-уведомление
-      notify('✅ Цель создана', initialData ? 'Цель обновлена' : `Цель "${name.trim()}" создана`);
+      notify('Цель создана', initialData ? 'Цель обновлена' : `Цель "${name.trim()}" создана`);
 
       onClose();
     } catch (error) {

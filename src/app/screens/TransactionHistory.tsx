@@ -554,7 +554,7 @@ export const TransactionHistory = () => {
             </>
           );
         })() : (
-          <EmptyState emoji="💸" title="Нет транзакций" description="Здесь будут отображаться все ваши операции" />
+          <EmptyState icon="Banknote" title="Нет транзакций" description="Здесь будут отображаться все ваши операции" />
         )}
       </div>
 

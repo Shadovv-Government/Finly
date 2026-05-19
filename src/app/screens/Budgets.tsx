@@ -220,7 +220,7 @@ export const Budgets = () => {
 
       {/* Empty State */}
       {filteredBudgets.length === 0 && (
-        <EmptyState emoji="💰" title="Нет бюджетов" description="Создайте первый бюджет, чтобы контролировать расходы" action={{ label: 'Создать бюджет', onClick: handleAddBudget }} />
+        <EmptyState icon="Wallet" title="Нет бюджетов" description="Создайте первый бюджет, чтобы контролировать расходы" action={{ label: 'Создать бюджет', onClick: handleAddBudget }} />
       )}
 
       {/* Форма добавления/редактирования бюджета */}

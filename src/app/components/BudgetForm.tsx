@@ -53,12 +53,12 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({
   const handleSubmit = async () => {
     const budgetAmount = parseFloat(amount);
     if (!selectedCategoryId) {
-      notify('⚠️ Выберите категорию', 'error');
+      notify('Выберите категорию', 'error');
       return;
     }
 
     if (!budgetAmount || budgetAmount <= 0) {
-      notify('⚠️ Введите сумму бюджета', 'error');
+      notify('Введите сумму бюджета', 'error');
       return;
     }
 
@@ -74,13 +74,13 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({
       });
 
       notify(
-        initialData ? '✅ Бюджет обновлен' : '✅ Бюджет создан',
+        initialData ? 'Бюджет обновлен' : 'Бюджет создан',
         initialData ? `Бюджет обновлен` : `Бюджет на ${formatAmountInput(amount)} ₽ создан`
       );
 
       onClose();
     } catch (error) {
-      notify('❌ Ошибка при сохранении', 'error');
+      notify('Ошибка при сохранении', 'error');
     } finally {
       setIsSubmitting(false);
     }

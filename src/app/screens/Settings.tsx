@@ -400,20 +400,20 @@ function DataSection() {
   const handleExportJSON = async () => {
     try {
       await exportToFile('finly-export.json');
-      notify('✅ Экспорт завершён', 'Данные сохранены в JSON');
+      notify('Экспорт завершён', 'Данные сохранены в JSON');
       setIsExportOpen(false);
     } catch {
-      notify('❌ Ошибка экспорта', 'Не удалось сохранить файл', 'error');
+      notify('Ошибка экспорта', 'Не удалось сохранить файл', 'error');
     }
   };
 
   const handleExportCSV = async () => {
     try {
       await exportCSVToFile('finly-transactions.csv');
-      notify('✅ Экспорт завершён', 'Транзакции сохранены в CSV');
+      notify('Экспорт завершён', 'Транзакции сохранены в CSV');
       setIsExportOpen(false);
     } catch {
-      notify('❌ Ошибка экспорта', 'Не удалось сохранить файл', 'error');
+      notify('Ошибка экспорта', 'Не удалось сохранить файл', 'error');
     }
   };
 
@@ -427,18 +427,18 @@ function DataSection() {
       if (result.success) {
         const total = Object.values(result.imported).reduce((s: number, v: number) => s + v, 0);
         notify(
-          '✅ Импорт завершён',
+          'Импорт завершён',
           `Импортировано: ${total} записей` +
             (result.warnings.length > 0 ? ` (${result.warnings.length} предупреждений)` : '')
         );
       } else {
         notify(
-          '⚠️ Импорт с ошибками',
+          'Импорт с ошибками',
           result.errors.slice(0, 2).join('; ') || 'Не удалось импортировать данные'
         );
       }
     } catch {
-      notify('❌ Ошибка импорта', 'Не удалось прочитать файл', 'error');
+      notify('Ошибка импорта', 'Не удалось прочитать файл', 'error');
     } finally {
       setIsImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

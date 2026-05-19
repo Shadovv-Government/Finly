@@ -93,7 +93,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
 
   const handleSubmit = async () => {
     if (!name.trim()) {
-      notify('⚠️ Введите название категории', 'error');
+      notify('Введите название категории', 'error');
       return;
     }
 
@@ -107,13 +107,13 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
       });
 
       notify(
-        initialData ? '✅ Категория обновлена' : '✅ Категория создана',
+        initialData ? 'Категория обновлена' : 'Категория создана',
         initialData ? `Категория "${name.trim()}" обновлена` : `Категория "${name.trim()}" создана`
       );
 
       onClose();
     } catch (error) {
-      notify('❌ Ошибка при сохранении', 'error');
+      notify('Ошибка при сохранении', 'error');
     } finally {
       setIsSubmitting(false);
     }

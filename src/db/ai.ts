@@ -470,7 +470,7 @@ export async function generateSuggestions(): Promise<AISuggestion[]> {
     if (maxExpense && maxExpense.amount > avgExpense * 3) {
       suggestions.push({
         type: 'unusual',
-        message: `📊 Крупная трата: ${maxExpense.amount} ₽ в категории "${maxExpense.categoryName}"`,
+        message: `Крупная трата: ${maxExpense.amount} ₽ в категории "${maxExpense.categoryName}"`,
         priority: 4,
         data: maxExpense,
       });

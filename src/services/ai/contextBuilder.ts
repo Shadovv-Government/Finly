@@ -44,7 +44,7 @@ export async function buildFinancialSnapshot(): Promise<string> {
   if (budgets.length > 0) {
     const budgetStr = budgets
       .map(b => {
-        const flag = b.isOverBudget ? '❌' : b.percent >= 80 ? '⚠️' : '✅';
+        const flag = b.isOverBudget ? '[over]' : b.percent >= 80 ? '[warn]' : '[ok]';
         return `${b.categoryName} ${fmt(b.spent)}/${fmt(b.limit)} ₽ ${flag}`;
       })
       .join(', ');

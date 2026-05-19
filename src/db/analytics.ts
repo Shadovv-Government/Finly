@@ -376,7 +376,7 @@ export async function getBudgetProgressForPeriod(
     limit: budget.amount,
     percent: Math.min(percent, 100),
     isOverBudget: spent > budget.amount,
-    icon: category?.icon || '📊',
+    icon: category?.icon || 'ChartColumn',
     color: category?.color || '#999',
   };
 }

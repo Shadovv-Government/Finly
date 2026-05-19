@@ -1,4 +1,4 @@
-import { Bell, Camera, Calendar, TrendingUp } from 'lucide-react';
+import { Bell, Camera, Calendar, TrendingUp, Wallet, Target, Folder, Repeat, Sparkles } from 'lucide-react';
 import { EmptyState } from '../components/EmptyState';
 import { motion } from 'motion/react';
 import { useState, useMemo, useEffect } from 'react';
@@ -131,7 +131,7 @@ function ExpenseBreakdown({ data }: ExpenseBreakdownProps) {
             </div>
           </>
         ) : (
-          <EmptyState emoji="📊" title="Нет данных" description="Добавьте транзакции за этот период, чтобы увидеть структуру расходов" />
+          <EmptyState icon="ChartColumn" title="Нет данных" description="Добавьте транзакции за этот период, чтобы увидеть структуру расходов" />
         )}
       </div>
     </div>
@@ -181,7 +181,7 @@ function RecentTransactions({ transactions, categories }: RecentTransactionsProp
             );
           })
         ) : (
-          <EmptyState emoji="💸" title="Нет транзакций" description="Добавьте первую транзакцию, чтобы начать учёт" />
+          <EmptyState icon="Banknote" title="Нет транзакций" description="Добавьте первую транзакцию, чтобы начать учёт" />
         )}
       </div>
     </div>
@@ -413,8 +413,8 @@ export const Dashboard = () => {
       <div className="px-5 py-4">
         <div className="grid grid-cols-2 gap-2.5">
           <Link to="/budgets" className="card-premium p-4 flex items-center gap-3 hover:shadow-md transition-shadow duration-200 active:scale-[0.98]">
-            <div className="w-10 h-10 shrink-0 rounded-xl bg-red-50 dark:bg-red-950 flex items-center justify-center text-lg shadow-xs">
-              💰
+            <div className="w-10 h-10 shrink-0 rounded-xl bg-red-50 dark:bg-red-950 flex items-center justify-center shadow-xs">
+              <Wallet className="w-5 h-5 text-red-600 dark:text-red-400" />
             </div>
             <div>
               <p className="text-sm font-semibold">Бюджеты</p>
@@ -423,8 +423,8 @@ export const Dashboard = () => {
           </Link>
 
           <Link to="/goals" className="card-premium p-4 flex items-center gap-3 hover:shadow-md transition-shadow duration-200 active:scale-[0.98]">
-            <div className="w-10 h-10 shrink-0 rounded-xl bg-green-50 dark:bg-green-950 flex items-center justify-center text-lg shadow-xs">
-              🎯
+            <div className="w-10 h-10 shrink-0 rounded-xl bg-green-50 dark:bg-green-950 flex items-center justify-center shadow-xs">
+              <Target className="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
             <div>
               <p className="text-sm font-semibold">Цели</p>
@@ -433,8 +433,8 @@ export const Dashboard = () => {
           </Link>
 
           <Link to="/categories" className="card-premium p-4 flex items-center gap-3 hover:shadow-md transition-shadow duration-200 active:scale-[0.98]">
-            <div className="w-10 h-10 shrink-0 rounded-xl bg-blue-50 dark:bg-blue-950 flex items-center justify-center text-lg shadow-xs">
-              📂
+            <div className="w-10 h-10 shrink-0 rounded-xl bg-blue-50 dark:bg-blue-950 flex items-center justify-center shadow-xs">
+              <Folder className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
               <p className="text-sm font-semibold">Категории</p>
@@ -443,8 +443,8 @@ export const Dashboard = () => {
           </Link>
 
           <Link to="/recurring" className="card-premium p-4 flex items-center gap-3 hover:shadow-md transition-shadow duration-200 active:scale-[0.98]">
-            <div className="w-10 h-10 shrink-0 rounded-xl bg-amber-50 dark:bg-amber-950 flex items-center justify-center text-lg shadow-xs">
-              🔄
+            <div className="w-10 h-10 shrink-0 rounded-xl bg-amber-50 dark:bg-amber-950 flex items-center justify-center shadow-xs">
+              <Repeat className="w-5 h-5 text-amber-600 dark:text-amber-400" />
             </div>
             <div>
               <p className="text-sm font-semibold">Повтор</p>
@@ -453,8 +453,8 @@ export const Dashboard = () => {
           </Link>
 
           <Link to="/ai-assistant" className="col-span-2 card-premium p-4 flex items-center gap-3 hover:shadow-md transition-shadow duration-200 active:scale-[0.98]">
-            <div className="w-10 h-10 shrink-0 rounded-xl bg-primary/10 dark:bg-primary/15 flex items-center justify-center text-lg shadow-xs">
-              ✨
+            <div className="w-10 h-10 shrink-0 rounded-xl bg-primary/10 dark:bg-primary/15 flex items-center justify-center shadow-xs">
+              <Sparkles className="w-5 h-5 text-primary" />
             </div>
             <div className="flex-1">
               <p className="text-sm font-semibold">AI Помощник</p>

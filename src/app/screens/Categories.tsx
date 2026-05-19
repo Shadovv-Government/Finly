@@ -49,7 +49,7 @@ export const Categories = () => {
 
     try {
       await remove(deletingCategory.id);
-      notify('✅ Категория удалена', `Категория "${deletingCategory.name}" удалена`);
+      notify('Категория удалена', `Категория "${deletingCategory.name}" удалена`);
       setDeletingCategory(null);
     } catch (error: any) {
       const msg: string = error?.message ?? '';
@@ -59,7 +59,7 @@ export const Categories = () => {
         setReassignTargetId('');
         setDeletingCategory(null);
       } else {
-        notify('❌ Ошибка', msg || 'Не удалось удалить категорию');
+        notify('Ошибка', msg || 'Не удалось удалить категорию');
         setDeletingCategory(null);
       }
     }
@@ -69,9 +69,9 @@ export const Categories = () => {
     if (!conflictCategory || !reassignTargetId) return;
     try {
       await reassignCategoryTransactions(conflictCategory.id, reassignTargetId);
-      notify('✅ Готово', `Операции переназначены, категория "${conflictCategory.name}" удалена`);
+      notify('Готово', `Операции переназначены, категория "${conflictCategory.name}" удалена`);
     } catch (error: any) {
-      notify('❌ Ошибка', error?.message || 'Не удалось переназначить операции');
+      notify('Ошибка', error?.message || 'Не удалось переназначить операции');
     } finally {
       setConflictCategory(null);
       setReassignTargetId('');
@@ -82,9 +82,9 @@ export const Categories = () => {
     if (!conflictCategory) return;
     try {
       await deleteCategoryWithTransactions(conflictCategory.id);
-      notify('✅ Удалено', `Категория "${conflictCategory.name}" и все её операции удалены`);
+      notify('Удалено', `Категория "${conflictCategory.name}" и все её операции удалены`);
     } catch (error: any) {
-      notify('❌ Ошибка', error?.message || 'Не удалось удалить');
+      notify('Ошибка', error?.message || 'Не удалось удалить');
     } finally {
       setConflictCategory(null);
       setReassignTargetId('');

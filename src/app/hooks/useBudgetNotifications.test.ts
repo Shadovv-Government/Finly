@@ -32,14 +32,14 @@ const mockSendOverrun           = sendBudgetOverrunNotification as ReturnType<ty
 const FROZEN = new Date('2026-05-01T12:00:00.000Z').getTime();
 const BUDGET_AMOUNT = 10000;
 const BUDGET = { id: 1, categoryId: 'cat-food', amount: BUDGET_AMOUNT, period: 'month', startDate: FROZEN - 1000 };
-const CATEGORY = { id: 'cat-food', name: 'Еда', type: 'expense', icon: '🍔', color: '#f00', isSystem: false };
+const CATEGORY = { id: 'cat-food', name: 'Еда', type: 'expense', icon: 'Utensils', color: '#f00', isSystem: false };
 
 function setupMocks(spent: number, existingNotifications: object[] = []) {
   mockHasPermission.mockReturnValue(true);
   mockGetActiveBudgets.mockResolvedValue([BUDGET]);
   mockGetPeriodRange.mockReturnValue({ start: FROZEN - 30 * 86400000, end: FROZEN });
   mockGetExpensesByCategory.mockResolvedValue([
-    { categoryId: 'cat-food', amount: spent, categoryName: 'Еда', percent: 100, icon: '🍔', color: '#f00' },
+    { categoryId: 'cat-food', amount: spent, categoryName: 'Еда', percent: 100, icon: 'Utensils', color: '#f00' },
   ]);
   mockGetCategoriesByType.mockResolvedValue([CATEGORY]);
   mockGetAllNotifications.mockResolvedValue(existingNotifications);

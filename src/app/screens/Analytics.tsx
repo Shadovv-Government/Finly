@@ -231,7 +231,7 @@ export const Analytics = () => {
               )}
             </>
           ) : (
-            <EmptyState emoji="📊" title="Нет данных за период" description="Добавьте транзакции, и мы покажем красивую аналитику" />
+            <EmptyState icon="ChartColumn" title="Нет данных за период" description="Добавьте транзакции, и мы покажем красивую аналитику" />
           )}
         </div>
       </div>

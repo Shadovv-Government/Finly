@@ -191,13 +191,13 @@ const INTENTS: Intent[] = [
       if (budgets.length === 0) return { answer: 'Бюджеты не настроены.' };
       const lines: string[] = [];
       budgets.filter(b => b.isOverBudget).forEach(b =>
-        lines.push(`• ❌ ${b.categoryName}: ${fmt(b.spent)} / ${fmt(b.limit)} ₽`)
+        lines.push(`• [over] ${b.categoryName}: ${fmt(b.spent)} / ${fmt(b.limit)} ₽`)
       );
       budgets.filter(b => !b.isOverBudget && b.percent >= 80).forEach(b =>
-        lines.push(`• ⚠️ ${b.categoryName}: ${fmt(b.spent)} / ${fmt(b.limit)} ₽ (${Math.round(b.percent)}%)`)
+        lines.push(`• [warn] ${b.categoryName}: ${fmt(b.spent)} / ${fmt(b.limit)} ₽ (${Math.round(b.percent)}%)`)
       );
       budgets.filter(b => !b.isOverBudget && b.percent < 80).forEach(b =>
-        lines.push(`• ✅ ${b.categoryName}: ${fmt(b.spent)} / ${fmt(b.limit)} ₽ (${Math.round(b.percent)}%)`)
+        lines.push(`• [ok] ${b.categoryName}: ${fmt(b.spent)} / ${fmt(b.limit)} ₽ (${Math.round(b.percent)}%)`)
       );
       return { answer: `Бюджеты этого месяца:\n${lines.join('\n')}` };
     },

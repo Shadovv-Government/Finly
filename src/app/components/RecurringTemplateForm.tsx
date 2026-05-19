@@ -77,17 +77,17 @@ export const RecurringTemplateForm: React.FC<RecurringTemplateFormProps> = ({
   const handleSubmit = async () => {
     const templateAmount = parseFloat(amount);
     if (!selectedCategoryId) {
-      notify('⚠️ Выберите категорию', 'error');
+      notify('Выберите категорию', 'error');
       return;
     }
 
     if (!templateAmount || templateAmount <= 0) {
-      notify('⚠️ Введите сумму', 'error');
+      notify('Введите сумму', 'error');
       return;
     }
 
     if (!firstDate) {
-      notify('⚠️ Укажите дату первого платежа', 'error');
+      notify('Укажите дату первого платежа', 'error');
       return;
     }
 
@@ -104,7 +104,7 @@ export const RecurringTemplateForm: React.FC<RecurringTemplateFormProps> = ({
       });
 
       notify(
-        initialData ? '✅ Шаблон обновлен' : '✅ Шаблон создан',
+        initialData ? 'Шаблон обновлен' : 'Шаблон создан',
         initialData
           ? `Шаблон обновлен`
           : `${INTERVAL_LABELS[interval]} — ${formatAmountInput(amount)} ₽`
@@ -112,7 +112,7 @@ export const RecurringTemplateForm: React.FC<RecurringTemplateFormProps> = ({
 
       onClose();
     } catch (error) {
-      notify('❌ Ошибка при сохранении', 'error');
+      notify('Ошибка при сохранении', 'error');
     } finally {
       setIsSubmitting(false);
     }
