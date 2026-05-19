@@ -228,7 +228,7 @@ export const AddTransaction = () => {
                 onClick={() => processText(quickInput)}
                 aria-label="Распознать быстрый ввод"
                 disabled={isProcessingQuickInput || !quickInput.trim()}
-                className="text-primary hover:text-violet-700 disabled:text-muted-foreground transition-colors"
+                className="text-primary hover:text-primary-light disabled:text-muted-foreground transition-colors"
                 title="Распознать"
               >
                 <Sparkles className="w-5 h-5" />

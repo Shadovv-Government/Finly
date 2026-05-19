@@ -165,7 +165,7 @@ export const Analytics = () => {
               <p className="text-xs opacity-90 mb-1">Расходы</p>
               <p className="text-lg font-bold">−{formatShort(expense)}</p>
             </div>
-            <div className={`bg-gradient-to-br text-white rounded-2xl p-4 ${balanceAmount >= 0 ? 'from-violet-600 to-indigo-700' : 'from-gray-600 to-gray-700'}`}>
+            <div className={`bg-gradient-to-br text-white rounded-2xl p-4 shadow-lg ${balanceAmount >= 0 ? '' : 'from-gray-600 to-gray-700'}`} style={balanceAmount >= 0 ? { background: 'linear-gradient(135deg, var(--primary), var(--primary-light))' } : undefined}>
               <p className="text-xs opacity-90 mb-1">Баланс</p>
               <p className="text-lg font-bold">
                 {balanceAmount >= 0 ? '+' : '−'}{formatShort(Math.abs(balanceAmount))}
@@ -221,7 +221,7 @@ export const Analytics = () => {
                     </div>
                     <div className="text-center">
                       <p className="text-xs text-muted-foreground mb-1">Баланс</p>
-                      <p className={`text-base font-bold ${weeklyData[selectedWeekIdx].income - weeklyData[selectedWeekIdx].expense >= 0 ? 'text-violet-600' : 'text-gray-500'}`}>
+                      <p className={`text-base font-bold ${weeklyData[selectedWeekIdx].income - weeklyData[selectedWeekIdx].expense >= 0 ? 'text-primary' : 'text-gray-500'}`}>
                         {weeklyData[selectedWeekIdx].income - weeklyData[selectedWeekIdx].expense >= 0 ? '+' : '−'}
                         {Math.abs(weeklyData[selectedWeekIdx].income - weeklyData[selectedWeekIdx].expense).toLocaleString('ru-RU')} ₽
                       </p>
@@ -357,7 +357,7 @@ export const Analytics = () => {
                   onClick={() => { setPeriod(p); setIsPeriodPickerOpen(false); }}
                   className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
                     period === p && period !== 'custom'
-                      ? 'bg-white dark:bg-card shadow-sm text-violet-600 dark:text-violet-400'
+                      ? 'bg-white dark:bg-card shadow-sm text-primary dark:text-primary-light'
                       : 'text-muted-foreground'
                   }`}
                 >
@@ -402,7 +402,7 @@ export const Analytics = () => {
             <div className="px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom)+4rem)]">
               <button
                 onClick={() => setIsPeriodPickerOpen(false)}
-                className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-xl font-semibold"
+                className="w-full py-4 text-white rounded-xl font-semibold shadow-lg transition-all duration-200 hover:scale-[1.01] active:scale-[0.98]" style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-light))' }}
               >
                 Применить
               </button>

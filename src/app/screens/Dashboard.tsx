@@ -150,7 +150,7 @@ function RecentTransactions({ transactions, categories }: RecentTransactionsProp
     <div className="px-5 pb-4">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-bold">Последние операции</h2>
-        <Link to="/history" className="text-sm text-violet-600 dark:text-violet-400">
+        <Link to="/history" className="text-sm text-primary dark:text-primary-light font-medium">
           Все
         </Link>
       </div>
@@ -220,7 +220,7 @@ function BudgetProgressSection({ expensesByCategory, categories }: BudgetProgres
     <div className="px-5 pb-2">
       <div className="flex items-center justify-between mb-3">
         <h2 className="font-bold">Бюджеты</h2>
-        <Link to="/budgets" className="text-sm text-violet-600 dark:text-violet-400 flex items-center gap-1">
+        <Link to="/budgets" className="text-sm text-primary dark:text-primary-light font-medium flex items-center gap-1">
           <TrendingUp className="w-3.5 h-3.5" />
           Все
         </Link>
@@ -267,7 +267,7 @@ function getGreeting() {
 
 const AVATAR_COLORS = [
   'from-amber-400 to-pink-500',
-  'from-violet-500 to-purple-600',
+  'from-indigo-500 to-blue-600',
   'from-blue-400 to-cyan-500',
   'from-green-400 to-emerald-500',
   'from-orange-400 to-red-500',
@@ -453,7 +453,7 @@ export const Dashboard = () => {
           </Link>
 
           <Link to="/ai-assistant" className="col-span-2 card-premium p-4 flex items-center gap-3 hover:shadow-md transition-shadow duration-200 active:scale-[0.98]">
-            <div className="w-10 h-10 shrink-0 rounded-xl bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center text-lg shadow-xs">
+            <div className="w-10 h-10 shrink-0 rounded-xl bg-primary/10 dark:bg-primary/15 flex items-center justify-center text-lg shadow-xs">
               ✨
             </div>
             <div className="flex-1">
@@ -482,7 +482,7 @@ export const Dashboard = () => {
                 key={color}
                 onClick={() => handleAvatarSelect(color)}
                 className={`w-16 h-16 rounded-full bg-gradient-to-br ${color} flex items-center justify-center font-bold text-white text-xl hover:scale-110 transition-transform ${
-                  user?.avatarColor === color ? 'ring-4 ring-violet-600' : ''
+                  user?.avatarColor === color ? 'ring-4 ring-primary' : ''
                 }`}
               >
                 {getInitial(user?.name || 'U')}
@@ -555,7 +555,7 @@ export const Dashboard = () => {
             </button>
             <button
               onClick={() => { setPeriod('custom'); setIsCustomPeriodOpen(false); }}
-              className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-xl font-medium"
+              className="flex-1 py-3 text-white rounded-xl font-medium shadow-lg transition-all duration-200 hover:scale-[1.01] active:scale-[0.98]" style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-light))' }}
             >
               Применить
             </button>

@@ -161,7 +161,7 @@ export const Goals = () => {
                   <button
                     onClick={() => openContribute(goal)}
                     disabled={!goal.isActive}
-                    className="flex-1 py-2 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 py-2 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all duration-200 hover:scale-[1.01] active:scale-[0.98]" style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-light))' }}
                   >
                     Пополнить
                   </button>

@@ -173,14 +173,18 @@ export const Recurring = () => {
 
       {/* Empty State */}
       {templates.length === 0 && (
-        <div className="px-5 py-12 text-center">
-          <div className="w-20 h-20 mx-auto mb-4 bg-muted rounded-full flex items-center justify-center">
+        <div className="px-5 py-16 text-center">
+          <div className="w-20 h-20 mx-auto mb-6 bg-muted rounded-full flex items-center justify-center shadow-sm">
             <Clock className="w-10 h-10 text-muted-foreground" />
           </div>
-          <p className="text-muted-foreground mb-4">Нет повторяющихся платежей</p>
+          <h2 className="text-lg font-bold mb-2">Нет повторяющихся платежей</h2>
+          <p className="text-muted-foreground mb-6 max-w-xs mx-auto">
+            Добавьте шаблон для автоматического учёта регулярных доходов и расходов
+          </p>
           <button
             onClick={handleAdd}
-            className="px-6 py-3 bg-violet-600 text-white rounded-xl font-medium hover:bg-violet-700 transition-colors"
+            className="px-6 py-3 text-white rounded-xl font-semibold shadow-lg transition-all duration-200 hover:scale-[1.01] active:scale-[0.98]"
+            style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-light))' }}
           >
             Создать первый шаблон
           </button>
@@ -215,17 +219,17 @@ export const Recurring = () => {
 
         return (
           <div className="px-5 pb-4">
-            <div className="bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-950/30 dark:to-indigo-950/30 rounded-2xl p-4 border border-violet-200 dark:border-violet-800">
-              <h3 className="font-bold text-violet-900 dark:text-violet-100 mb-2 flex items-center gap-2">
-                <CalendarDays className="w-5 h-5" />
+            <div className="bg-primary/5 dark:bg-primary/10 rounded-2xl p-5 border border-primary/15 dark:border-primary/20">
+              <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
+                <CalendarDays className="w-5 h-5 text-primary" />
                 Сводка
               </h3>
-              <div className="space-y-1">
-                <p className="text-sm text-violet-800 dark:text-violet-200">
-                  Активных шаблонов: <span className="font-semibold">{activeTemplates.length} из {templates.length}</span>
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Активных шаблонов: <span className="font-semibold text-foreground">{activeTemplates.length} из {templates.length}</span>
                 </p>
-                <p className="text-sm text-violet-800 dark:text-violet-200">
-                  Расходы в месяц: <span className="font-semibold">{Math.round(monthlyTotal).toLocaleString('ru-RU')} ₽</span>
+                <p className="text-sm text-muted-foreground">
+                  Расходы в месяц: <span className="font-semibold text-foreground">{Math.round(monthlyTotal).toLocaleString('ru-RU')} ₽</span>
                 </p>
               </div>
             </div>
@@ -234,20 +238,20 @@ export const Recurring = () => {
       })()}
 
       {deletingTemplateId !== null && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-card rounded-2xl p-6 max-w-sm w-full">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-2xl p-6 max-w-sm w-full shadow-lg border border-border">
             <h3 className="text-lg font-bold mb-2">Удалить шаблон?</h3>
             <p className="text-muted-foreground mb-6">Это действие нельзя отменить.</p>
             <div className="flex gap-3">
               <button
                 onClick={() => setDeletingTemplateId(null)}
-                className="flex-1 py-3 bg-muted rounded-xl font-medium"
+                className="flex-1 py-3 bg-muted hover:bg-muted-foreground/10 rounded-xl font-medium transition-colors"
               >
                 Отмена
               </button>
               <button
                 onClick={handleDeleteConfirm}
-                className="flex-1 py-3 bg-red-600 text-white rounded-xl font-medium"
+                className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium transition-colors"
               >
                 Удалить
               </button>
