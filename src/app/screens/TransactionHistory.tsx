@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Search, Filter, X, Calendar, ChevronDown, Wallet, MessageSquare } from 'lucide-react';
+import { EmptyState } from '../components/EmptyState';
 import { CategoryBadge } from '../components/CategoryBadge';
 import { AmountDisplay } from '../components/AmountDisplay';
 import { BottomSheet } from '../components/BottomSheet';
@@ -553,20 +554,7 @@ export const TransactionHistory = () => {
             </>
           );
         })() : (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Search className="w-12 h-12 text-muted-foreground mb-4" />
-            <p className="text-lg font-medium text-muted-foreground">
-              {hasActiveFilters ? 'Ничего не найдено' : 'Нет транзакций'}
-            </p>
-            {hasActiveFilters && (
-              <button
-                onClick={clearAllFilters}
-                className="mt-3 px-6 py-2 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors"
-              >
-                Сбросить фильтры
-              </button>
-            )}
-          </div>
+          <EmptyState emoji="💸" title="Нет транзакций" description="Здесь будут отображаться все ваши операции" />
         )}
       </div>
 

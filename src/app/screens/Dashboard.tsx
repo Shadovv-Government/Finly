@@ -1,4 +1,5 @@
 import { Bell, Camera, Calendar, TrendingUp } from 'lucide-react';
+import { EmptyState } from '../components/EmptyState';
 import { motion } from 'motion/react';
 import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router';
@@ -130,7 +131,7 @@ function ExpenseBreakdown({ data }: ExpenseBreakdownProps) {
             </div>
           </>
         ) : (
-          <p className="text-center text-muted-foreground py-8">Нет данных</p>
+          <EmptyState emoji="📊" title="Нет данных" description="Добавьте транзакции за этот период, чтобы увидеть структуру расходов" />
         )}
       </div>
     </div>
@@ -180,7 +181,7 @@ function RecentTransactions({ transactions, categories }: RecentTransactionsProp
             );
           })
         ) : (
-          <p className="text-center text-muted-foreground py-8">Нет транзакций</p>
+          <EmptyState emoji="💸" title="Нет транзакций" description="Добавьте первую транзакцию, чтобы начать учёт" />
         )}
       </div>
     </div>

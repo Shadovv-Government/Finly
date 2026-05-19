@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Plus, Target, TrendingUp, Pencil, Trash2, PiggyBank, PartyPopper, Trophy } from 'lucide-react';
+import { EmptyState } from '../components/EmptyState';
 import { useGoals } from '../hooks/useGoals';
 import { GoalForm } from '../components/GoalForm';
 import { ContributeBottomSheet } from '../components/ContributeBottomSheet';
@@ -182,18 +183,7 @@ export const Goals = () => {
           );
         })}
         {goals.length === 0 && (
-          <div className="text-center py-12">
-            <div className="w-20 h-20 mx-auto mb-4 bg-muted rounded-full flex items-center justify-center">
-              <Target className="w-10 h-10 text-muted-foreground" />
-            </div>
-            <p className="text-muted-foreground mb-4">У вас пока нет целей</p>
-            <button
-              onClick={() => setIsCreateFormOpen(true)}
-              className="px-6 py-3 bg-primary text-primary-foreground rounded-xl font-medium"
-            >
-              Создать первую цель
-            </button>
-          </div>
+          <EmptyState emoji="🎯" title="Нет целей" description="Поставьте финансовую цель и начните копить" action={{ label: 'Создать первую цель', onClick: () => setIsCreateFormOpen(true) }} />
         )}
       </div>
 

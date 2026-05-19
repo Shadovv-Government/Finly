@@ -1,4 +1,5 @@
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, Tooltip } from 'recharts';
+import { EmptyState } from '../components/EmptyState';
 import { Calendar } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useAnalytics, getPeriodRange, PeriodType } from '../hooks/useAnalytics';
@@ -230,7 +231,7 @@ export const Analytics = () => {
               )}
             </>
           ) : (
-            <p className="text-center text-muted-foreground py-8">Нет данных за период</p>
+            <EmptyState emoji="📊" title="Нет данных за период" description="Добавьте транзакции, и мы покажем красивую аналитику" />
           )}
         </div>
       </div>

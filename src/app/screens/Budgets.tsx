@@ -1,4 +1,5 @@
 import { Plus, Edit2, Trash2, AlertCircle } from 'lucide-react';
+import { EmptyState } from '../components/EmptyState';
 import { CategoryBadge } from '../components/CategoryBadge';
 import { useBudgets } from '../hooks/useBudgets';
 import { useCategories } from '../hooks/useCategories';
@@ -219,17 +220,7 @@ export const Budgets = () => {
 
       {/* Empty State */}
       {filteredBudgets.length === 0 && (
-        <div className="px-5 py-12 text-center">
-          <p className="text-muted-foreground">
-            Нет бюджетов на этот период.
-          </p>
-          <button
-            onClick={handleAddBudget}
-            className="mt-4 px-6 py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 transition-colors"
-          >
-            Создать первый бюджет
-          </button>
-        </div>
+        <EmptyState emoji="💰" title="Нет бюджетов" description="Создайте первый бюджет, чтобы контролировать расходы" action={{ label: 'Создать бюджет', onClick: handleAddBudget }} />
       )}
 
       {/* Форма добавления/редактирования бюджета */}
