@@ -60,7 +60,7 @@ export const AIAssistant = () => {
   };
 
   return (
-    <div className="pb-20 bg-background min-h-screen flex flex-col">
+    <div className="pb-28 bg-background min-h-screen flex flex-col">
       {/* Header */}
       <div className="px-4 pt-6 pb-4 bg-gradient-to-br from-violet-600 to-indigo-700 text-white">
         <div className="flex items-center justify-between">
