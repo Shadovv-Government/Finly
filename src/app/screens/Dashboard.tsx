@@ -1,4 +1,5 @@
 import { Bell, Camera, Calendar, TrendingUp } from 'lucide-react';
+import { motion } from 'motion/react';
 import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
@@ -272,6 +273,15 @@ const AVATAR_COLORS = [
   'from-pink-400 to-rose-500',
 ];
 
+const sectionVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.05, duration: 0.35, ease: 'easeOut' as const }
+  }),
+};
+
 export const Dashboard = () => {
   const [period, setPeriod] = useState<PeriodType>('month');
   const [customStartDate, setCustomStartDate] = useState<Date>(new Date(Date.now() - MS_PER_MONTH));
@@ -356,13 +366,15 @@ export const Dashboard = () => {
           </div>
         </div>
 
-        <BalanceCard
-          totalBalance={currentBalance}
-          income={income}
-          expense={expense}
-          savingsAmount={savingsAmount}
-          freeBalance={freeBalance}
-        />
+        <motion.section custom={0} variants={sectionVariants} initial="hidden" animate="visible">
+          <BalanceCard
+            totalBalance={currentBalance}
+            income={income}
+            expense={expense}
+            savingsAmount={savingsAmount}
+            freeBalance={freeBalance}
+          />
+        </motion.section>
 
         {/* Period Switcher */}
         <div className="flex gap-1 p-1 bg-card rounded-xl border border-border shadow-xs">
@@ -387,10 +399,15 @@ export const Dashboard = () => {
         </div>
       </div>
 
-      <ExpenseBreakdown data={expensesByCategory} />
+      <motion.section custom={1} variants={sectionVariants} initial="hidden" animate="visible">
+        <ExpenseBreakdown data={expensesByCategory} />
+      </motion.section>
 
-      <BudgetProgressSection expensesByCategory={expensesByCategory} categories={categories} />
+      <motion.section custom={2} variants={sectionVariants} initial="hidden" animate="visible">
+        <BudgetProgressSection expensesByCategory={expensesByCategory} categories={categories} />
+      </motion.section>
 
+      <motion.section custom={3} variants={sectionVariants} initial="hidden" animate="visible">
       {/* Quick Links */}
       <div className="px-5 py-4">
         <div className="grid grid-cols-2 gap-2.5">
@@ -446,8 +463,11 @@ export const Dashboard = () => {
           </Link>
         </div>
       </div>
+      </motion.section>
 
-      <RecentTransactions transactions={recentTransactions} categories={categories} />
+      <motion.section custom={4} variants={sectionVariants} initial="hidden" animate="visible">
+        <RecentTransactions transactions={recentTransactions} categories={categories} />
+      </motion.section>
 
       {/* Avatar Selection Dialog */}
       <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
