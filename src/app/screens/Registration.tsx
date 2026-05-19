@@ -3,9 +3,7 @@ import { useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { BiometricSetupCard } from '../components/BiometricSetupCard';
-import { Wallet } from 'lucide-react';
 
 type Step = 'register' | 'biometric';
 
@@ -58,58 +56,59 @@ export const Registration = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-violet-500 to-purple-600 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center">
-            <Wallet className="w-8 h-8 text-white" />
-          </div>
-          <CardTitle className="text-2xl font-bold">Finly</CardTitle>
-          <CardDescription>
-            Умное приложение для управления личными финансами
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {step === 'register' ? (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="name" className="text-sm font-medium">
-                  Как к вам обращаться?
-                </label>
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="Введите ваше имя"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  disabled={isLoading}
-                  className="text-base"
-                />
-                {error && (
-                  <p className="text-sm text-red-500">{error}</p>
-                )}
-              </div>
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Content */}
+      <div className="flex-1 flex flex-col items-center justify-center px-5">
+        {/* Brand Mark */}
+        <div className="w-14 h-14 bg-gradient-to-br from-indigo-600 to-indigo-400 rounded-2xl flex items-center justify-center shadow-lg mb-8">
+          <span className="text-white text-2xl font-bold" style={{ transform: 'rotate(-8deg)' }}>F</span>
+        </div>
 
-              <Button
-                type="submit"
-                className="w-full h-12 text-base font-medium"
+        {/* Title */}
+        <h1 className="text-3xl font-bold tracking-[-0.02em] mb-2">Finly</h1>
+        <p className="text-muted-foreground text-center mb-8">
+          Умное приложение для управления личными финансами
+        </p>
+
+        {step === 'register' ? (
+          <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="name" className="text-sm font-medium">
+                Как к вам обращаться?
+              </label>
+              <Input
+                id="name"
+                type="text"
+                placeholder="Введите ваше имя"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 disabled={isLoading}
-              >
-                {isLoading ? 'Загрузка...' : 'Начать'}
-              </Button>
+                className="bg-input-background border border-border rounded-2xl p-4 text-base"
+              />
+              {error && (
+                <p className="text-sm text-red-500">{error}</p>
+              )}
+            </div>
 
-              <p className="text-xs text-center text-muted-foreground">
-                Это создаст локальный аккаунт на этом устройстве
-              </p>
-            </form>
-          ) : (
-            <BiometricSetupCard
-              onEnable={handleEnableBiometric}
-              onSkip={handleSkipBiometric}
-            />
-          )}
-        </CardContent>
-      </Card>
+            <Button
+              type="submit"
+              className="btn-primary w-full"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Загрузка...' : 'Начать'}
+            </Button>
+
+            <p className="text-xs text-center text-muted-foreground">
+              Это создаст локальный аккаунт на этом устройстве
+            </p>
+          </form>
+        ) : (
+          <BiometricSetupCard
+            onEnable={handleEnableBiometric}
+            onSkip={handleSkipBiometric}
+          />
+        )}
+      </div>
     </div>
   );
 };
