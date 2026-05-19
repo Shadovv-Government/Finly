@@ -38,12 +38,12 @@
 
   .btn-primary {
     background: linear-gradient(135deg, var(--primary), var(--primary-light));
-    color: white;
+    color: var(--primary-foreground);
     border-radius: var(--radius-btn);
     padding: 0.75rem 1.5rem;
     font-weight: 600;
     box-shadow: var(--shadow-lg);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    transition: transform 0.15s ease;
   }
   .btn-primary:hover {
     transform: scale(1.02);
@@ -66,7 +66,7 @@
   }
 
   .shimmer {
-    background: linear-gradient(90deg, var(--muted) 25%, var(--card) 50%, var(--muted) 75%);
+    background: linear-gradient(90deg, var(--muted) 25%, var(--border) 50%, var(--muted) 75%);
     background-size: 200% 100%;
     animation: var(--animate-shimmer);
   }
