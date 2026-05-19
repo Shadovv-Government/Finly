@@ -25,6 +25,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
 
   // Drag state
   const dragStartY = useRef<number | null>(null);
+  const dragStartTime = useRef<number>(0);
   const dragCurrentY = useRef<number>(0);
   const isDragging = useRef(false);
   const previousUserSelect = useRef<string>('');
@@ -79,6 +80,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
 
     const clientY = getClientY(e);
     dragStartY.current = clientY;
+    dragStartTime.current = Date.now();
     dragCurrentY.current = 0;
     isDragging.current = true;
     previousUserSelect.current = document.body.style.userSelect;
@@ -95,8 +97,25 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
     if ('touches' in e) {
       e.preventDefault();
     }
+    // Rubber band: сопротивление нарастает за пределами 120px
+    const absDelta = Math.abs(delta);
+    const RUBBER_LIMIT = 120;
+    const RUBBER_FACTOR = 0.35;
+    let visualDelta: number;
+    if (absDelta > RUBBER_LIMIT) {
+      const excess = absDelta - RUBBER_LIMIT;
+      visualDelta = RUBBER_LIMIT + excess * RUBBER_FACTOR;
+      visualDelta = isTop ? -visualDelta : visualDelta;
+    } else {
+      visualDelta = delta;
+    }
+    // Динамическая тень: затухает по мере оттягивания
     if (sheetRef.current) {
-      sheetRef.current.style.transform = `translateY(${delta}px)`;
+      const shadowStrength = Math.max(0, 1 - absDelta / 280);
+      const baseShadow = '0 -4px 20px rgba(0,0,0,';
+      const baseShadow2 = '0 -1px 3px rgba(0,0,0,';
+      sheetRef.current.style.boxShadow = `${baseShadow}${(0.08 * shadowStrength).toFixed(3)}), ${baseShadow2}${(0.04 * shadowStrength).toFixed(3)})`;
+      sheetRef.current.style.transform = `translateY(${visualDelta}px)`;
       sheetRef.current.style.transition = 'none';
     }
   };
@@ -104,21 +123,46 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
   const onDragEnd = () => {
     if (!isDragging.current) return;
     isDragging.current = false;
-    const threshold = 120;
+
+    // Velocity calculation (px/s)
+    const timeDelta = Date.now() - dragStartTime.current;
+    const velocity = timeDelta > 0 ? (dragCurrentY.current / timeDelta) * 1000 : 0;
+    const VELOCITY_THRESHOLD = 500;
+    const DISTANCE_THRESHOLD = 100;
+
     const shouldClose = isTop
-      ? dragCurrentY.current < -threshold
-      : dragCurrentY.current > threshold;
+      ? dragCurrentY.current < -DISTANCE_THRESHOLD || velocity < -VELOCITY_THRESHOLD
+      : dragCurrentY.current > DISTANCE_THRESHOLD || velocity > VELOCITY_THRESHOLD;
 
     if (shouldClose) {
+      // Dismiss: animate from current position to off-screen (imperative — no React re-render)
       if (sheetRef.current) {
-        sheetRef.current.style.transition = 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
+        const remainingDistance = Math.abs(dragCurrentY.current);
+        const duration = Math.min(0.3, Math.max(0.18, remainingDistance / 800));
+        sheetRef.current.style.transition = `transform ${duration}s cubic-bezier(0.4, 0, 0.6, 1), opacity ${duration}s ease-in`;
         sheetRef.current.style.transform = isTop ? 'translateY(-100%)' : 'translateY(100%)';
+        sheetRef.current.style.opacity = '0';
+        sheetRef.current.style.boxShadow = 'none';
       }
-      setTimeout(() => onClose(), 350);
+      // Fade backdrop imperatively (avoids React re-render that would reset sheet animation class)
+      const backdrop = sheetRef.current?.previousElementSibling as HTMLElement | null;
+      if (backdrop) {
+        backdrop.style.transition = 'opacity 0.25s ease-in';
+        backdrop.style.opacity = '0';
+      }
+      const dismissDelay = 300;
+      setTimeout(() => {
+        setVisible(false);
+        setClosing(false);
+        onClose(); // sync parent isOpen (visible already false → triggerClose skipped)
+      }, dismissDelay);
     } else {
+      // Spring return: bounce back with overshoot
       if (sheetRef.current) {
-        sheetRef.current.style.transition = 'transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)';
+        sheetRef.current.style.transition = 'transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.45s cubic-bezier(0.34, 1.56, 0.64, 1)';
         sheetRef.current.style.transform = 'translateY(0)';
+        sheetRef.current.style.boxShadow = ''; // restore CSS class shadow
+        sheetRef.current.style.opacity = '';
       }
     }
     document.body.style.userSelect = previousUserSelect.current;
@@ -167,6 +211,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
         ref={sheetRef}
         className={`fixed left-0 right-0 bg-card shadow-[0_-4px_20px_rgba(0,0,0,0.08),0_-1px_3px_rgba(0,0,0,0.04)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.3),0_-1px_3px_rgba(0,0,0,0.2)] z-[70]
                    max-h-[90vh] flex flex-col will-change-transform
+                   ${isTop ? 'sheet-glow-bottom' : 'sheet-glow-top'}
                    ${isTop
                      ? `top-0 rounded-b-[2.5rem] ${
                          reducedMotion
@@ -286,27 +331,28 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
           to   { opacity: 0; }
         }
 
+        /* === Spring easing: overshoot + settle === */
         .animate-slide-up {
-          animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          animation: slide-up 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
         .animate-slide-down {
           animation: slide-down 0.25s cubic-bezier(0.4, 0, 0.6, 1) forwards;
         }
         .animate-slide-down-in {
-          animation: slide-down-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          animation: slide-down-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
         .animate-slide-up-out {
-          animation: slide-up-out 0.25s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+          animation: slide-up-out 0.22s cubic-bezier(0.4, 0, 0.6, 1) forwards;
         }
 
         .animate-slide-up-minimal {
-          animation: slide-up-minimal 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          animation: slide-up-minimal 0.35s cubic-bezier(0.34, 1.3, 0.64, 1) forwards;
         }
         .animate-slide-down-minimal {
           animation: slide-down-minimal 0.2s cubic-bezier(0.4, 0, 0.6, 1) forwards;
         }
         .animate-slide-down-in-minimal {
-          animation: slide-down-in-minimal 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          animation: slide-down-in-minimal 0.35s cubic-bezier(0.34, 1.3, 0.64, 1) forwards;
         }
         .animate-slide-up-out-minimal {
           animation: slide-up-out-minimal 0.2s cubic-bezier(0.4, 0, 0.6, 1) forwards;
@@ -323,6 +369,52 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
         }
         .animate-fade-out-fast {
           animation: fade-out-fast 0.08s ease-in forwards;
+        }
+
+        /* === Animated glow (pseudo-element) === */
+        .sheet-glow-top::before {
+          content: '';
+          position: absolute;
+          top: -24px;
+          left: 0;
+          right: 0;
+          height: 36px;
+          background: linear-gradient(to bottom,
+            rgba(0,0,0,0.06) 0%,
+            rgba(0,0,0,0.015) 50%,
+            transparent 100%
+          );
+          filter: blur(8px);
+          pointer-events: none;
+          z-index: -1;
+          animation: glow-in 0.6s 0.12s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        .sheet-glow-bottom::before {
+          content: '';
+          position: absolute;
+          bottom: -24px;
+          left: 0;
+          right: 0;
+          height: 36px;
+          background: linear-gradient(to top,
+            rgba(0,0,0,0.06) 0%,
+            rgba(0,0,0,0.015) 50%,
+            transparent 100%
+          );
+          filter: blur(8px);
+          pointer-events: none;
+          z-index: -1;
+          animation: glow-in 0.6s 0.12s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        @keyframes glow-in {
+          0%   { opacity: 0; transform: scaleY(0.6); }
+          100% { opacity: 1; transform: scaleY(1); }
+        }
+
+        @keyframes glow-out {
+          0%   { opacity: 1; transform: scaleY(1); }
+          100% { opacity: 0; transform: scaleY(0.6); }
         }
       `}</style>
     </>
