@@ -25,13 +25,13 @@ export const BiometricSetupCard = ({ onEnable, onSkip }: BiometricSetupCardProps
 
   return (
     <div className="flex flex-col items-center gap-4 pt-4 border-t border-border">
-      <div className="w-14 h-14 rounded-2xl bg-violet-100 dark:bg-violet-950 flex items-center justify-center">
-        <Fingerprint className="w-7 h-7 text-violet-600 dark:text-violet-400" />
+      <div className="w-14 h-14 rounded-2xl bg-primary/10 dark:bg-primary/15 flex items-center justify-center">
+        <Fingerprint className="w-7 h-7 text-primary dark:text-primary-light" />
       </div>
 
       <div className="text-center space-y-1">
         <div className="flex items-center justify-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-violet-600" />
+          <ShieldCheck className="w-4 h-4 text-primary" />
           <p className="font-semibold">Защитите приложение</p>
         </div>
         <p className="text-sm text-muted-foreground">
@@ -45,7 +45,7 @@ export const BiometricSetupCard = ({ onEnable, onSkip }: BiometricSetupCardProps
         <Button
           onClick={handleEnable}
           disabled={isLoading}
-          className="w-full bg-violet-600 hover:bg-violet-700"
+          className="btn-primary w-full !py-3 !px-0"
         >
           {isLoading ? 'Настройка...' : 'Включить'}
         </Button>

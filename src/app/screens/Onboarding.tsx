@@ -63,7 +63,7 @@ export const Onboarding = () => {
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-8 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex-1 flex flex-col items-center justify-center px-8 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500" key={currentSlide}>
         {/* Brand Mark */}
         <div className="w-14 h-14 bg-gradient-to-br from-indigo-600 to-indigo-400 rounded-2xl flex items-center justify-center shadow-lg mb-8">
           <span className="text-white text-2xl font-bold" style={{ transform: 'rotate(-8deg)' }}>F</span>
@@ -96,7 +96,7 @@ export const Onboarding = () => {
               key={index}
               className={`h-2 rounded-full transition-all ${
                 index === currentSlide 
-                  ? 'w-8 bg-violet-600' 
+                  ? 'w-8 bg-primary'
                   : 'w-2 bg-muted'
               }`}
             />
