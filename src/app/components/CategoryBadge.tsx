@@ -30,7 +30,7 @@ export const CategoryBadge: React.FC<CategoryBadgeProps> = ({
 
   if (!category) {
     return (
-      <div className={`${containerSizes[size]} rounded-xl flex items-center justify-center bg-gray-100 dark:bg-gray-800`}>
+      <div className={`${containerSizes[size]} rounded-xl shadow-xs flex items-center justify-center bg-gray-100 dark:bg-gray-800`}>
         <CircleHelp className={`${iconSizes[size]} text-gray-400`} />
       </div>
     );
@@ -41,7 +41,7 @@ export const CategoryBadge: React.FC<CategoryBadgeProps> = ({
   return (
     <div className="flex items-center gap-2">
       <div
-        className={`${containerSizes[size]} rounded-xl flex items-center justify-center`}
+        className={`${containerSizes[size]} rounded-xl shadow-xs flex items-center justify-center`}
         style={{ backgroundColor: category.color + '20' }}
       >
         <IconComponent
