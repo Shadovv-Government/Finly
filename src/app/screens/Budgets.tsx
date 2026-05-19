@@ -74,14 +74,14 @@ export const Budgets = () => {
   };
 
   return (
-    <div className="pb-20 bg-background min-h-screen">
+    <div className="pb-28 bg-background min-h-screen">
       {/* Header */}
-      <div className="px-4 py-4 bg-card border-b border-border">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold">Бюджеты</h1>
+      <div className="px-5 pt-4 pb-4">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-xl font-bold tracking-[-0.01em]">Бюджеты</h1>
           <button
             onClick={handleAddBudget}
-            className="w-9 h-9 bg-violet-600 hover:bg-violet-700 text-white rounded-xl flex items-center justify-center transition-colors"
+            className="w-9 h-9 bg-primary hover:bg-primary/90 text-white rounded-xl flex items-center justify-center transition-colors"
           >
             <Plus className="w-5 h-5" />
           </button>
@@ -89,13 +89,13 @@ export const Budgets = () => {
       </div>
 
       {/* Period Switcher */}
-      <div className="px-4 py-3">
+      <div className="px-5 py-3">
         <div className="flex gap-2 p-1 bg-muted rounded-xl">
           <button
             onClick={() => setPeriodFilter('month')}
             className={`flex-1 py-3 rounded-lg font-medium transition-colors ${
               periodFilter === 'month'
-                ? 'bg-white dark:bg-card shadow-sm text-violet-600 dark:text-violet-400'
+                ? 'bg-white dark:bg-card shadow-sm text-primary'
                 : 'text-muted-foreground'
             }`}
           >
@@ -105,7 +105,7 @@ export const Budgets = () => {
             onClick={() => setPeriodFilter('week')}
             className={`flex-1 py-3 rounded-lg font-medium transition-colors ${
               periodFilter === 'week'
-                ? 'bg-white dark:bg-card shadow-sm text-violet-600 dark:text-violet-400'
+                ? 'bg-white dark:bg-card shadow-sm text-primary'
                 : 'text-muted-foreground'
             }`}
           >
@@ -116,8 +116,8 @@ export const Budgets = () => {
 
       {/* Total Budget Card */}
       {filteredBudgets.length > 0 && (
-        <div className="px-4 py-3">
-          <div className="bg-card rounded-2xl p-4 border border-border">
+        <div className="px-5 py-3">
+          <div className="card-premium p-5">
             <div className="mb-3">
               <p className="text-sm text-muted-foreground mb-1">Потрачено</p>
               <p className="text-2xl font-bold">
@@ -130,7 +130,8 @@ export const Budgets = () => {
                 className="h-full transition-all duration-500 rounded-full"
                 style={{
                   width: `${Math.min((totalSpent / totalBudget) * 100, 100)}%`,
-                  backgroundColor: getProgressColor((totalSpent / totalBudget) * 100)
+                  backgroundColor: getProgressColor((totalSpent / totalBudget) * 100),
+                  transition: 'width 600ms cubic-bezier(0.34,1.56,0.64,1)'
                 }}
               />
             </div>
@@ -143,7 +144,7 @@ export const Budgets = () => {
       )}
 
       {/* Budget List */}
-      <div className="px-4 py-3 space-y-3">
+      <div className="px-5 py-3 space-y-3">
         {filteredBudgets.map(budget => {
           const category = categories.find(c => c.id === budget.categoryId);
           const spent = expensesByCategory.find(c => c.categoryId === budget.categoryId)?.amount || 0;
@@ -153,7 +154,7 @@ export const Budgets = () => {
           const isWarning = percentage >= 80;
 
           return (
-            <div key={budget.id} className="bg-card rounded-2xl p-4 border border-border">
+            <div key={budget.id} className="card-premium p-5">
               <div className="flex items-center gap-3 mb-3">
                 <CategoryBadge categoryId={budget.categoryId} size="md" />
                 <div className="flex-1">
@@ -194,7 +195,8 @@ export const Budgets = () => {
                     className="h-full transition-all duration-500 rounded-full"
                     style={{
                       width: `${Math.min(percentage, 100)}%`,
-                      backgroundColor: getProgressColor(percentage)
+                      backgroundColor: getProgressColor(percentage),
+                      transition: 'width 600ms cubic-bezier(0.34,1.56,0.64,1)'
                     }}
                   />
                 </div>
@@ -217,13 +219,13 @@ export const Budgets = () => {
 
       {/* Empty State */}
       {filteredBudgets.length === 0 && (
-        <div className="px-4 py-12 text-center">
+        <div className="px-5 py-12 text-center">
           <p className="text-muted-foreground">
             Нет бюджетов на этот период.
           </p>
           <button
             onClick={handleAddBudget}
-            className="mt-4 px-6 py-3 bg-violet-600 text-white rounded-xl font-medium hover:bg-violet-700 transition-colors"
+            className="mt-4 px-6 py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 transition-colors"
           >
             Создать первый бюджет
           </button>

@@ -61,14 +61,16 @@ export const Goals = () => {
   };
 
   return (
-    <div className="pb-20 bg-background min-h-screen">
+    <div className="pb-28 bg-background min-h-screen">
       {/* Header */}
-      <div className="px-4 py-4 bg-card border-b border-border">
-        <h1 className="text-xl font-bold">Цели и накопления</h1>
+      <div className="px-5 pt-4 pb-4">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-xl font-bold tracking-[-0.01em]">Цели и накопления</h1>
+        </div>
       </div>
 
       {/* Goals List */}
-      <div className="px-4 py-4 space-y-4">
+      <div className="px-5 py-4 space-y-4">
         {goals.length > 0 && goals.map(goal => {
           const percentage = Math.min((goal.currentAmount / goal.targetAmount) * 100, 100);
           const remaining = goal.targetAmount - goal.currentAmount;
@@ -78,7 +80,7 @@ export const Goals = () => {
           return (
             <div
               key={goal.id}
-              className="bg-card rounded-2xl p-5 border border-border"
+              className="card-premium p-5"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
@@ -121,7 +123,8 @@ export const Goals = () => {
                       className="h-full rounded-full transition-all"
                       style={{
                         width: `${percentage}%`,
-                        backgroundColor: goal.color
+                        backgroundColor: goal.color,
+                        transition: 'width 600ms cubic-bezier(0.34,1.56,0.64,1)'
                       }}
                     />
                   </div>
@@ -157,7 +160,7 @@ export const Goals = () => {
                   <button
                     onClick={() => openContribute(goal)}
                     disabled={!goal.isActive}
-                    className="flex-1 py-2 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 py-2 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Пополнить
                   </button>
@@ -196,7 +199,7 @@ export const Goals = () => {
 
       {/* Add Goal Button */}
       {goals.length > 0 && (
-        <div className="px-4 py-4">
+        <div className="px-5 py-4">
           <button
             onClick={() => setIsCreateFormOpen(true)}
             className="w-full flex items-center justify-center gap-2 py-4 border-2 border-dashed border-border rounded-2xl text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
@@ -209,7 +212,7 @@ export const Goals = () => {
 
       {/* Stats Card */}
       {goals.length > 0 && (
-        <div className="px-4 pb-4">
+        <div className="px-5 pb-4">
           <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 rounded-2xl p-4 border border-green-200 dark:border-green-800">
             <h3 className="font-bold text-green-900 dark:text-green-100 mb-2 flex items-center gap-2">
               <Trophy className="w-5 h-5" />
