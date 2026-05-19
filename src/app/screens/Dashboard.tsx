@@ -253,6 +253,14 @@ function BudgetProgressSection({ expensesByCategory, categories }: BudgetProgres
   );
 }
 
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 6) return 'Доброй ночи';
+  if (h < 12) return 'Доброе утро';
+  if (h < 18) return 'Добрый день';
+  return 'Добрый вечер';
+}
+
 // ==================== Dashboard ====================
 
 const AVATAR_COLORS = [
@@ -323,7 +331,7 @@ export const Dashboard = () => {
       <div className="px-5 pt-6 pb-4">
         <div className="flex items-center justify-between mb-5">
           <div>
-            <p className="text-sm text-muted-foreground font-medium">Доброе утро,</p>
+            <p className="text-sm text-muted-foreground font-medium">{getGreeting()},</p>
             <h1 className="text-[22px] font-bold tracking-[-0.02em]">{user?.name || 'Пользователь'}</h1>
           </div>
           <div className="flex items-center gap-2.5">
