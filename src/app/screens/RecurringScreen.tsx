@@ -62,14 +62,14 @@ export const Recurring = () => {
   };
 
   return (
-    <div className="pb-20 bg-background min-h-screen">
+    <div className="pb-28 bg-background min-h-screen">
       {/* Header */}
-      <div className="px-4 py-4 bg-card border-b border-border">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold">Повтор</h1>
+      <div className="px-5 pt-4 pb-4">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-xl font-bold tracking-[-0.01em]">Повтор</h1>
           <button
             onClick={handleAdd}
-            className="w-9 h-9 bg-violet-600 hover:bg-violet-700 text-white rounded-xl flex items-center justify-center transition-colors"
+            className="w-9 h-9 bg-primary hover:bg-primary/90 text-white rounded-xl flex items-center justify-center transition-colors"
           >
             <Plus className="w-5 h-5" />
           </button>
@@ -77,14 +77,14 @@ export const Recurring = () => {
       </div>
 
       {/* Templates List */}
-      <div className="px-4 py-4 space-y-3">
+      <div className="px-5 py-4 space-y-3">
         {templates.map(template => {
           const category = categories.find(c => c.id === template.categoryId);
 
           return (
             <div
               key={template.id}
-              className={`bg-card rounded-2xl p-4 border border-border transition-opacity ${
+              className={`card-premium p-5 transition-opacity ${
                 !template.isActive ? 'opacity-60' : ''
               }`}
             >
@@ -121,7 +121,7 @@ export const Recurring = () => {
                         title={template.isActive ? 'Отключить' : 'Включить'}
                       >
                         {template.isActive ? (
-                          <ToggleRight className="w-6 h-6 text-violet-600 dark:text-violet-400" />
+                          <ToggleRight className="w-6 h-6 text-primary" />
                         ) : (
                           <ToggleLeft className="w-6 h-6 text-muted-foreground" />
                         )}
@@ -173,7 +173,7 @@ export const Recurring = () => {
 
       {/* Empty State */}
       {templates.length === 0 && (
-        <div className="px-4 py-12 text-center">
+        <div className="px-5 py-12 text-center">
           <div className="w-20 h-20 mx-auto mb-4 bg-muted rounded-full flex items-center justify-center">
             <Clock className="w-10 h-10 text-muted-foreground" />
           </div>
@@ -189,7 +189,7 @@ export const Recurring = () => {
 
       {/* Add Button (when templates exist) */}
       {templates.length > 0 && (
-        <div className="px-4 py-4">
+        <div className="px-5 py-4">
           <button
             onClick={handleAdd}
             className="w-full flex items-center justify-center gap-2 py-4 border-2 border-dashed border-border rounded-2xl text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
@@ -214,7 +214,7 @@ export const Recurring = () => {
         }, 0);
 
         return (
-          <div className="px-4 pb-4">
+          <div className="px-5 pb-4">
             <div className="bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-950/30 dark:to-indigo-950/30 rounded-2xl p-4 border border-violet-200 dark:border-violet-800">
               <h3 className="font-bold text-violet-900 dark:text-violet-100 mb-2 flex items-center gap-2">
                 <CalendarDays className="w-5 h-5" />

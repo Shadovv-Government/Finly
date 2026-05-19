@@ -1,10 +1,11 @@
 import { Bell, Camera, Calendar, TrendingUp } from 'lucide-react';
+import { EmptyState } from '../components/EmptyState';
+import { motion } from 'motion/react';
 import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { CategoryBadge } from '../components/CategoryBadge';
 import { AmountDisplay } from '../components/AmountDisplay';
-import { Target, Folder, Sparkles, DollarSign, Repeat2 } from 'lucide-react';
 import { useAnalytics, getPeriodRange, PeriodType } from '../hooks/useAnalytics';
 import { useTransactions } from '../hooks/useTransactions';
 import { useCategories } from '../hooks/useCategories';
@@ -35,33 +36,41 @@ interface BalanceCardProps {
 }
 
 function BalanceCard({ totalBalance, income, expense, savingsAmount, freeBalance }: BalanceCardProps) {
-  const hasSavings = savingsAmount > 0;
   return (
-    <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 mb-4">
-      <p className="text-xs opacity-80 mb-1">Общий баланс</p>
-      <p className="text-3xl font-bold mb-3">{totalBalance.toLocaleString('ru-RU')} ₽</p>
-
-      {hasSavings && (
-        <div className="mb-3 p-3 bg-white/10 rounded-xl">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs opacity-90">Свободно</p>
-            <p className="text-sm font-semibold">{freeBalance.toLocaleString('ru-RU')} ₽</p>
-          </div>
-          <div className="flex items-center justify-between">
-            <p className="text-xs opacity-90">В накоплениях</p>
-            <p className="text-sm font-semibold">{savingsAmount.toLocaleString('ru-RU')} ₽</p>
-          </div>
+    <div className="card-featured mb-5">
+      <div className="flex items-start justify-between mb-1">
+        <div>
+          <p className="label-sm mb-1">Баланс</p>
+          <p className="text-3xl font-bold tracking-[-0.02em] text-numeric">
+            {totalBalance.toLocaleString('ru-RU')} ₽
+          </p>
         </div>
-      )}
+        {savingsAmount > 0 && (
+          <div className="px-2.5 py-1 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-900">
+            <p className="text-[10px] text-green-700 dark:text-green-400 font-semibold leading-tight">Свободно</p>
+            <p className="text-sm font-bold text-green-700 dark:text-green-400 text-numeric">
+              {freeBalance.toLocaleString('ru-RU')} ₽
+            </p>
+          </div>
+        )}
+      </div>
 
-      <div className="flex gap-4">
-        <div className="flex-1">
-          <p className="text-xs opacity-80">Доходы</p>
-          <p className="text-lg font-semibold">+{income.toLocaleString('ru-RU')} ₽</p>
+      <div className="flex gap-2 mt-4">
+        <div className="flex-1 bg-green-50 dark:bg-green-950 rounded-2xl p-3 border border-green-100 dark:border-green-900">
+          <p className="text-[10px] text-green-700 dark:text-green-400 uppercase tracking-[0.05em] font-semibold mb-1">
+            Доходы
+          </p>
+          <p className="text-base font-bold text-green-700 dark:text-green-400 text-numeric">
+            +{income.toLocaleString('ru-RU')} ₽
+          </p>
         </div>
-        <div className="flex-1">
-          <p className="text-xs opacity-80">Расходы</p>
-          <p className="text-lg font-semibold">−{expense.toLocaleString('ru-RU')} ₽</p>
+        <div className="flex-1 bg-red-50 dark:bg-red-950 rounded-2xl p-3 border border-red-100 dark:border-red-900">
+          <p className="text-[10px] text-red-700 dark:text-red-400 uppercase tracking-[0.05em] font-semibold mb-1">
+            Расходы
+          </p>
+          <p className="text-base font-bold text-red-700 dark:text-red-400 text-numeric">
+            −{expense.toLocaleString('ru-RU')} ₽
+          </p>
         </div>
       </div>
     </div>
@@ -77,9 +86,9 @@ interface ExpenseBreakdownProps {
 function ExpenseBreakdown({ data }: ExpenseBreakdownProps) {
   const total = data.reduce((sum, item) => sum + item.value, 0);
   return (
-    <div className="px-4 py-4">
+    <div className="px-5 py-4">
       <h2 className="font-bold mb-4">Расходы по категориям</h2>
-      <div className="bg-card rounded-2xl p-4 border border-border">
+      <div className="card-premium p-5">
         {data.length > 0 ? (
           <>
             <div className="flex items-center justify-center mb-4">
@@ -122,7 +131,7 @@ function ExpenseBreakdown({ data }: ExpenseBreakdownProps) {
             </div>
           </>
         ) : (
-          <p className="text-center text-muted-foreground py-8">Нет данных</p>
+          <EmptyState emoji="📊" title="Нет данных" description="Добавьте транзакции за этот период, чтобы увидеть структуру расходов" />
         )}
       </div>
     </div>
@@ -138,14 +147,14 @@ interface RecentTransactionsProps {
 
 function RecentTransactions({ transactions, categories }: RecentTransactionsProps) {
   return (
-    <div className="px-4 pb-4">
+    <div className="px-5 pb-4">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-bold">Последние операции</h2>
         <Link to="/history" className="text-sm text-violet-600 dark:text-violet-400">
           Все
         </Link>
       </div>
-      <div className="bg-card rounded-2xl border border-border overflow-hidden">
+      <div className="card-premium overflow-hidden">
         {transactions.length > 0 ? (
           transactions.map((transaction, index) => {
             const category = categories.find(c => c.id === transaction.categoryId);
@@ -172,7 +181,7 @@ function RecentTransactions({ transactions, categories }: RecentTransactionsProp
             );
           })
         ) : (
-          <p className="text-center text-muted-foreground py-8">Нет транзакций</p>
+          <EmptyState emoji="💸" title="Нет транзакций" description="Добавьте первую транзакцию, чтобы начать учёт" />
         )}
       </div>
     </div>
@@ -208,7 +217,7 @@ function BudgetProgressSection({ expensesByCategory, categories }: BudgetProgres
     pct > 90 ? '#ef4444' : pct >= 70 ? '#f59e0b' : '#22c55e';
 
   return (
-    <div className="px-4 pb-2">
+    <div className="px-5 pb-2">
       <div className="flex items-center justify-between mb-3">
         <h2 className="font-bold">Бюджеты</h2>
         <Link to="/budgets" className="text-sm text-violet-600 dark:text-violet-400 flex items-center gap-1">
@@ -216,7 +225,7 @@ function BudgetProgressSection({ expensesByCategory, categories }: BudgetProgres
           Все
         </Link>
       </div>
-      <div className="bg-card rounded-2xl border border-border overflow-hidden">
+      <div className="card-premium overflow-hidden">
         {activeBudgets.map(({ budget, cat, spent, pct }, index) => (
           <div
             key={budget.id}
@@ -235,8 +244,8 @@ function BudgetProgressSection({ expensesByCategory, categories }: BudgetProgres
             </div>
             <div className="h-1.5 bg-muted rounded-full overflow-hidden">
               <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{ width: `${pct}%`, backgroundColor: getBarColor(pct) }}
+                className="h-full rounded-full"
+                style={{ width: `${pct}%`, backgroundColor: getBarColor(pct), transition: 'width 600ms cubic-bezier(0.34,1.56,0.64,1)' }}
               />
             </div>
           </div>
@@ -244,6 +253,14 @@ function BudgetProgressSection({ expensesByCategory, categories }: BudgetProgres
       </div>
     </div>
   );
+}
+
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 6) return 'Доброй ночи';
+  if (h < 12) return 'Доброе утро';
+  if (h < 18) return 'Добрый день';
+  return 'Добрый вечер';
 }
 
 // ==================== Dashboard ====================
@@ -256,6 +273,15 @@ const AVATAR_COLORS = [
   'from-orange-400 to-red-500',
   'from-pink-400 to-rose-500',
 ];
+
+const sectionVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.05, duration: 0.35, ease: 'easeOut' as const }
+  }),
+};
 
 export const Dashboard = () => {
   const [period, setPeriod] = useState<PeriodType>('month');
@@ -311,29 +337,29 @@ export const Dashboard = () => {
   };
 
   return (
-    <div className="pb-36 bg-background min-h-screen">
+    <div className="pb-28 bg-background min-h-screen">
       {/* Header */}
-      <div className="px-4 pt-6 pb-4 bg-gradient-to-br from-violet-600 to-indigo-700 text-white">
-        <div className="flex items-center justify-between mb-6">
+      <div className="px-5 pt-6 pb-4">
+        <div className="flex items-center justify-between mb-5">
           <div>
-            <p className="text-sm opacity-90">Привет,</p>
-            <h1 className="text-xl font-bold">{user?.name || 'Пользователь'}</h1>
+            <p className="text-sm text-muted-foreground font-medium">{getGreeting()},</p>
+            <h1 className="text-[22px] font-bold tracking-[-0.02em]">{user?.name || 'Пользователь'}</h1>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <button
               aria-label="Открыть уведомления"
               onClick={() => setIsNotificationsOpen(true)}
-              className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center relative"
+              className="w-10 h-10 rounded-full bg-card border border-border shadow-xs flex items-center justify-center relative hover:shadow-sm transition-shadow"
             >
-              <Bell className="w-5 h-5" />
+              <Bell className="w-5 h-5 text-muted-foreground" />
               {hasUnread && (
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+                <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-card" />
               )}
             </button>
             <button
               aria-label="Выбрать аватар"
               onClick={() => setIsAvatarDialogOpen(true)}
-              className={`w-10 h-10 rounded-full bg-gradient-to-br ${user?.avatarColor || 'from-amber-400 to-pink-500'} flex items-center justify-center font-bold relative group`}
+              className={`w-10 h-10 rounded-full bg-gradient-to-br ${user?.avatarColor || 'from-amber-400 to-pink-500'} flex items-center justify-center font-bold text-white relative group shadow-md`}
             >
               {getInitial(user?.name || 'U')}
               <Camera className="w-4 h-4 absolute opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -341,16 +367,18 @@ export const Dashboard = () => {
           </div>
         </div>
 
-        <BalanceCard
-          totalBalance={currentBalance}
-          income={income}
-          expense={expense}
-          savingsAmount={savingsAmount}
-          freeBalance={freeBalance}
-        />
+        <motion.section custom={0} variants={sectionVariants} initial="hidden" animate="visible">
+          <BalanceCard
+            totalBalance={currentBalance}
+            income={income}
+            expense={expense}
+            savingsAmount={savingsAmount}
+            freeBalance={freeBalance}
+          />
+        </motion.section>
 
         {/* Period Switcher */}
-        <div className="flex gap-2">
+        <div className="flex gap-1 p-1 bg-card rounded-xl border border-border shadow-xs">
           {[
             { value: 'day' as PeriodType, label: 'День' },
             { value: 'week' as PeriodType, label: 'Неделя' },
@@ -360,10 +388,10 @@ export const Dashboard = () => {
             <button
               key={p.value}
               onClick={() => handlePeriodChange(p.value)}
-              className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all ${
+              className={`flex-1 py-2.5 px-3 rounded-[10px] text-sm transition-all duration-200 ${
                 period === p.value
-                  ? 'bg-white text-violet-700'
-                  : 'bg-white/20 text-white hover:bg-white/30'
+                  ? 'bg-muted shadow-sm font-semibold text-foreground'
+                  : 'text-muted-foreground hover:text-foreground font-medium'
               }`}
             >
               {p.label}
@@ -372,66 +400,75 @@ export const Dashboard = () => {
         </div>
       </div>
 
-      <ExpenseBreakdown data={expensesByCategory} />
+      <motion.section custom={1} variants={sectionVariants} initial="hidden" animate="visible">
+        <ExpenseBreakdown data={expensesByCategory} />
+      </motion.section>
 
-      <BudgetProgressSection expensesByCategory={expensesByCategory} categories={categories} />
+      <motion.section custom={2} variants={sectionVariants} initial="hidden" animate="visible">
+        <BudgetProgressSection expensesByCategory={expensesByCategory} categories={categories} />
+      </motion.section>
 
+      <motion.section custom={3} variants={sectionVariants} initial="hidden" animate="visible">
       {/* Quick Links */}
-      <div className="px-4 py-4">
-        <div className="grid grid-cols-2 gap-3">
-          <Link to="/budgets" className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3 hover:bg-muted transition-colors">
-            <div className="w-10 h-10 shrink-0 rounded-xl bg-red-100 dark:bg-red-950 flex items-center justify-center">
-              <DollarSign className="w-5 h-5 text-red-600 dark:text-red-400" />
+      <div className="px-5 py-4">
+        <div className="grid grid-cols-2 gap-2.5">
+          <Link to="/budgets" className="card-premium p-4 flex items-center gap-3 hover:shadow-md transition-shadow duration-200 active:scale-[0.98]">
+            <div className="w-10 h-10 shrink-0 rounded-xl bg-red-50 dark:bg-red-950 flex items-center justify-center text-lg shadow-xs">
+              💰
             </div>
             <div>
-              <p className="text-sm font-medium">Бюджеты</p>
+              <p className="text-sm font-semibold">Бюджеты</p>
               <p className="text-xs text-muted-foreground">Контроль лимитов</p>
             </div>
           </Link>
 
-          <Link to="/goals" className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3 hover:bg-muted transition-colors">
-            <div className="w-10 h-10 shrink-0 rounded-xl bg-green-100 dark:bg-green-950 flex items-center justify-center">
-              <Target className="w-5 h-5 text-green-600 dark:text-green-400" />
+          <Link to="/goals" className="card-premium p-4 flex items-center gap-3 hover:shadow-md transition-shadow duration-200 active:scale-[0.98]">
+            <div className="w-10 h-10 shrink-0 rounded-xl bg-green-50 dark:bg-green-950 flex items-center justify-center text-lg shadow-xs">
+              🎯
             </div>
             <div>
-              <p className="text-sm font-medium">Цели</p>
+              <p className="text-sm font-semibold">Цели</p>
               <p className="text-xs text-muted-foreground">Накопления</p>
             </div>
           </Link>
 
-          <Link to="/categories" className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3 hover:bg-muted transition-colors">
-            <div className="w-10 h-10 shrink-0 rounded-xl bg-blue-100 dark:bg-blue-950 flex items-center justify-center">
-              <Folder className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          <Link to="/categories" className="card-premium p-4 flex items-center gap-3 hover:shadow-md transition-shadow duration-200 active:scale-[0.98]">
+            <div className="w-10 h-10 shrink-0 rounded-xl bg-blue-50 dark:bg-blue-950 flex items-center justify-center text-lg shadow-xs">
+              📂
             </div>
             <div>
-              <p className="text-sm font-medium">Категории</p>
+              <p className="text-sm font-semibold">Категории</p>
               <p className="text-xs text-muted-foreground">Управление</p>
             </div>
           </Link>
 
-          <Link to="/recurring" className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3 hover:bg-muted transition-colors">
-            <div className="w-10 h-10 shrink-0 rounded-xl bg-orange-100 dark:bg-orange-950 flex items-center justify-center">
-              <Repeat2 className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+          <Link to="/recurring" className="card-premium p-4 flex items-center gap-3 hover:shadow-md transition-shadow duration-200 active:scale-[0.98]">
+            <div className="w-10 h-10 shrink-0 rounded-xl bg-amber-50 dark:bg-amber-950 flex items-center justify-center text-lg shadow-xs">
+              🔄
             </div>
             <div>
-              <p className="text-sm font-medium">Повтор</p>
+              <p className="text-sm font-semibold">Повтор</p>
               <p className="text-xs text-muted-foreground">Регулярные платежи</p>
             </div>
           </Link>
 
-          <Link to="/ai-assistant" className="col-span-2 bg-card border border-border rounded-2xl p-4 flex items-center gap-3 hover:bg-muted transition-colors">
-            <div className="w-10 h-10 shrink-0 rounded-xl bg-violet-100 dark:bg-violet-950 flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+          <Link to="/ai-assistant" className="col-span-2 card-premium p-4 flex items-center gap-3 hover:shadow-md transition-shadow duration-200 active:scale-[0.98]">
+            <div className="w-10 h-10 shrink-0 rounded-xl bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center text-lg shadow-xs">
+              ✨
             </div>
-            <div>
-              <p className="text-sm font-medium">AI Помощник</p>
-              <p className="text-xs text-muted-foreground">Аналитика</p>
+            <div className="flex-1">
+              <p className="text-sm font-semibold">AI Помощник</p>
+              <p className="text-xs text-muted-foreground">Аналитика и советы</p>
             </div>
+            <span className="text-muted-foreground">→</span>
           </Link>
         </div>
       </div>
+      </motion.section>
 
-      <RecentTransactions transactions={recentTransactions} categories={categories} />
+      <motion.section custom={4} variants={sectionVariants} initial="hidden" animate="visible">
+        <RecentTransactions transactions={recentTransactions} categories={categories} />
+      </motion.section>
 
       {/* Avatar Selection Dialog */}
       <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>

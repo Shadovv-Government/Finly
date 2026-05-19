@@ -1,37 +1,35 @@
-import { LucideIcon } from 'lucide-react';
+import { ReactNode } from 'react';
 
 interface EmptyStateProps {
-  icon: LucideIcon;
+  emoji: string;
   title: string;
   description: string;
-  actionLabel?: string;
-  onAction?: () => void;
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
+  children?: ReactNode;
 }
 
-export const EmptyState: React.FC<EmptyStateProps> = ({
-  icon: Icon,
-  title,
-  description,
-  actionLabel,
-  onAction,
-}) => {
+export function EmptyState({ emoji, title, description, action, children }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
-      <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-4">
-        <Icon className="w-10 h-10 text-muted-foreground" />
+    <div className="flex flex-col items-center justify-center py-16 px-5 text-center">
+      <div className="w-[120px] h-[120px] rounded-full bg-muted flex items-center justify-center text-5xl mb-6 shadow-sm">
+        {emoji}
       </div>
-      <h3 className="font-bold text-lg mb-2">{title}</h3>
-      <p className="text-sm text-muted-foreground mb-6 max-w-sm">
+      <h3 className="text-lg font-bold tracking-[-0.01em] mb-2">{title}</h3>
+      <p className="text-sm text-muted-foreground max-w-[280px] mb-6 leading-relaxed">
         {description}
       </p>
-      {actionLabel && onAction && (
+      {action && (
         <button
-          onClick={onAction}
-          className="px-6 py-3 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-xl font-semibold"
+          onClick={action.onClick}
+          className="btn-primary"
         >
-          {actionLabel}
+          {action.label}
         </button>
       )}
+      {children}
     </div>
   );
-};
+}

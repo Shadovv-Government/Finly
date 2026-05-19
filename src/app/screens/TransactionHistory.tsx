@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Search, Filter, X, Calendar, ChevronDown, Wallet, MessageSquare } from 'lucide-react';
+import { EmptyState } from '../components/EmptyState';
 import { CategoryBadge } from '../components/CategoryBadge';
 import { AmountDisplay } from '../components/AmountDisplay';
 import { BottomSheet } from '../components/BottomSheet';
@@ -206,7 +207,7 @@ function EditTransactionSheet({ transaction, categories, onClose, onSave }: Edit
           <button
             onClick={handleSave}
             disabled={!amount || !categoryId || saving}
-            className="flex-[2] py-4 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-xl font-semibold text-sm disabled:opacity-50"
+            className="flex-[2] py-4 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-xl font-semibold text-sm disabled:opacity-50"
           >
             Сохранить
           </button>
@@ -254,7 +255,7 @@ function TransactionFilters({
                 onClick={() => { setFilterType(item.value); setSelectedCategory(null); }}
                 className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
                   filterType === item.value
-                    ? 'bg-white dark:bg-card shadow-sm text-violet-600 dark:text-violet-400'
+                    ? 'bg-white dark:bg-card shadow-sm text-primary'
                     : 'text-muted-foreground'
                 }`}
               >
@@ -272,7 +273,7 @@ function TransactionFilters({
               onClick={() => setSelectedCategory(null)}
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                 !selectedCategory
-                  ? 'bg-white dark:bg-card shadow-sm text-violet-600 dark:text-violet-400'
+                  ? 'bg-white dark:bg-card shadow-sm text-primary'
                   : 'text-muted-foreground hover:bg-accent'
               }`}
             >
@@ -334,7 +335,7 @@ function TransactionFilters({
           </button>
           <button
             onClick={onClose}
-            className="flex-[2] py-3 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-xl font-semibold text-sm"
+            className="flex-[2] py-3 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-xl font-semibold text-sm"
           >
             Применить
           </button>
@@ -421,10 +422,10 @@ export const TransactionHistory = () => {
   useEffect(() => { setVisiblePages(1); }, [searchQuery, selectedCategory, dateFrom, dateTo, filterType]);
 
   return (
-    <div className="pb-20 bg-background min-h-screen">
+    <div className="pb-28 bg-background min-h-screen">
       {/* Header */}
-      <div className="px-4 py-4 bg-card border-b border-border sticky top-0 z-10">
-        <h1 className="text-xl font-bold mb-4">История операций</h1>
+      <div className="px-5 pt-4 pb-4 sticky top-0 z-10">
+        <h1 className="text-xl font-bold tracking-[-0.01em] mb-4">История операций</h1>
 
         <div className="relative mb-3">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -445,11 +446,11 @@ export const TransactionHistory = () => {
           )}
         </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-5 px-5 scrollbar-hide">
           <button
             onClick={() => setIsFilterOpen(true)}
             className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap flex-shrink-0 transition-all ${
-              hasActiveFilters ? 'bg-violet-600 text-white' : 'bg-muted text-foreground'
+              hasActiveFilters ? 'bg-primary text-white' : 'bg-muted text-foreground'
             }`}
           >
             <Filter className="w-4 h-4" />
@@ -493,7 +494,7 @@ export const TransactionHistory = () => {
       </div>
 
       {/* Transaction List */}
-      <div className="px-4 py-4">
+      <div className="px-5 py-4">
         {Object.keys(groupedTransactions).length > 0 ? (() => {
           const groupEntries = Object.entries(groupedTransactions);
           const shownGroups: [string, Transaction[]][] = [];
@@ -521,7 +522,7 @@ export const TransactionHistory = () => {
                     <h3 className="text-sm font-medium text-muted-foreground">{date}</h3>
                     <span className="text-sm text-muted-foreground">{dayTransactions.length} операций</span>
                   </div>
-                  <div className="bg-card rounded-2xl border border-border overflow-hidden">
+                  <div className="card-premium overflow-hidden">
                     {dayTransactions.map((transaction, index) => (
                       <TransactionItem
                         key={transaction.id}
@@ -553,20 +554,7 @@ export const TransactionHistory = () => {
             </>
           );
         })() : (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Search className="w-12 h-12 text-muted-foreground mb-4" />
-            <p className="text-lg font-medium text-muted-foreground">
-              {hasActiveFilters ? 'Ничего не найдено' : 'Нет транзакций'}
-            </p>
-            {hasActiveFilters && (
-              <button
-                onClick={clearAllFilters}
-                className="mt-3 px-6 py-2 bg-violet-600 text-white rounded-xl text-sm font-medium hover:bg-violet-700 transition-colors"
-              >
-                Сбросить фильтры
-              </button>
-            )}
-          </div>
+          <EmptyState emoji="💸" title="Нет транзакций" description="Здесь будут отображаться все ваши операции" />
         )}
       </div>
 

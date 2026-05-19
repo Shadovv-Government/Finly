@@ -27,7 +27,7 @@ export const AmountDisplay: React.FC<AmountDisplayProps> = ({
   const sign = type === 'income' ? '+' : type === 'expense' ? '−' : '';
   
   return (
-    <span className={`${colorClasses[type]} ${sizeClasses[size]} font-semibold`}>
+    <span className={`${colorClasses[type]} ${sizeClasses[size]} font-semibold text-numeric tracking-[-0.01em]`}>
       {showSign && sign} {amount.toLocaleString('ru-RU')} ₽
     </span>
   );

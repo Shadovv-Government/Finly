@@ -103,17 +103,17 @@ export const Categories = () => {
   };
 
   return (
-    <div className="pb-20 bg-background min-h-screen">
+    <div className="pb-28 bg-background min-h-screen">
       {/* Header */}
-      <div className="px-4 py-4 bg-card border-b border-border">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold">Категории</h1>
+      <div className="px-5 pt-4 pb-4">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-xl font-bold tracking-[-0.01em]">Категории</h1>
           <button
             onClick={() => setEditMode(!editMode)}
             className={`px-4 py-2 rounded-xl font-medium transition-colors ${
               editMode
                 ? 'bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400'
-                : 'bg-violet-600 text-white'
+                : 'bg-primary text-white'
             }`}
           >
             {editMode ? 'Готово' : 'Изменить'}
@@ -122,7 +122,7 @@ export const Categories = () => {
       </div>
 
       {/* Expense Categories */}
-      <div className="px-4 py-4">
+      <div className="px-5 py-4">
         <h2 className="font-bold mb-3 text-red-600 dark:text-red-400">Расходы</h2>
         <div className="grid grid-cols-3 gap-3">
           {categories
@@ -132,7 +132,7 @@ export const Categories = () => {
               return (
                 <div
                   key={category.id}
-                  className="relative bg-card border border-border rounded-2xl p-4 flex flex-col items-center gap-2"
+                  className="relative card-premium p-4 flex flex-col items-center gap-2"
                 >
                   {editMode && !category.isSystem && (
                     <div className="absolute top-2 right-2 flex gap-1 z-10">
@@ -185,7 +185,7 @@ export const Categories = () => {
       </div>
 
       {/* Income Categories */}
-      <div className="px-4 py-4">
+      <div className="px-5 py-4">
         <h2 className="font-bold mb-3 text-green-600 dark:text-green-400">Доходы</h2>
         <div className="grid grid-cols-3 gap-3">
           {categories
@@ -195,7 +195,7 @@ export const Categories = () => {
               return (
                 <div
                   key={category.id}
-                  className="relative bg-card border border-border rounded-2xl p-4 flex flex-col items-center gap-2"
+                  className="relative card-premium p-4 flex flex-col items-center gap-2"
                 >
                   {editMode && !category.isSystem && (
                     <div className="absolute top-2 right-2 flex gap-1 z-10">
@@ -318,7 +318,7 @@ export const Categories = () => {
               <button
                 onClick={handleReassignAndDelete}
                 disabled={!reassignTargetId}
-                className="w-full py-3 bg-violet-600 text-white rounded-xl font-medium disabled:opacity-40"
+                className="w-full py-3 bg-primary text-white rounded-xl font-medium disabled:opacity-40"
               >
                 Переназначить и удалить категорию
               </button>

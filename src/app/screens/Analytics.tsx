@@ -1,4 +1,5 @@
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, Tooltip } from 'recharts';
+import { EmptyState } from '../components/EmptyState';
 import { Calendar } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useAnalytics, getPeriodRange, PeriodType } from '../hooks/useAnalytics';
@@ -130,15 +131,15 @@ export const Analytics = () => {
   };
 
   return (
-    <div className="pb-20 bg-background min-h-screen">
+    <div className="pb-28 bg-background min-h-screen">
       {/* Header */}
-      <div className="px-4 py-4 bg-card border-b border-border sticky top-0 z-10">
-        <h1 className="text-xl font-bold mb-4">Аналитика</h1>
+      <div className="px-5 pt-4 pb-4">
+        <h1 className="text-xl font-bold tracking-[-0.01em] mb-4">Аналитика</h1>
 
         {/* Period Selector Button */}
         <button
           onClick={() => setIsPeriodPickerOpen(true)}
-          className="w-full flex items-center justify-between px-4 py-3 bg-muted rounded-xl"
+          className="w-full flex items-center justify-between px-5 py-3 bg-card rounded-xl border border-border shadow-xs hover:shadow-sm transition-shadow"
         >
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-muted-foreground" />
@@ -149,7 +150,7 @@ export const Analytics = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="px-4 py-4">
+      <div className="px-5 py-4">
         {loading ? (
           <div className="grid grid-cols-3 gap-3">
             {[1, 2, 3].map(i => <div key={i} className="bg-muted rounded-2xl p-4 h-20 animate-pulse" />)}
@@ -175,9 +176,9 @@ export const Analytics = () => {
       </div>
 
       {/* Bar Chart */}
-      <div className="px-4 py-4">
+      <div className="px-5 py-4">
         <h2 className="font-bold mb-4">Доходы vs Расходы</h2>
-        <div className="bg-card rounded-2xl p-4 border border-border">
+        <div className="card-premium p-5">
           {weeklyData.length > 0 && weeklyData.some(w => w.income > 0 || w.expense > 0) ? (
             <>
               <ResponsiveContainer width="100%" height={220}>
@@ -230,16 +231,16 @@ export const Analytics = () => {
               )}
             </>
           ) : (
-            <p className="text-center text-muted-foreground py-8">Нет данных за период</p>
+            <EmptyState emoji="📊" title="Нет данных за период" description="Добавьте транзакции, и мы покажем красивую аналитику" />
           )}
         </div>
       </div>
 
       {/* Trend Chart */}
       {trendData.length > 1 && (
-        <div className="px-4 py-4">
+        <div className="px-5 py-4">
           <h2 className="font-bold mb-4">Динамика</h2>
-          <div className="bg-card rounded-2xl p-4 border border-border">
+          <div className="card-premium p-5">
             <ResponsiveContainer width="100%" height={180}>
               <AreaChart data={trendData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
                 <defs>
@@ -277,9 +278,9 @@ export const Analytics = () => {
       )}
 
       {/* Pie Chart */}
-      <div className="px-4 py-4">
+      <div className="px-5 py-4">
         <h2 className="font-bold mb-4">Структура расходов</h2>
-        <div className="bg-card rounded-2xl p-4 border border-border">
+        <div className="card-premium p-5">
           {pieData.length > 0 ? (
             <>
               <ResponsiveContainer width="100%" height={200}>
@@ -311,10 +312,10 @@ export const Analytics = () => {
       </div>
 
       {/* Top Categories */}
-      <div className="px-4 pb-4">
+      <div className="px-5 pb-4">
         <h2 className="font-bold mb-4">Топ категорий</h2>
         {pieData.length > 0 ? (
-          <div className="bg-card rounded-2xl p-4 border border-border space-y-4">
+          <div className="card-premium p-5 space-y-4">
             {pieData.slice(0, 5).map((category, index) => (
               <div key={category.name}>
                 <div className="flex items-center justify-between mb-2">
@@ -334,7 +335,7 @@ export const Analytics = () => {
             ))}
           </div>
         ) : (
-          <div className="bg-card rounded-2xl p-8 border border-border text-center text-muted-foreground">Нет данных</div>
+          <div className="card-premium p-8 text-center text-muted-foreground">Нет данных</div>
         )}
       </div>
 
@@ -347,7 +348,7 @@ export const Analytics = () => {
       >
         <div className="flex flex-col pb-4">
           {/* Быстрый выбор */}
-          <div className="px-4 py-4">
+          <div className="px-5 py-4">
             <label className="text-sm font-medium mb-3 block">Быстрый выбор</label>
             <div className="flex gap-2 p-1 bg-muted rounded-xl">
               {(['day', 'week', 'month'] as PeriodType[]).map(p => (
@@ -367,7 +368,7 @@ export const Analytics = () => {
           </div>
 
           {/* Свой период */}
-          <div className="px-4 py-4">
+          <div className="px-5 py-4">
             <label className="text-sm font-medium mb-3 block">Свой период</label>
             <div className="flex gap-2">
               <div className="flex-1 flex items-center gap-2 p-3 bg-muted rounded-xl">
@@ -398,7 +399,7 @@ export const Analytics = () => {
 
           {/* Применить свой период */}
           {period === 'custom' && (
-            <div className="px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom)+4rem)]">
+            <div className="px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom)+4rem)]">
               <button
                 onClick={() => setIsPeriodPickerOpen(false)}
                 className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-xl font-semibold"
