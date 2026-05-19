@@ -50,9 +50,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none">
-      <div className="relative mx-auto max-w-md px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-        <div className="relative h-20 rounded-[2rem] border border-border bg-card/95 shadow-[0_18px_40px_rgba(15,23,42,0.18)] backdrop-blur supports-[backdrop-filter]:bg-card/85 pointer-events-auto">
-          <div className="grid h-full grid-cols-5 items-end px-2 pb-2">
+      <div className="relative mx-auto max-w-md px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="relative h-[4.5rem] rounded-[2rem] border border-border bg-card/90 shadow-md backdrop-blur-xl supports-[backdrop-filter]:bg-card/80 pointer-events-auto">
+          <div className="grid h-full grid-cols-5 items-end px-3 pb-2.5">
             {navItems.slice(0, 2).map(({ path, icon: Icon, label }) => {
               const isActive = location.pathname === path;
 
@@ -60,12 +60,17 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                 <Link
                   key={path}
                   to={path}
-                  className={`flex h-full flex-col items-center justify-center transition-colors ${
-                    isActive ? 'text-primary' : 'text-muted-foreground'
+                  className={`flex h-full flex-col items-center justify-center transition-all duration-200 ${
+                    isActive
+                      ? 'text-primary scale-110'
+                      : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  <Icon className="mb-1 h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
-                  <span className="text-[10px]">{label}</span>
+                  <Icon
+                    className="mb-1 h-5 w-5 transition-transform duration-300 ease-out"
+                    strokeWidth={isActive ? 2.5 : 2}
+                  />
+                  <span className="text-[10px] font-medium">{label}</span>
                 </Link>
               );
             })}
@@ -79,12 +84,17 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                 <Link
                   key={path}
                   to={path}
-                  className={`flex h-full flex-col items-center justify-center transition-colors ${
-                    isActive ? 'text-primary' : 'text-muted-foreground'
+                  className={`flex h-full flex-col items-center justify-center transition-all duration-200 ${
+                    isActive
+                      ? 'text-primary scale-110'
+                      : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  <Icon className="mb-1 h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
-                  <span className="text-[10px]">{label}</span>
+                  <Icon
+                    className="mb-1 h-5 w-5 transition-transform duration-300 ease-out"
+                    strokeWidth={isActive ? 2.5 : 2}
+                  />
+                  <span className="text-[10px] font-medium">{label}</span>
                 </Link>
               );
             })}
@@ -99,9 +109,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({
               onPointerLeave={handleActionPointerEnd}
               onPointerCancel={handleActionPointerEnd}
               onClick={handleActionClick}
-              className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 via-fuchsia-600 to-indigo-700 text-white shadow-[0_10px_30px_rgba(109,40,217,0.45)] transition-transform active:scale-95"
+              className="flex h-[4rem] w-[4rem] items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 via-indigo-500 to-purple-600 text-white shadow-lg transition-transform active:scale-95"
             >
-              <Sparkles className="h-7 w-7" strokeWidth={2.4} />
+              <Sparkles className="h-7 w-7" strokeWidth={2.2} />
             </button>
             <p className="mt-1 text-center text-[10px] font-medium text-muted-foreground">
               AI ввод
