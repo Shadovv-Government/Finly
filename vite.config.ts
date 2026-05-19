@@ -72,7 +72,7 @@ export default defineConfig({
     },
   },
   build: {
-    target: 'esnext',
+    target: 'modules',
     minify: 'terser',
     terserOptions: {
       compress: {
@@ -85,40 +85,33 @@ export default defineConfig({
         manualChunks(id) {
           if (id.includes('node_modules')) {
             if (id.includes('@tensorflow')) {
-              if (id.includes('@tensorflow/tfjs-core')) {
-                return 'vendor-tfjs-core'
-              }
-
-              if (id.includes('@tensorflow/tfjs-backend-cpu')) {
-                return 'vendor-tfjs-backend-cpu'
-              }
-
-              if (id.includes('@tensorflow/tfjs-backend-webgl')) {
-                return 'vendor-tfjs-backend-webgl'
-              }
-
-              if (id.includes('@tensorflow/tfjs-converter')) {
-                return 'vendor-tfjs-converter'
-              }
-
-              if (id.includes('@tensorflow/tfjs-layers')) {
-                return 'vendor-tfjs-layers'
-              }
-
+              if (id.includes('@tensorflow/tfjs-core')) return 'vendor-tfjs-core'
+              if (id.includes('@tensorflow/tfjs-backend-cpu')) return 'vendor-tfjs-backend-cpu'
+              if (id.includes('@tensorflow/tfjs-backend-webgl')) return 'vendor-tfjs-backend-webgl'
+              if (id.includes('@tensorflow/tfjs-converter')) return 'vendor-tfjs-converter'
+              if (id.includes('@tensorflow/tfjs-layers')) return 'vendor-tfjs-layers'
               return 'vendor-tfjs'
+            }
+
+            if (id.includes('@mui') || id.includes('@emotion')) {
+              return 'vendor-mui'
             }
 
             if (id.includes('recharts') || id.includes('chart.js') || id.includes('react-chartjs-2')) {
               return 'vendor-charts'
             }
 
-            if (id.includes('dexie')) {
-              return 'vendor-dexie'
-            }
+            if (id.includes('dexie')) return 'vendor-dexie'
 
-            if (id.includes('@radix-ui')) {
-              return 'vendor-radix'
-            }
+            if (id.includes('@radix-ui')) return 'vendor-radix'
+
+            if (id.includes('tesseract')) return 'vendor-tesseract'
+
+            if (id.includes('motion') || id.includes('framer-motion')) return 'vendor-motion'
+
+            if (id.includes('date-fns')) return 'vendor-date'
+
+            if (id.includes('lucide-react')) return 'vendor-icons'
 
             if (
               id.includes('react-router') ||
@@ -128,6 +121,9 @@ export default defineConfig({
             ) {
               return 'vendor-react'
             }
+
+            if (id.includes('workbox')) return 'vendor-sw'
+            if (id.includes('zustand')) return 'vendor-state'
           }
         },
       },
