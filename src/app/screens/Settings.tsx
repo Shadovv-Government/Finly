@@ -29,7 +29,7 @@ import { getGeminiApiKey, setGeminiApiKey } from '../lib/geminiReceiptParser';
 
 const AVATAR_COLORS = [
   'from-amber-400 to-pink-500',
-  'from-violet-500 to-purple-600',
+  'from-indigo-500 to-blue-600',
   'from-blue-400 to-cyan-500',
   'from-green-400 to-emerald-500',
   'from-orange-400 to-red-500',

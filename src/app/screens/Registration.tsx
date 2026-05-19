@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
-import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { BiometricSetupCard } from '../components/BiometricSetupCard';
+import { Loader2, ArrowRight } from 'lucide-react';
 
 type Step = 'register' | 'biometric';
 
@@ -56,52 +56,70 @@ export const Registration = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
+      {/* Decorative background blobs */}
+      <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full opacity-[0.07]"
+        style={{ background: 'radial-gradient(circle, var(--primary), transparent 70%)' }} />
+      <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full opacity-[0.05]"
+        style={{ background: 'radial-gradient(circle, var(--primary-light), transparent 70%)' }} />
+
       {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-5">
-        {/* Brand Mark */}
-        <div className="w-14 h-14 bg-gradient-to-br from-indigo-600 to-indigo-400 rounded-2xl flex items-center justify-center shadow-lg mb-8">
-          <span className="text-white text-2xl font-bold" style={{ transform: 'rotate(-8deg)' }}>F</span>
-        </div>
-
-        {/* Title */}
-        <h1 className="text-3xl font-bold tracking-[-0.02em] mb-2">Finly</h1>
-        <p className="text-muted-foreground text-center mb-8">
-          Умное приложение для управления личными финансами
-        </p>
-
+      <div className="flex-1 flex flex-col items-center justify-center px-5 relative z-10">
         {step === 'register' ? (
-          <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="name" className="text-sm font-medium">
-                Как к вам обращаться?
-              </label>
-              <Input
-                id="name"
-                type="text"
-                placeholder="Введите ваше имя"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                disabled={isLoading}
-                className="bg-input-background border border-border rounded-2xl p-4 text-base"
-              />
-              {error && (
-                <p className="text-sm text-red-500">{error}</p>
-              )}
+          <div className="w-full max-w-sm">
+            {/* Brand Mark */}
+            <div className="flex justify-center mb-10">
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/25"
+                style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-light))' }}>
+                <span className="text-white text-[28px] font-bold" style={{ transform: 'rotate(-8deg)' }}>F</span>
+              </div>
             </div>
 
-            <Button
-              type="submit"
-              className="btn-primary w-full"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Загрузка...' : 'Начать'}
-            </Button>
-
-            <p className="text-xs text-center text-muted-foreground">
-              Это создаст локальный аккаунт на этом устройстве
+            {/* Title */}
+            <h1 className="text-4xl font-bold tracking-[-0.02em] text-center mb-3">Finly</h1>
+            <p className="text-muted-foreground text-center text-lg leading-relaxed mb-10">
+              Умное приложение для управления личными финансами
             </p>
-          </form>
+
+            {/* Form Card */}
+            <form onSubmit={handleSubmit} className="bg-card border border-border rounded-3xl p-6 shadow-lg space-y-5">
+              <div className="space-y-2">
+                <label htmlFor="name" className="text-sm font-semibold">
+                  Как к вам обращаться?
+                </label>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="Введите ваше имя"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  disabled={isLoading}
+                  autoFocus
+                  className="bg-input-background border border-border rounded-2xl p-4 text-base focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary/30 transition-all"
+                />
+                {error && (
+                  <p className="text-sm text-red-500 font-medium">{error}</p>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-4 text-white rounded-2xl font-semibold text-base disabled:opacity-50 shadow-lg transition-all duration-200 hover:scale-[1.01] active:scale-[0.98] flex items-center justify-center gap-2"
+                style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-light))' }}
+              >
+                {isLoading ? (
+                  <><Loader2 className="w-5 h-5 animate-spin" /> Загрузка...</>
+                ) : (
+                  <>Начать <ArrowRight className="w-5 h-5" /></>
+                )}
+              </button>
+
+              <p className="text-xs text-center text-muted-foreground">
+                Локальный аккаунт на этом устройстве
+              </p>
+            </form>
+          </div>
         ) : (
           <BiometricSetupCard
             onEnable={handleEnableBiometric}

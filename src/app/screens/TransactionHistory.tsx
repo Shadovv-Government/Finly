@@ -160,7 +160,7 @@ function EditTransactionSheet({ transaction, categories, onClose, onSave }: Edit
                 onClick={() => setCategoryId(cat.id)}
                 className={`flex flex-col items-center gap-2 p-2 rounded-lg transition-all ${
                   categoryId === cat.id
-                    ? 'bg-violet-100 dark:bg-violet-950 ring-2 ring-violet-600'
+                    ? 'bg-primary/10 dark:bg-primary/15 ring-2 ring-primary'
                     : 'hover:bg-accent'
                 }`}
               >
@@ -207,7 +207,7 @@ function EditTransactionSheet({ transaction, categories, onClose, onSave }: Edit
           <button
             onClick={handleSave}
             disabled={!amount || !categoryId || saving}
-            className="flex-[2] py-4 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-xl font-semibold text-sm disabled:opacity-50"
+            className="flex-[2] py-4 text-white rounded-xl font-semibold text-sm disabled:opacity-50 shadow-lg transition-all duration-200 hover:scale-[1.01] active:scale-[0.98]" style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-light))' }}
           >
             Сохранить
           </button>
@@ -285,7 +285,7 @@ function TransactionFilters({
                 onClick={() => setSelectedCategory(cat.id)}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                   selectedCategory === cat.id
-                    ? 'bg-violet-100 dark:bg-violet-950 ring-2 ring-violet-600'
+                    ? 'bg-primary/10 dark:bg-primary/15 ring-2 ring-primary'
                     : 'hover:bg-accent'
                 }`}
               >
@@ -335,7 +335,7 @@ function TransactionFilters({
           </button>
           <button
             onClick={onClose}
-            className="flex-[2] py-3 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-xl font-semibold text-sm"
+            className="flex-[2] py-3 text-white rounded-xl font-semibold text-sm shadow-md transition-all duration-200 hover:scale-[1.01] active:scale-[0.98]" style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-light))' }}
           >
             Применить
           </button>
@@ -434,7 +434,7 @@ export const TransactionHistory = () => {
             placeholder="Поиск: комментарий, категория, сумма..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-10 py-3 bg-muted rounded-xl outline-none focus:ring-2 focus:ring-violet-600"
+            className="w-full pl-10 pr-10 py-3 bg-muted rounded-xl outline-none focus:ring-2 focus:ring-primary/50"
           />
           {searchQuery && (
             <button
@@ -460,7 +460,7 @@ export const TransactionHistory = () => {
           {selectedCategory && (
             <button
               onClick={() => setSelectedCategory(null)}
-              className="flex items-center gap-1 px-3 py-2 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded-full whitespace-nowrap flex-shrink-0 text-sm"
+              className="flex items-center gap-1 px-3 py-2 bg-primary/10 dark:bg-primary/15 text-primary dark:text-primary-light rounded-full whitespace-nowrap flex-shrink-0 text-sm"
             >
               {categories.find(c => c.id === selectedCategory)?.name}
               <X className="w-3 h-3" />
