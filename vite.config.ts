@@ -4,7 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     tailwindcss(),
@@ -60,6 +60,11 @@ export default defineConfig({
         type: 'module',
       },
     }),
+    {
+      name: 'strip-csp-in-dev',
+      apply: 'serve',
+      transformIndexHtml: (html) => html.replace(/<meta\s+http-equiv="Content-Security-Policy"[^>]*\/?>/gi, ''),
+    },
   ],
   resolve: {
     alias: {
@@ -128,4 +133,4 @@ export default defineConfig({
       },
     },
   },
-})
+}))
