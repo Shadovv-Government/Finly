@@ -3,8 +3,83 @@
 
 @import 'tw-animate-css';
 
+@theme inline {
+  --animate-shimmer: shimmer 2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
 @layer utilities {
-  /* Blur-вход/выход для animate-in/animate-out из tw-animate-css */
   .blur-enter { --tw-enter-blur: 12px; }
   .blur-exit  { --tw-exit-blur:  12px; }
+
+  .shadow-xs { box-shadow: var(--shadow-xs); }
+  .shadow-sm { box-shadow: var(--shadow-sm); }
+  .shadow-md { box-shadow: var(--shadow-md); }
+  .shadow-lg { box-shadow: var(--shadow-lg); }
+
+  .card-premium {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .card-featured {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-md);
+    padding: 1.25rem;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    color: white;
+    border-radius: var(--radius-btn);
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    box-shadow: var(--shadow-lg);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .btn-primary:hover {
+    transform: scale(1.02);
+  }
+  .btn-primary:active {
+    transform: scale(0.97);
+  }
+
+  .btn-secondary {
+    background: var(--muted);
+    color: var(--foreground);
+    border-radius: var(--radius-btn);
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    transition: transform 0.15s ease;
+  }
+  .btn-secondary:active {
+    transform: scale(0.97);
+  }
+
+  .shimmer {
+    background: linear-gradient(90deg, var(--muted) 25%, var(--card) 50%, var(--muted) 75%);
+    background-size: 200% 100%;
+    animation: var(--animate-shimmer);
+  }
+
+  .text-numeric {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .label-sm {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted-foreground);
+  }
 }
