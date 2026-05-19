@@ -197,7 +197,7 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
           placeholder="0"
           value={formatAmount(formData.amount)}
           onChange={handleAmountChange}
-          className="w-full text-4xl font-bold text-center bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-lg"
+          className="w-full text-4xl font-bold text-center bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg"
         />
         <p className="text-center text-muted-foreground mt-2">₽</p>
         <label className="mt-4 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-card px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
@@ -226,7 +226,7 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
                 onClick={() => setFormData(prev => ({ ...prev, categoryId: category.id }))}
                 className={`relative flex flex-col items-center gap-2 p-2 rounded-lg transition-all ${
                   isSelected
-                    ? 'bg-violet-100 dark:bg-violet-950 ring-2 ring-violet-600'
+                    ? 'bg-primary/10 dark:bg-primary/15 ring-2 ring-primary'
                     : 'hover:bg-accent'
                 }`}
               >
@@ -257,7 +257,7 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
             type="date"
             value={formatDateInputValue(formData.date)}
             onChange={(e) => setFormData(prev => ({ ...prev, date: parseDateInputValue(e.target.value) }))}
-            className="flex-1 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-md"
+            className="flex-1 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
           />
         </div>
         <div className="flex items-center gap-3 p-4 bg-card rounded-xl border border-border">
@@ -268,7 +268,7 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
             placeholder="Комментарий"
             value={formData.comment}
             onChange={(e) => setFormData(prev => ({ ...prev, comment: e.target.value }))}
-            className="flex-1 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-md"
+            className="flex-1 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
           />
         </div>
       </div>
@@ -278,7 +278,8 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
         <button
           onClick={handleSave}
           disabled={isMlClassifying}
-          className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-xl font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+          className="w-full py-4 text-white rounded-xl font-semibold disabled:opacity-60 disabled:cursor-not-allowed shadow-lg transition-transform duration-150 hover:scale-[1.01] active:scale-[0.98]"
+          style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-light))' }}
         >
           {isMlClassifying ? 'Определяю категорию...' : 'Сохранить'}
         </button>

@@ -101,7 +101,7 @@ export const ContributeBottomSheet: React.FC<ContributeBottomSheetProps> = ({
             placeholder="0"
             value={formatAmountInput(amount)}
             onChange={handleAmountChange}
-            className="w-full text-4xl font-bold text-center bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-lg"
+            className="w-full text-4xl font-bold text-center bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg"
           />
           <p className="text-center text-muted-foreground mt-2">₽</p>
         </div>
@@ -126,7 +126,8 @@ export const ContributeBottomSheet: React.FC<ContributeBottomSheetProps> = ({
           <button
             onClick={handleSubmit}
             disabled={isSubmitting || !amount}
-            className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-xl font-semibold disabled:opacity-50"
+            className="w-full py-4 text-white rounded-xl font-semibold disabled:opacity-50 shadow-lg transition-transform duration-150 hover:scale-[1.01] active:scale-[0.98]"
+            style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-light))' }}
           >
             {isSubmitting ? 'Пополнение...' : 'Пополнить'}
           </button>

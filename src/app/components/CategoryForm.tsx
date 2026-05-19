@@ -151,7 +151,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
             placeholder="Например: Продукты"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full px-4 py-3 bg-muted rounded-xl outline-none focus:ring-2 focus:ring-violet-600"
+            className="w-full px-4 py-3 bg-muted rounded-xl outline-none focus:ring-2 focus:ring-primary"
             maxLength={30}
           />
         </div>
@@ -197,7 +197,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
                   onClick={() => setSelectedIcon(iconName)}
                   className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
                     selectedIcon === iconName
-                      ? 'bg-violet-100 dark:bg-violet-950 ring-2 ring-violet-600'
+                      ? 'bg-primary/10 dark:bg-primary/15 ring-2 ring-primary'
                       : 'hover:bg-muted-foreground/10'
                   }`}
                 >
@@ -217,7 +217,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
                 key={color}
                 onClick={() => setSelectedColor(color)}
                 className={`w-10 h-10 rounded-full transition-transform ${
-                  selectedColor === color ? 'ring-2 ring-offset-2 ring-violet-600 scale-110' : ''
+                  selectedColor === color ? 'ring-2 ring-offset-2 ring-primary scale-110' : ''
                 }`}
                 style={{ backgroundColor: color }}
               />
@@ -230,7 +230,8 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
           <button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-xl font-semibold disabled:opacity-50"
+            className="w-full py-4 text-white rounded-xl font-semibold disabled:opacity-50 shadow-lg transition-transform duration-150 hover:scale-[1.01] active:scale-[0.98]"
+            style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-light))' }}
           >
             {isSubmitting ? 'Сохранение...' : initialData ? 'Сохранить изменения' : 'Создать категорию'}
           </button>

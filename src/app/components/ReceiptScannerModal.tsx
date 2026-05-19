@@ -70,9 +70,9 @@ export function ReceiptScannerModal({
           type="button"
           aria-label="Закрыть сканер"
           onClick={onClose}
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-muted"
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-muted hover:bg-muted-foreground/20 transition-colors duration-200"
         >
-          <X className="h-5 w-5" />
+          <X className="h-4 w-4" />
         </button>
       </div>
 
@@ -86,16 +86,16 @@ export function ReceiptScannerModal({
 
           {isLoading && (
             <div className="flex flex-col items-center gap-3 py-8">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-violet-600 border-t-transparent" />
+              <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-primary border-t-transparent" />
               <p className="text-muted-foreground">{statusMessage ?? 'Распознаю чек...'}</p>
             </div>
           )}
 
           {!isLoading && error === 'ocr_error' && !result && (
-            <div className="rounded-xl border border-border bg-card p-4 text-center text-muted-foreground">
-              <p>Не удалось распознать чек. Попробуй ещё раз.</p>
+            <div className="rounded-xl border border-border bg-card p-4 text-center shadow-sm">
+              <p className="text-muted-foreground">Не удалось распознать чек. Попробуй ещё раз.</p>
               {errorMessage && (
-                <p className="mt-2 break-all text-left text-xs text-muted-foreground/80">
+                <p className="mt-2 break-all text-left text-xs text-muted-foreground/60">
                   {errorMessage}
                 </p>
               )}
@@ -117,7 +117,7 @@ export function ReceiptScannerModal({
                     Gemini AI
                   </div>
                 ) : result.engine === 'claude' ? (
-                  <div className="flex items-center gap-1.5 rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-violet-950 dark:text-violet-300">
+                  <div className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-primary/15 dark:text-violet-300">
                     <Sparkles className="h-3 w-3" />
                     Claude AI
                   </div>
@@ -149,7 +149,7 @@ export function ReceiptScannerModal({
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
                       placeholder="0"
-                      className="flex-1 rounded-xl bg-muted px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600"
+                      className="flex-1 rounded-xl bg-muted px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                     />
                     {result.currency && (
                       <div className="flex items-center rounded-xl bg-muted px-4 text-sm font-medium text-muted-foreground">
@@ -166,7 +166,7 @@ export function ReceiptScannerModal({
                     value={merchant}
                     onChange={(e) => setMerchant(e.target.value)}
                     placeholder="Название магазина"
-                    className="rounded-xl bg-muted px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600"
+                    className="rounded-xl bg-muted px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   />
                 </div>
 
@@ -176,7 +176,7 @@ export function ReceiptScannerModal({
                     type="date"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="rounded-xl bg-muted px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600"
+                    className="rounded-xl bg-muted px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   />
                 </div>
 
@@ -226,7 +226,7 @@ export function ReceiptScannerModal({
             type="button"
             onClick={onClose}
             aria-label="Отмена"
-            className="flex-1 rounded-xl bg-muted py-4 font-semibold"
+            className="btn-secondary flex-1 text-center"
           >
             Отмена
           </button>
@@ -234,7 +234,7 @@ export function ReceiptScannerModal({
             type="button"
             onClick={handleConfirm}
             aria-label="Использовать"
-            className="flex-1 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-700 py-4 font-semibold text-white"
+            className="btn-primary flex-1 text-center"
           >
             Использовать
           </button>

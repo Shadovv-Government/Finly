@@ -120,7 +120,7 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
                         {item.actionLabel && !item.read && (
                           <button
                             onClick={() => handleAction(item.actionData)}
-                            className="text-xs font-medium text-violet-600 dark:text-violet-400 mt-1.5 hover:underline"
+                            className="text-xs font-medium text-primary dark:text-primary-light mt-1.5 hover:underline"
                           >
                             {item.actionLabel} →
                           </button>

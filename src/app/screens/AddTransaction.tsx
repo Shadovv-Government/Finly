@@ -208,7 +208,7 @@ export const AddTransaction = () => {
               value={quickInput}
               onChange={(e) => setQuickInput(e.target.value)}
               onKeyDown={handleQuickInputKeyDown}
-              className="w-full px-4 py-3 pr-32 bg-muted rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600"
+              className="w-full px-4 py-3 pr-32 bg-muted rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             />
             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
               <label
@@ -228,7 +228,7 @@ export const AddTransaction = () => {
                 onClick={() => processText(quickInput)}
                 aria-label="Распознать быстрый ввод"
                 disabled={isProcessingQuickInput || !quickInput.trim()}
-                className="text-violet-600 hover:text-violet-700 disabled:text-muted-foreground transition-colors"
+                className="text-primary hover:text-violet-700 disabled:text-muted-foreground transition-colors"
                 title="Распознать"
               >
                 <Sparkles className="w-5 h-5" />
@@ -291,7 +291,7 @@ export const AddTransaction = () => {
             placeholder="0"
             value={formatAmountInput(amount)}
             onChange={handleAmountChange}
-            className="w-full text-4xl font-bold text-center bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-lg"
+            className="w-full text-4xl font-bold text-center bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg"
           />
           <p className="text-center text-muted-foreground mt-2">₽</p>
         </div>
@@ -308,7 +308,7 @@ export const AddTransaction = () => {
                   onClick={() => setSelectedCategory(category.id)}
                   className={`flex flex-col items-center gap-2 p-2 rounded-lg transition-all ${
                     isSelected
-                      ? 'bg-violet-100 dark:bg-violet-950 ring-2 ring-violet-600'
+                      ? 'bg-primary/10 dark:bg-primary/15 ring-2 ring-primary'
                       : 'hover:bg-accent'
                   }`}
                 >
@@ -336,7 +336,7 @@ export const AddTransaction = () => {
               type="date"
               value={formatDateInputValue(selectedDate)}
               onChange={(e) => setSelectedDate(parseDateInputValue(e.target.value))}
-              className="flex-1 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-md"
+              className="flex-1 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
             />
           </div>
           <div className="flex items-center gap-3 p-4 bg-card rounded-xl border border-border">
@@ -347,7 +347,7 @@ export const AddTransaction = () => {
               placeholder="Комментарий"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              className="flex-1 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-md"
+              className="flex-1 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
             />
           </div>
         </div>
@@ -357,7 +357,8 @@ export const AddTransaction = () => {
       <div className="px-4 py-4 bg-card border-t border-border pb-[calc(1rem+env(safe-area-inset-bottom)+4rem)]">
         <button
           onClick={handleSave}
-          className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-xl font-semibold"
+          className="w-full py-4 text-white rounded-xl font-semibold shadow-lg transition-transform duration-150 hover:scale-[1.01] active:scale-[0.98]"
+          style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-light))' }}
         >
           Сохранить
         </button>

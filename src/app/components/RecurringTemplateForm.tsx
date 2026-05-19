@@ -162,7 +162,7 @@ export const RecurringTemplateForm: React.FC<RecurringTemplateFormProps> = ({
             placeholder="0"
             value={formatAmountInput(amount)}
             onChange={handleAmountChange}
-            className="w-full text-3xl font-bold text-center bg-transparent py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-lg"
+            className="w-full text-3xl font-bold text-center bg-transparent py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg"
           />
           <p className="text-center text-muted-foreground mt-2">₽</p>
         </div>
@@ -183,7 +183,7 @@ export const RecurringTemplateForm: React.FC<RecurringTemplateFormProps> = ({
                     onClick={() => setSelectedCategoryId(category.id)}
                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-all ${
                       isSelected
-                        ? 'bg-violet-100 dark:bg-violet-950 ring-2 ring-violet-600'
+                        ? 'bg-primary/10 dark:bg-primary/15 ring-2 ring-primary'
                         : 'hover:bg-accent'
                     }`}
                   >
@@ -215,7 +215,7 @@ export const RecurringTemplateForm: React.FC<RecurringTemplateFormProps> = ({
                 onClick={() => setInterval(int)}
                 className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium transition-all ${
                   interval === int
-                    ? 'bg-white dark:bg-card shadow-sm text-violet-600 dark:text-violet-400'
+                    ? 'bg-white dark:bg-card shadow-sm text-primary dark:text-primary-light'
                     : 'text-muted-foreground'
                 }`}
               >
@@ -236,7 +236,7 @@ export const RecurringTemplateForm: React.FC<RecurringTemplateFormProps> = ({
               type="date"
               value={firstDate}
               onChange={(e) => setFirstDate(e.target.value)}
-              className="flex-1 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-md"
+              className="flex-1 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
             />
           </div>
         </div>
@@ -250,7 +250,7 @@ export const RecurringTemplateForm: React.FC<RecurringTemplateFormProps> = ({
             placeholder="Например: Аренда квартиры"
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            className="w-full px-4 py-3 bg-muted rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600"
+            className="w-full px-4 py-3 bg-muted rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           />
         </div>
 
@@ -274,7 +274,8 @@ export const RecurringTemplateForm: React.FC<RecurringTemplateFormProps> = ({
           <button
             onClick={handleSubmit}
             disabled={isSubmitting || !selectedCategoryId || !amount}
-            className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-xl font-semibold disabled:opacity-50"
+            className="w-full py-4 text-white rounded-xl font-semibold disabled:opacity-50 shadow-lg transition-transform duration-150 hover:scale-[1.01] active:scale-[0.98]"
+            style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-light))' }}
           >
             {isSubmitting ? 'Сохранение...' : initialData ? 'Сохранить изменения' : 'Создать шаблон'}
           </button>
