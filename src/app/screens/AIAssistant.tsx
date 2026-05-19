@@ -6,7 +6,7 @@ import { useAIChat } from '../hooks/useAIChat';
 const INSIGHT_CONFIG = {
   alert:    { Icon: AlertTriangle, color: 'text-red-500',    bg: 'bg-red-50 dark:bg-red-950/40' },
   warning:  { Icon: TrendingDown,  color: 'text-amber-500',  bg: 'bg-amber-50 dark:bg-amber-950/40' },
-  tip:      { Icon: Lightbulb,     color: 'text-violet-500', bg: 'bg-violet-50 dark:bg-violet-950/40' },
+  tip:      { Icon: Lightbulb,     color: 'text-primary', bg: 'bg-primary/10 dark:bg-primary/15' },
   positive: { Icon: TrendingUp,    color: 'text-emerald-500',bg: 'bg-emerald-50 dark:bg-emerald-950/40' },
 } as const;
 
@@ -62,7 +62,7 @@ export const AIAssistant = () => {
   return (
     <div className="pb-28 bg-background min-h-screen flex flex-col">
       {/* Header */}
-      <div className="px-4 pt-6 pb-4 bg-gradient-to-br from-violet-600 to-indigo-700 text-white">
+      <div className="px-4 pt-6 pb-4 text-white" style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-light))' }}>
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm opacity-90">Умный анализ финансов</p>
@@ -119,7 +119,7 @@ export const AIAssistant = () => {
                   <button
                     key={s}
                     onClick={() => { if (!isLoading) void sendMessage(s); }}
-                    className="text-xs px-3 py-1.5 rounded-full bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800 hover:bg-violet-100 dark:hover:bg-violet-900/40 transition-colors"
+                    className="text-xs px-3 py-1.5 rounded-full bg-primary/5 dark:bg-primary/10 text-primary dark:text-primary-light border border-primary/20 dark:border-primary/30 hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors"
                   >
                     {s}
                   </button>
@@ -131,7 +131,7 @@ export const AIAssistant = () => {
                 <div
                   className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm whitespace-pre-wrap ${
                     msg.role === 'user'
-                      ? 'bg-violet-600 text-white rounded-br-sm'
+                      ? 'bg-primary text-white rounded-br-sm'
                       : 'bg-card border border-border text-foreground rounded-bl-sm'
                   }`}
                 >
@@ -157,13 +157,13 @@ export const AIAssistant = () => {
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Введите вопрос…"
-              className="flex-1 text-sm px-4 py-2.5 rounded-2xl bg-card border border-border focus:outline-none focus:ring-2 focus:ring-violet-500/50 placeholder:text-muted-foreground"
+              className="flex-1 text-sm px-4 py-2.5 rounded-2xl bg-card border border-border focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted-foreground"
               disabled={isLoading}
             />
             <button
               onClick={handleSend}
               disabled={!input.trim() || isLoading}
-              className="w-10 h-10 rounded-2xl bg-violet-600 text-white flex items-center justify-center disabled:opacity-40 transition-opacity hover:bg-violet-700"
+              className="w-10 h-10 rounded-2xl bg-primary text-white flex items-center justify-center disabled:opacity-40 transition-all duration-200 hover:bg-primary-light active:scale-95"
             >
               <Send className="w-4 h-4" />
             </button>

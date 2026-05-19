@@ -56,52 +56,55 @@ export const LockScreen = () => {
   const getInitial = (name: string) => name.charAt(0).toUpperCase();
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-6 px-8 w-full max-w-sm">
-        {/* Аватар */}
-        <div
-          className={`w-20 h-20 rounded-full bg-gradient-to-br ${user?.avatarColor || 'from-amber-400 to-pink-500'} flex items-center justify-center text-white text-3xl font-bold`}
-        >
-          {user ? getInitial(user.name) : 'U'}
-        </div>
-
-        {/* Имя */}
-        <div className="text-center">
-          <p className="text-xl font-semibold">{user?.name || 'Пользователь'}</p>
-          <p className="text-sm text-muted-foreground mt-1">Приложение заблокировано</p>
-        </div>
-
-        {/* Иконка биометрии */}
-        <div className="w-20 h-20 rounded-full bg-violet-100 dark:bg-violet-950 flex items-center justify-center">
-          <Fingerprint className="w-10 h-10 text-violet-600 dark:text-violet-400" />
-        </div>
-
-        {/* Ошибка */}
-        {error && (
-          <div className="flex items-center gap-2 text-sm text-red-500">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {/* Кнопка разблокировки */}
-        <Button
-          onClick={handleUnlock}
-          disabled={isUnlocking}
-          className="w-full h-12 text-base font-medium bg-violet-600 hover:bg-violet-700"
-        >
-          {isUnlocking ? 'Проверка...' : 'Войти с биометрией'}
-        </Button>
-
-        {/* Аварийный выход после 3 неудач */}
-        {failureCount >= MAX_FAILURES && (
-          <button
-            onClick={handleForceDisable}
-            className="text-xs text-muted-foreground underline underline-offset-2"
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background px-5">
+      <div className="flex flex-col items-center gap-6 w-full max-w-sm">
+        {/* Контентная карточка */}
+        <div className="card-featured w-full flex flex-col items-center gap-6 p-8">
+          {/* Аватар */}
+          <div
+            className={`w-20 h-20 rounded-full bg-gradient-to-br ${user?.avatarColor || 'from-amber-400 to-pink-500'} flex items-center justify-center text-white text-3xl font-bold shadow-md`}
           >
-            Войти без биометрии (сбросить)
-          </button>
-        )}
+            {user ? getInitial(user.name) : 'U'}
+          </div>
+
+          {/* Имя */}
+          <div className="text-center">
+            <p className="text-xl font-semibold">{user?.name || 'Пользователь'}</p>
+            <p className="text-sm text-muted-foreground mt-1">Приложение заблокировано</p>
+          </div>
+
+          {/* Иконка биометрии */}
+          <div className="w-20 h-20 rounded-full bg-primary/10 dark:bg-primary/15 flex items-center justify-center">
+            <Fingerprint className="w-10 h-10 text-primary dark:text-primary-light" />
+          </div>
+
+          {/* Ошибка */}
+          {error && (
+            <div className="flex items-center gap-2 text-sm text-red-500">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Кнопка разблокировки */}
+          <Button
+            onClick={handleUnlock}
+            disabled={isUnlocking}
+            className="btn-primary w-full !py-3 !px-0 text-base"
+          >
+            {isUnlocking ? 'Проверка...' : 'Войти с биометрией'}
+          </Button>
+
+          {/* Аварийный выход после 3 неудач */}
+          {failureCount >= MAX_FAILURES && (
+            <button
+              onClick={handleForceDisable}
+              className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground transition-colors"
+            >
+              Войти без биометрии (сбросить)
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

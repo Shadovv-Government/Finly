@@ -135,7 +135,7 @@ function ProfileSection() {
                 key={color}
                 onClick={() => handleAvatarSelect(color)}
                 className={`w-16 h-16 rounded-full bg-gradient-to-br ${color} flex items-center justify-center font-bold text-white text-xl hover:scale-110 transition-transform ${
-                  user?.avatarColor === color ? 'ring-4 ring-violet-600' : ''
+                  user?.avatarColor === color ? 'ring-4 ring-primary' : ''
                 }`}
               >
                 {getInitial(user?.name || 'U')}
@@ -178,14 +178,14 @@ function AppearanceSection() {
               >
                 <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                    isSelected ? 'bg-violet-600 text-white' : 'bg-muted'
+                    isSelected ? 'bg-primary text-white' : 'bg-muted'
                   }`}>
                     <Icon className="w-5 h-5" />
                   </div>
                   <span className="font-medium">{option.label}</span>
                 </div>
                 {isSelected && (
-                  <div className="w-2 h-2 rounded-full bg-violet-600" />
+                  <div className="w-2 h-2 rounded-full bg-primary" />
                 )}
               </button>
             );
@@ -314,7 +314,8 @@ function ApiKeyRow({
               type="button"
               onClick={handleSave}
               disabled={!keyInput.trim()}
-              className="rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-40"
+              className="rounded-xl text-sm font-semibold text-white disabled:opacity-40 shadow-lg transition-transform duration-150 hover:scale-[1.02] active:scale-[0.98]"
+              style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-light))' }}
             >
               Сохранить
             </button>
@@ -495,8 +496,8 @@ function DataSection() {
               onClick={handleExportJSON}
               className="w-full flex items-center gap-4 p-4 bg-muted rounded-xl hover:bg-accent transition-colors"
             >
-              <div className="w-12 h-12 rounded-xl bg-violet-100 dark:bg-violet-950 flex items-center justify-center">
-                <FileJson className="w-6 h-6 text-violet-600 dark:text-violet-500" />
+              <div className="w-12 h-12 rounded-xl bg-primary/10 dark:bg-primary/15 flex items-center justify-center">
+                <FileJson className="w-6 h-6 text-primary dark:text-primary-light" />
               </div>
               <div className="text-left">
                 <p className="font-medium">JSON</p>
@@ -552,8 +553,8 @@ function SecuritySection() {
       <div className="bg-card rounded-2xl border border-border overflow-hidden">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-950 flex items-center justify-center">
-              <Fingerprint className="w-5 h-5 text-violet-600 dark:text-violet-500" />
+            <div className="w-10 h-10 rounded-xl bg-primary/10 dark:bg-primary/15 flex items-center justify-center">
+              <Fingerprint className="w-5 h-5 text-primary dark:text-primary-light" />
             </div>
             <div>
               <p className="font-medium">Face ID / Отпечаток</p>
@@ -604,8 +605,8 @@ export const Settings = () => {
         <div className="bg-card rounded-2xl border border-border overflow-hidden">
           <div className="flex items-center justify-between p-4 border-b border-border">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-950 flex items-center justify-center">
-                <Bell className="w-5 h-5 text-violet-600 dark:text-violet-500" />
+              <div className="w-10 h-10 rounded-xl bg-primary/10 dark:bg-primary/15 flex items-center justify-center">
+                <Bell className="w-5 h-5 text-primary dark:text-primary-light" />
               </div>
               <div>
                 <p className="font-medium">Push-уведомления</p>

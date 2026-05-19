@@ -11,7 +11,7 @@ export const PrivacyPolicy = () => {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/settings')}
-            className="w-8 h-8 rounded-full bg-muted flex items-center justify-center"
+            className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted-foreground/20 transition-colors duration-200"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>

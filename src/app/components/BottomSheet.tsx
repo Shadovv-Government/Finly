@@ -165,8 +165,8 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
       {/* Sheet */}
       <div
         ref={sheetRef}
-        className={`fixed left-0 right-0 bg-card shadow-lg z-[70]
-                   max-h-[90vh] overflow-hidden flex flex-col will-change-transform
+        className={`fixed left-0 right-0 bg-card shadow-[0_-4px_20px_rgba(0,0,0,0.08),0_-1px_3px_rgba(0,0,0,0.04)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.3),0_-1px_3px_rgba(0,0,0,0.2)] z-[70]
+                   max-h-[90vh] flex flex-col will-change-transform
                    ${isTop
                      ? `top-0 rounded-b-[2.5rem] ${
                          reducedMotion
@@ -206,7 +206,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
         )}
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
           {children}
         </div>
 
