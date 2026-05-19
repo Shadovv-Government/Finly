@@ -145,7 +145,7 @@ function EditTransactionSheet({ transaction, categories, onClose, onSave }: Edit
             placeholder="0"
             value={formatAmountInput(amount)}
             onChange={e => setAmount(e.target.value.replace(/\s/g, ''))}
-            className="w-full text-4xl font-bold text-center bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-lg"
+            className="w-full text-4xl font-bold text-center bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg"
           />
           <p className="text-center text-muted-foreground mt-2">₽</p>
         </div>

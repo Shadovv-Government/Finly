@@ -509,7 +509,7 @@ export const Dashboard = () => {
                 type="date"
                 value={formatDateInputValue(customStartDate)}
                 onChange={(e) => setCustomStartDate(parseDateInputValue(e.target.value))}
-                className="flex-1 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-md"
+                className="flex-1 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
               />
             </div>
           </div>
@@ -522,7 +522,7 @@ export const Dashboard = () => {
                 type="date"
                 value={formatDateInputValue(customEndDate)}
                 onChange={(e) => setCustomEndDate(parseDateInputValue(e.target.value))}
-                className="flex-1 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-md"
+                className="flex-1 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
               />
             </div>
           </div>

@@ -300,7 +300,7 @@ function ApiKeyRow({
                 onChange={(e) => setKeyInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSave()}
                 placeholder={placeholder}
-                className="w-full rounded-xl bg-muted px-4 py-3 pr-11 font-mono text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600"
+                className="w-full rounded-xl bg-muted px-4 py-3 pr-11 font-mono text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               />
               <button
                 type="button"

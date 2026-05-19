@@ -507,7 +507,7 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
               value={chatInput}
               onChange={e => setChatInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleChatSend()}
-              className="w-full px-4 py-3 pr-12 bg-muted rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 text-sm"
+              className="w-full px-4 py-3 pr-12 bg-muted rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary text-sm"
             />
             <button
               onClick={handleChatSend}

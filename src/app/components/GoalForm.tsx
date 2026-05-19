@@ -130,7 +130,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({
             placeholder="Например: Новый автомобиль"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full px-4 py-3 bg-muted rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600"
+            className="w-full px-4 py-3 bg-muted rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           />
         </div>
 
@@ -144,7 +144,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({
             placeholder="0"
             value={formatAmountInput(targetAmount)}
             onChange={(e) => handleAmountChange(e, setTargetAmount)}
-            className="w-full text-3xl font-bold text-center bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-lg"
+            className="w-full text-3xl font-bold text-center bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg"
           />
           <p className="text-center text-muted-foreground mt-2">₽</p>
         </div>
@@ -159,7 +159,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({
             placeholder="0"
             value={formatAmountInput(currentAmount)}
             onChange={(e) => handleAmountChange(e, setCurrentAmount)}
-            className="w-full px-4 py-3 bg-muted rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600"
+            className="w-full px-4 py-3 bg-muted rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           />
         </div>
 
@@ -173,7 +173,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({
               type="date"
               value={deadline}
               onChange={(e) => setDeadline(e.target.value)}
-              className="flex-1 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 rounded-md"
+              className="flex-1 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
             />
           </div>
         </div>
@@ -188,7 +188,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({
                 onClick={() => setSelectedColor(color)}
                 aria-label={`Выбрать цвет ${color}`}
                 className={`w-10 h-10 rounded-full transition-transform ${
-                  selectedColor === color ? 'ring-2 ring-offset-2 ring-violet-600 scale-110' : ''
+                  selectedColor === color ? 'ring-2 ring-offset-2 ring-primary scale-110' : ''
                 }`}
                 style={{ backgroundColor: color }}
               />
@@ -214,7 +214,8 @@ export const GoalForm: React.FC<GoalFormProps> = ({
           <button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-xl font-semibold disabled:opacity-50"
+            className="w-full py-4 text-white rounded-xl font-semibold disabled:opacity-50 shadow-lg transition-transform duration-150 hover:scale-[1.01] active:scale-[0.98]"
+            style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-light))' }}
           >
             {isSubmitting ? 'Сохранение...' : initialData ? 'Сохранить изменения' : 'Создать цель'}
           </button>

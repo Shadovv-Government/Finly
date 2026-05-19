@@ -154,7 +154,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
     <>
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 bg-black/50 z-[60] ${
+        className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] ${
           reducedMotion
             ? (closing ? 'animate-fade-out-fast' : 'animate-fade-in-fast')
             : (closing ? 'animate-fade-out' : 'animate-fade-in')
@@ -165,8 +165,8 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
       {/* Sheet */}
       <div
         ref={sheetRef}
-        className={`fixed left-0 right-0 bg-card z-[70]
-                   max-h-[90vh] overflow-hidden flex flex-col
+        className={`fixed left-0 right-0 bg-card shadow-lg z-[70]
+                   max-h-[90vh] overflow-hidden flex flex-col will-change-transform
                    ${isTop
                      ? `top-0 rounded-b-[2.5rem] ${
                          reducedMotion
@@ -188,7 +188,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
             onTouchStart={onDragStart}
             onMouseDown={onDragStart}
           >
-            <div className="w-10 h-1.5 bg-muted-foreground/30 rounded-full" />
+            <div className="w-8 h-1 bg-border rounded-full" />
           </div>
         )}
 
@@ -198,9 +198,9 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
             <h2 className="text-lg font-bold">{title}</h2>
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-full bg-muted flex items-center justify-center"
+              className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted-foreground/20 transition-colors duration-200"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         )}
@@ -217,7 +217,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
             onTouchStart={onDragStart}
             onMouseDown={onDragStart}
           >
-            <div className="w-10 h-1.5 bg-muted-foreground/30 rounded-full" />
+            <div className="w-8 h-1 bg-border rounded-full" />
           </div>
         )}
       </div>
@@ -225,26 +225,26 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
       <style>{`
         /* === Появление снизу: scale + blur + fade === */
         @keyframes slide-up {
-          0%   { transform: translateY(60%) scale(0.92); filter: blur(16px); opacity: 0; }
-          100% { transform: translateY(0) scale(1);     filter: blur(0px);  opacity: 1; }
+          0%   { transform: translateY(100%) scale(0.96); filter: blur(8px); opacity: 0; }
+          100% { transform: translateY(0) scale(1);       filter: blur(0px); opacity: 1; }
         }
 
         /* === Уход вниз === */
         @keyframes slide-down {
-          0%   { transform: translateY(0) scale(1);      filter: blur(0px);  opacity: 1; }
-          100% { transform: translateY(60%) scale(0.92); filter: blur(16px); opacity: 0; }
+          0%   { transform: translateY(0) scale(1);        filter: blur(0px); opacity: 1; }
+          100% { transform: translateY(100%) scale(0.96);  filter: blur(8px); opacity: 0; }
         }
 
         /* === Появление сверху: scale + blur + fade === */
         @keyframes slide-down-in {
-          0%   { transform: translateY(-60%) scale(0.92); filter: blur(16px); opacity: 0; }
-          100% { transform: translateY(0) scale(1);       filter: blur(0px);  opacity: 1; }
+          0%   { transform: translateY(-100%) scale(0.96); filter: blur(8px); opacity: 0; }
+          100% { transform: translateY(0) scale(1);         filter: blur(0px); opacity: 1; }
         }
 
         /* === Уход вверх === */
         @keyframes slide-up-out {
-          0%   { transform: translateY(0) scale(1);       filter: blur(0px);  opacity: 1; }
-          100% { transform: translateY(-60%) scale(0.92); filter: blur(16px); opacity: 0; }
+          0%   { transform: translateY(0) scale(1);          filter: blur(0px); opacity: 1; }
+          100% { transform: translateY(-100%) scale(0.96);   filter: blur(8px); opacity: 0; }
         }
 
         /* === Упрощённые анимации (без blur и scale) === */
@@ -287,42 +287,42 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
         }
 
         .animate-slide-up {
-          animation: slide-up 0.39s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+          animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         .animate-slide-down {
-          animation: slide-down 0.22s cubic-bezier(0.4, 0, 1, 1) forwards;
+          animation: slide-down 0.25s cubic-bezier(0.4, 0, 0.6, 1) forwards;
         }
         .animate-slide-down-in {
-          animation: slide-down-in 0.39s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+          animation: slide-down-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         .animate-slide-up-out {
-          animation: slide-up-out 0.22s cubic-bezier(0.4, 0, 1, 1) forwards;
+          animation: slide-up-out 0.25s cubic-bezier(0.4, 0, 0.6, 1) forwards;
         }
 
         .animate-slide-up-minimal {
-          animation: slide-up-minimal 0.2s ease-out forwards;
+          animation: slide-up-minimal 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         .animate-slide-down-minimal {
-          animation: slide-down-minimal 0.15s ease-in forwards;
+          animation: slide-down-minimal 0.2s cubic-bezier(0.4, 0, 0.6, 1) forwards;
         }
         .animate-slide-down-in-minimal {
-          animation: slide-down-in-minimal 0.2s ease-out forwards;
+          animation: slide-down-in-minimal 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         .animate-slide-up-out-minimal {
-          animation: slide-up-out-minimal 0.15s ease-in forwards;
+          animation: slide-up-out-minimal 0.2s cubic-bezier(0.4, 0, 0.6, 1) forwards;
         }
 
         .animate-fade-in {
           animation: fade-in 0.3s ease-out forwards;
         }
         .animate-fade-out {
-          animation: fade-out 0.3s ease-in forwards;
+          animation: fade-out 0.25s ease-in forwards;
         }
         .animate-fade-in-fast {
           animation: fade-in-fast 0.1s ease-out forwards;
         }
         .animate-fade-out-fast {
-          animation: fade-out-fast 0.1s ease-in forwards;
+          animation: fade-out-fast 0.08s ease-in forwards;
         }
       `}</style>
     </>

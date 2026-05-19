@@ -110,7 +110,7 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({
                   onClick={() => setSelectedCategoryId(category.id)}
                   className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-all ${
                     isSelected
-                      ? 'bg-violet-100 dark:bg-violet-950 ring-2 ring-violet-600'
+                      ? 'bg-primary/10 dark:bg-primary/15 ring-2 ring-primary'
                       : 'hover:bg-accent'
                   }`}
                 >
@@ -154,7 +154,7 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({
               onClick={() => setPeriod('month')}
               className={`flex-1 py-3 rounded-lg font-medium transition-colors ${
                 period === 'month'
-                  ? 'bg-white dark:bg-card shadow-sm text-violet-600 dark:text-violet-400'
+                  ? 'bg-white dark:bg-card shadow-sm text-primary dark:text-primary-light'
                   : 'text-muted-foreground'
               }`}
             >
@@ -164,7 +164,7 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({
               onClick={() => setPeriod('week')}
               className={`flex-1 py-3 rounded-lg font-medium transition-colors ${
                 period === 'week'
-                  ? 'bg-white dark:bg-card shadow-sm text-violet-600 dark:text-violet-400'
+                  ? 'bg-white dark:bg-card shadow-sm text-primary dark:text-primary-light'
                   : 'text-muted-foreground'
               }`}
             >
@@ -178,7 +178,8 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({
           <button
             onClick={handleSubmit}
             disabled={isSubmitting || !selectedCategoryId || !amount}
-            className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-xl font-semibold disabled:opacity-50"
+            className="w-full py-4 text-white rounded-xl font-semibold disabled:opacity-50 shadow-lg transition-transform duration-150 hover:scale-[1.01] active:scale-[0.98]"
+            style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-light))' }}
           >
             {isSubmitting ? 'Сохранение...' : initialData ? 'Сохранить изменения' : 'Создать бюджет'}
           </button>
