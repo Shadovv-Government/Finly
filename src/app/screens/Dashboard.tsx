@@ -1,7 +1,7 @@
-import { Bell, Camera, Calendar, TrendingUp, Wallet, Target, Folder, Repeat, Sparkles } from 'lucide-react';
+import { Bell, Camera, Calendar, TrendingUp, Wallet, Target, Folder, Repeat, Sparkles, ImagePlus } from 'lucide-react';
 import { EmptyState } from '../components/EmptyState';
 import { motion } from 'motion/react';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Link } from 'react-router';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { CategoryBadge } from '../components/CategoryBadge';
@@ -301,6 +301,7 @@ export const Dashboard = () => {
   const { checkBudgets } = useBudgetNotifications();
   const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     checkBudgets();
@@ -322,10 +323,41 @@ export const Dashboard = () => {
   const recentTransactions = useMemo(() => transactions.slice(0, 5), [transactions]);
 
   const getInitial = (name: string) => name.charAt(0).toUpperCase();
+  const hasPhoto = !!user?.avatarDataUrl;
 
   const handleAvatarSelect = async (color: string) => {
-    await updateProfile({ avatarColor: color });
+    await updateProfile({ avatarColor: color, avatarDataUrl: undefined });
     setIsAvatarDialogOpen(false);
+  };
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = reader.result as string;
+      const img = new Image();
+      img.onload = async () => {
+        const canvas = document.createElement('canvas');
+        const size = 200;
+        const ratio = Math.min(size / img.width, size / img.height, 1);
+        canvas.width = img.width * ratio;
+        canvas.height = img.height * ratio;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const compressed = canvas.toDataURL('image/jpeg', 0.8);
+        await updateProfile({ avatarDataUrl: compressed });
+        setIsAvatarDialogOpen(false);
+      };
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleRemovePhoto = async () => {
+    await updateProfile({ avatarDataUrl: undefined });
   };
 
   const handlePeriodChange = (value: PeriodType) => {
@@ -359,9 +391,15 @@ export const Dashboard = () => {
             <button
               aria-label="Выбрать аватар"
               onClick={() => setIsAvatarDialogOpen(true)}
-              className={`w-10 h-10 rounded-full bg-gradient-to-br ${user?.avatarColor || 'from-amber-400 to-pink-500'} flex items-center justify-center font-bold text-white relative group shadow-md`}
+              className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white relative group shadow-md overflow-hidden ${
+                !hasPhoto ? `bg-gradient-to-br ${user?.avatarColor || 'from-amber-400 to-pink-500'}` : ''
+              }`}
             >
-              {getInitial(user?.name || 'U')}
+              {hasPhoto ? (
+                <img src={user!.avatarDataUrl} alt="Аватар" className="w-full h-full object-cover" />
+              ) : (
+                getInitial(user?.name || 'U')
+              )}
               <Camera className="w-4 h-4 absolute opacity-0 group-hover:opacity-100 transition-opacity" />
             </button>
           </div>
@@ -482,15 +520,39 @@ export const Dashboard = () => {
                 key={color}
                 onClick={() => handleAvatarSelect(color)}
                 className={`w-16 h-16 rounded-full bg-gradient-to-br ${color} flex items-center justify-center font-bold text-white text-xl hover:scale-110 transition-transform ${
-                  user?.avatarColor === color ? 'ring-4 ring-primary' : ''
+                  !hasPhoto && user?.avatarColor === color ? 'ring-4 ring-primary' : ''
                 }`}
               >
                 {getInitial(user?.name || 'U')}
               </button>
             ))}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-16 h-16 rounded-full bg-muted border-2 border-dashed border-muted-foreground/30 flex items-center justify-center hover:scale-110 transition-transform"
+            >
+              <ImagePlus className="w-6 h-6 text-muted-foreground" />
+            </button>
           </div>
+          {hasPhoto && (
+            <div className="flex items-center justify-center pb-2">
+              <button
+                onClick={handleRemovePhoto}
+                className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+              >
+                Убрать фото
+              </button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handlePhotoUpload}
+      />
 
       {/* Custom Period BottomSheet */}
       <BottomSheet

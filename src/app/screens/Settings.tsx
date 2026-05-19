@@ -1,7 +1,7 @@
 import {
   Sun, Moon, Monitor, ChevronRight, Download, Upload, Bell, Repeat, LogOut,
   Pencil, Fingerprint, AlertTriangle, Target, FileJson, FileSpreadsheet, Sparkles,
-  Eye, EyeOff, Camera,
+  ImagePlus,
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useSettings } from '../contexts/SettingsContext';
@@ -22,8 +22,6 @@ import { Input } from '../components/ui/input';
 import { BottomSheet } from '../components/BottomSheet';
 import { exportToFile, exportCSVToFile, importFromFile, ImportResult } from '../../db/exportImport';
 import { useNotifications } from '../hooks/useNotifications';
-import { getAnthropicApiKey, setAnthropicApiKey } from '../lib/claudeReceiptParser';
-import { getGeminiApiKey, setGeminiApiKey } from '../lib/geminiReceiptParser';
 
 // ==================== Helpers ====================
 
@@ -45,6 +43,7 @@ function ProfileSection() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
   const [editName, setEditName] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleEditName = () => {
     if (user) {
@@ -61,9 +60,41 @@ function ProfileSection() {
   };
 
   const handleAvatarSelect = async (color: string) => {
-    await updateProfile({ avatarColor: color });
+    await updateProfile({ avatarColor: color, avatarDataUrl: undefined });
     setIsAvatarDialogOpen(false);
   };
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = reader.result as string;
+      const img = new Image();
+      img.onload = async () => {
+        const canvas = document.createElement('canvas');
+        const size = 200;
+        const ratio = Math.min(size / img.width, size / img.height, 1);
+        canvas.width = img.width * ratio;
+        canvas.height = img.height * ratio;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const compressed = canvas.toDataURL('image/jpeg', 0.8);
+        await updateProfile({ avatarDataUrl: compressed });
+        setIsAvatarDialogOpen(false);
+      };
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleRemovePhoto = async () => {
+    await updateProfile({ avatarDataUrl: undefined });
+  };
+
+  const hasPhoto = !!user?.avatarDataUrl;
 
   return (
     <div className="px-4 py-4">
@@ -71,9 +102,15 @@ function ProfileSection() {
         <div className="flex items-center gap-4 mb-4">
           <button
             onClick={() => setIsAvatarDialogOpen(true)}
-            className={`w-16 h-16 rounded-full bg-gradient-to-br ${user?.avatarColor || 'from-amber-400 to-pink-500'} flex items-center justify-center text-white text-2xl font-bold hover:opacity-90 transition-opacity`}
+            className={`w-16 h-16 rounded-full overflow-hidden flex items-center justify-center text-white text-2xl font-bold hover:opacity-90 transition-opacity ${
+              !hasPhoto ? `bg-gradient-to-br ${user?.avatarColor || 'from-amber-400 to-pink-500'}` : ''
+            }`}
           >
-            {user ? getInitial(user.name) : 'U'}
+            {hasPhoto ? (
+              <img src={user!.avatarDataUrl} alt="Аватар" className="w-full h-full object-cover" />
+            ) : (
+              user ? getInitial(user.name) : 'U'
+            )}
           </button>
           <div className="flex-1">
             <h2 className="font-bold text-lg">{user?.name || 'Гость'}</h2>
@@ -124,6 +161,14 @@ function ProfileSection() {
         </DialogContent>
       </Dialog>
 
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handlePhotoUpload}
+      />
+
       <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -135,13 +180,29 @@ function ProfileSection() {
                 key={color}
                 onClick={() => handleAvatarSelect(color)}
                 className={`w-16 h-16 rounded-full bg-gradient-to-br ${color} flex items-center justify-center font-bold text-white text-xl hover:scale-110 transition-transform ${
-                  user?.avatarColor === color ? 'ring-4 ring-primary' : ''
+                  !hasPhoto && user?.avatarColor === color ? 'ring-4 ring-primary' : ''
                 }`}
               >
                 {getInitial(user?.name || 'U')}
               </button>
             ))}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-16 h-16 rounded-full bg-muted border-2 border-dashed border-muted-foreground/30 flex items-center justify-center hover:scale-110 transition-transform"
+            >
+              <ImagePlus className="w-6 h-6 text-muted-foreground" />
+            </button>
           </div>
+          {hasPhoto && (
+            <div className="flex items-center justify-center pb-2">
+              <button
+                onClick={handleRemovePhoto}
+                className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+              >
+                Убрать фото
+              </button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
@@ -211,181 +272,6 @@ function AppearanceSection() {
         </div>
       </div>
     </>
-  );
-}
-
-// ==================== AISection ====================
-
-function ApiKeyRow({
-  label,
-  sublabel,
-  badge,
-  placeholder,
-  savedMask,
-  accentClass,
-  initialSaved,
-  onSave,
-  onClear,
-}: {
-  label: string;
-  sublabel: string;
-  badge?: string;
-  placeholder: string;
-  savedMask: string;
-  accentClass: string;
-  initialSaved: boolean;
-  onSave: (key: string) => void;
-  onClear: () => void;
-}) {
-  const [keyInput, setKeyInput] = useState('');
-  const [showKey, setShowKey] = useState(false);
-  const [saved, setSaved] = useState(initialSaved);
-
-  const handleSave = () => {
-    if (keyInput.trim()) {
-      onSave(keyInput.trim());
-      setKeyInput('');
-      setSaved(true);
-    }
-  };
-
-  const handleClear = () => {
-    onClear();
-    setKeyInput('');
-    setSaved(false);
-  };
-
-  return (
-    <div className="p-4 border-b border-border last:border-b-0">
-      <div className="flex items-center gap-3 mb-3">
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <p className="font-medium text-sm">{label}</p>
-            {badge && (
-              <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${accentClass}`}>
-                {badge}
-              </span>
-            )}
-          </div>
-          <p className="text-xs text-muted-foreground">{sublabel}</p>
-        </div>
-        {saved && (
-          <div className="flex items-center gap-1 rounded-full bg-green-100 dark:bg-green-950 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400">
-            <Sparkles className="w-3 h-3" />
-            Активен
-          </div>
-        )}
-      </div>
-
-      {saved ? (
-        <div className="flex gap-2">
-          <div className="flex-1 rounded-xl bg-muted px-4 py-3 text-sm text-muted-foreground font-mono">
-            {savedMask}
-          </div>
-          <button
-            type="button"
-            onClick={handleClear}
-            className="rounded-xl bg-red-50 dark:bg-red-950/40 px-4 py-3 text-sm font-medium text-red-600 dark:text-red-400"
-          >
-            Удалить
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <input
-                type={showKey ? 'text' : 'password'}
-                value={keyInput}
-                onChange={(e) => setKeyInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-                placeholder={placeholder}
-                className="w-full rounded-xl bg-muted px-4 py-3 pr-11 font-mono text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              />
-              <button
-                type="button"
-                onClick={() => setShowKey((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-              >
-                {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={!keyInput.trim()}
-              className="rounded-xl text-sm font-semibold text-white disabled:opacity-40 shadow-lg transition-transform duration-150 hover:scale-[1.02] active:scale-[0.98]"
-              style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-light))' }}
-            >
-              Сохранить
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function AISection() {
-  const [expanded, setExpanded] = useState(false);
-  const hasAnyKey = !!getGeminiApiKey() || !!getAnthropicApiKey();
-
-  return (
-    <div className="px-4 py-4">
-      <button
-        type="button"
-        onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center gap-3 bg-card rounded-2xl border border-border p-4"
-      >
-        <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-950 flex items-center justify-center shrink-0">
-          <Camera className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-        </div>
-        <div className="flex-1 text-left">
-          <p className="font-medium text-sm">Улучшенное AI-сканирование</p>
-          <p className="text-xs text-muted-foreground">
-            {hasAnyKey ? 'Ключ настроен — AI активен' : 'Опционально — работает только онлайн'}
-          </p>
-        </div>
-        {hasAnyKey && (
-          <div className="flex items-center gap-1 rounded-full bg-green-100 dark:bg-green-950 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400">
-            <Sparkles className="w-3 h-3" />
-            Активно
-          </div>
-        )}
-        <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${expanded ? 'rotate-90' : ''}`} />
-      </button>
-
-      {expanded && (
-        <div className="mt-2 bg-card rounded-2xl border border-border overflow-hidden">
-          <div className="px-4 py-3 border-b border-border">
-            <p className="text-xs text-muted-foreground">
-              Оффлайн-сканер работает без ключей. AI-ключи нужны только для онлайн-режима — они позволяют читать любые иностранные чеки и сложные форматы.
-            </p>
-          </div>
-          <ApiKeyRow
-            label="Google Gemini"
-            sublabel="Бесплатно — до 200 сканирований в день. aistudio.google.com"
-            badge="Бесплатно"
-            placeholder="AIza..."
-            savedMask="AIza••••••••••••••••"
-            accentClass="bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400"
-            initialSaved={!!getGeminiApiKey()}
-            onSave={setGeminiApiKey}
-            onClear={() => setGeminiApiKey(null)}
-          />
-          <ApiKeyRow
-            label="Anthropic Claude"
-            sublabel="Платный. console.anthropic.com"
-            placeholder="sk-ant-..."
-            savedMask="sk-ant-••••••••••••••••"
-            accentClass=""
-            initialSaved={!!getAnthropicApiKey()}
-            onSave={setAnthropicApiKey}
-            onClear={() => setAnthropicApiKey(null)}
-          />
-        </div>
-      )}
-    </div>
   );
 }
 
@@ -595,7 +481,6 @@ export const Settings = () => {
 
       <ProfileSection />
       <AppearanceSection />
-      <AISection />
       <DataSection />
       <SecuritySection />
 

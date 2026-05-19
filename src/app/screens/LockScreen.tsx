@@ -54,6 +54,7 @@ export const LockScreen = () => {
   }, []);
 
   const getInitial = (name: string) => name.charAt(0).toUpperCase();
+  const hasPhoto = !!user?.avatarDataUrl;
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background px-5">
@@ -62,9 +63,15 @@ export const LockScreen = () => {
         <div className="card-featured w-full flex flex-col items-center gap-6 p-8">
           {/* Аватар */}
           <div
-            className={`w-20 h-20 rounded-full bg-gradient-to-br ${user?.avatarColor || 'from-amber-400 to-pink-500'} flex items-center justify-center text-white text-3xl font-bold shadow-md`}
+            className={`w-20 h-20 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-md overflow-hidden ${
+              !hasPhoto ? `bg-gradient-to-br ${user?.avatarColor || 'from-amber-400 to-pink-500'}` : ''
+            }`}
           >
-            {user ? getInitial(user.name) : 'U'}
+            {hasPhoto ? (
+              <img src={user!.avatarDataUrl} alt="Аватар" className="w-full h-full object-cover" />
+            ) : (
+              user ? getInitial(user.name) : 'U'
+            )}
           </div>
 
           {/* Имя */}

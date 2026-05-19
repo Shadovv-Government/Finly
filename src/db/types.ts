@@ -77,6 +77,7 @@ export interface User {
   createdAt: number; // timestamp
   deviceId?: string; // идентификатор устройства
   avatarColor?: string; // цвет аватара (градиент)
+  avatarDataUrl?: string; // своё фото (base64 data URL)
 }
 
 export type NotificationType =
