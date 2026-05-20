@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { X, Calendar, MessageSquare, Mic, MicOff, Sparkles, Wallet, Camera } from 'lucide-react';
+import { motion } from 'motion/react';
+import { sectionVariants } from '../utils/animations';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { useCategories } from '../hooks/useCategories';
@@ -199,6 +201,7 @@ export const AddTransaction = () => {
 
       <div className="flex-1 overflow-y-auto">
         {/* Quick Input */}
+        <motion.section custom={0} variants={sectionVariants} initial="hidden" animate="visible">
         <div className="px-4 py-4 bg-card border-b border-border">
           <div className="relative">
             <input
@@ -255,8 +258,10 @@ export const AddTransaction = () => {
             </div>
           </div>
         </div>
+        </motion.section>
 
         {/* Type Toggle */}
+        <motion.section custom={1} variants={sectionVariants} initial="hidden" animate="visible">
         <div className="px-4 py-4">
           <div className="flex gap-2 p-1 bg-muted rounded-xl">
             <button
@@ -281,8 +286,10 @@ export const AddTransaction = () => {
             </button>
           </div>
         </div>
+        </motion.section>
 
         {/* Amount Input */}
+        <motion.section custom={2} variants={sectionVariants} initial="hidden" animate="visible">
         <div className="px-4 py-6">
           <input
             aria-label="Сумма"
@@ -295,8 +302,10 @@ export const AddTransaction = () => {
           />
           <p className="text-center text-muted-foreground mt-2">₽</p>
         </div>
+        </motion.section>
 
         {/* Category Grid */}
+        <motion.section custom={3} variants={sectionVariants} initial="hidden" animate="visible">
         <div className="px-4 py-4">
           <h3 className="text-sm font-medium mb-3">Категория</h3>
           <div className="grid grid-cols-4 gap-3 p-2 bg-muted rounded-xl">
@@ -326,8 +335,10 @@ export const AddTransaction = () => {
             })}
           </div>
         </div>
+        </motion.section>
 
         {/* Additional Fields */}
+        <motion.section custom={4} variants={sectionVariants} initial="hidden" animate="visible">
         <div className="px-4 py-4 space-y-3">
           <div className="flex items-center gap-3 p-4 bg-card rounded-xl border border-border">
             <Calendar className="w-5 h-5 text-muted-foreground" />
@@ -351,9 +362,11 @@ export const AddTransaction = () => {
             />
           </div>
         </div>
+        </motion.section>
       </div>
 
       {/* Save Button */}
+      <motion.section custom={5} variants={sectionVariants} initial="hidden" animate="visible">
       <div className="px-4 py-4 bg-card border-t border-border pb-[calc(1rem+env(safe-area-inset-bottom)+4rem)]">
         <button
           onClick={handleSave}
@@ -363,6 +376,7 @@ export const AddTransaction = () => {
           Сохранить
         </button>
       </div>
+      </motion.section>
 
       {showReceiptModal && (
         <ReceiptScannerModal

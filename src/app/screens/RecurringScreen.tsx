@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Plus, Pencil, Trash2, Clock, CalendarDays, ArrowDownCircle, ArrowUpCircle, ToggleLeft, ToggleRight } from 'lucide-react';
+import { motion } from 'motion/react';
+import { sectionVariants, cardVariants } from '../utils/animations';
 import { RecurringTemplate } from '../../db/types';
 import { RecurringTemplateForm } from '../components/RecurringTemplateForm';
 import { useRecurringTemplates } from '../hooks/useRecurringTemplates';
@@ -64,6 +66,7 @@ export const Recurring = () => {
   return (
     <div className="pb-28 bg-background min-h-screen">
       {/* Header */}
+      <motion.section custom={0} variants={sectionVariants} initial="hidden" animate="visible">
       <div className="px-5 pt-4 pb-4">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-bold tracking-[-0.01em]">Повтор</h1>
@@ -75,15 +78,20 @@ export const Recurring = () => {
           </button>
         </div>
       </div>
+      </motion.section>
 
       {/* Templates List */}
       <div className="px-5 py-4 space-y-3">
-        {templates.map(template => {
+        {templates.map((template, index) => {
           const category = categories.find(c => c.id === template.categoryId);
 
           return (
-            <div
+            <motion.div
               key={template.id}
+              custom={index}
+              variants={cardVariants}
+              initial="hidden"
+              animate="visible"
               className={`card-premium p-5 transition-opacity ${
                 !template.isActive ? 'opacity-60' : ''
               }`}
@@ -166,13 +174,14 @@ export const Recurring = () => {
                   )}
                 </div>
               </div>
-            </div>
+            </motion.div>
           );
         })}
       </div>
 
       {/* Empty State */}
       {templates.length === 0 && (
+        <motion.section custom={0} variants={sectionVariants} initial="hidden" animate="visible">
         <div className="px-5 py-16 text-center">
           <div className="w-20 h-20 mx-auto mb-6 bg-muted rounded-full flex items-center justify-center shadow-sm">
             <Clock className="w-10 h-10 text-muted-foreground" />
@@ -189,10 +198,12 @@ export const Recurring = () => {
             Создать первый шаблон
           </button>
         </div>
+        </motion.section>
       )}
 
       {/* Add Button (when templates exist) */}
       {templates.length > 0 && (
+        <motion.section custom={templates.length} variants={sectionVariants} initial="hidden" animate="visible">
         <div className="px-5 py-4">
           <button
             onClick={handleAdd}
@@ -202,6 +213,7 @@ export const Recurring = () => {
             Добавить шаблон
           </button>
         </div>
+        </motion.section>
       )}
 
       {/* Stats Card */}
@@ -218,6 +230,7 @@ export const Recurring = () => {
         }, 0);
 
         return (
+          <motion.section custom={templates.length + 1} variants={sectionVariants} initial="hidden" animate="visible">
           <div className="px-5 pb-4">
             <div className="bg-primary/5 dark:bg-primary/10 rounded-2xl p-5 border border-primary/15 dark:border-primary/20">
               <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
@@ -234,6 +247,7 @@ export const Recurring = () => {
               </div>
             </div>
           </div>
+          </motion.section>
         );
       })()}
 

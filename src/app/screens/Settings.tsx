@@ -3,6 +3,8 @@ import {
   Pencil, Fingerprint, AlertTriangle, Target, FileJson, FileSpreadsheet, Sparkles,
   ImagePlus,
 } from 'lucide-react';
+import { motion } from 'motion/react';
+import { sectionVariants } from '../utils/animations';
 import { useTheme } from '../contexts/ThemeContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -475,16 +477,27 @@ export const Settings = () => {
 
   return (
     <div className="pb-20 bg-background min-h-screen">
+      <motion.section custom={0} variants={sectionVariants} initial="hidden" animate="visible">
       <div className="px-4 py-4 bg-card border-b border-border">
         <h1 className="text-xl font-bold">Настройки</h1>
       </div>
+      </motion.section>
 
+      <motion.section custom={1} variants={sectionVariants} initial="hidden" animate="visible">
       <ProfileSection />
+      </motion.section>
+      <motion.section custom={2} variants={sectionVariants} initial="hidden" animate="visible">
       <AppearanceSection />
+      </motion.section>
+      <motion.section custom={3} variants={sectionVariants} initial="hidden" animate="visible">
       <DataSection />
+      </motion.section>
+      <motion.section custom={4} variants={sectionVariants} initial="hidden" animate="visible">
       <SecuritySection />
+      </motion.section>
 
       {/* Уведомления */}
+      <motion.section custom={5} variants={sectionVariants} initial="hidden" animate="visible">
       <div className="px-4 py-4">
         <h2 className="font-bold mb-3">Уведомления</h2>
         <div className="bg-card rounded-2xl border border-border overflow-hidden">
@@ -541,8 +554,10 @@ export const Settings = () => {
           </div>
         </div>
       </div>
+      </motion.section>
 
       {/* О приложении */}
+      <motion.section custom={6} variants={sectionVariants} initial="hidden" animate="visible">
       <div className="px-4 py-4">
         <div className="bg-card rounded-2xl border border-border overflow-hidden">
           <Link to="/components" className="w-full flex items-center justify-between p-4 border-b border-border">
@@ -561,8 +576,10 @@ export const Settings = () => {
           </Link>
         </div>
       </div>
+      </motion.section>
 
       {/* Выход */}
+      <motion.section custom={7} variants={sectionVariants} initial="hidden" animate="visible">
       <div className="px-4 py-4">
         <button
           onClick={handleLogout}
@@ -573,6 +590,7 @@ export const Settings = () => {
           {isLoggingOut ? 'Выход...' : 'Выйти из аккаунта'}
         </button>
       </div>
+      </motion.section>
     </div>
   );
 };

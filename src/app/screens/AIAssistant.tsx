@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Sparkles, TrendingDown, AlertTriangle, Lightbulb, TrendingUp, Loader2, Send, WifiOff } from 'lucide-react';
+import { motion } from 'motion/react';
+import { sectionVariants } from '../utils/animations';
 import { useAIInsights, type Insight } from '../hooks/useAIInsights';
 import { useAIChat } from '../hooks/useAIChat';
 
@@ -62,6 +64,7 @@ export const AIAssistant = () => {
   return (
     <div className="pb-28 bg-background min-h-screen flex flex-col">
       {/* Header */}
+      <motion.section custom={0} variants={sectionVariants} initial="hidden" animate="visible">
       <div className="px-4 pt-6 pb-4 text-white" style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-light))' }}>
         <div className="flex items-center justify-between">
           <div>
@@ -73,9 +76,11 @@ export const AIAssistant = () => {
           </div>
         </div>
       </div>
+      </motion.section>
 
       <div className="flex-1 overflow-y-auto flex flex-col">
         {/* Insights */}
+        <motion.section custom={1} variants={sectionVariants} initial="hidden" animate="visible">
         <div className="px-4 pt-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-bold text-sm">Инсайты</h2>
@@ -98,8 +103,10 @@ export const AIAssistant = () => {
             </div>
           )}
         </div>
+        </motion.section>
 
         {/* Chat */}
+        <motion.section custom={2} variants={sectionVariants} initial="hidden" animate="visible">
         <div className="px-4 pt-5 flex-1 flex flex-col">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-bold text-sm">Спросить AI</h2>
@@ -169,6 +176,7 @@ export const AIAssistant = () => {
             </button>
           </div>
         </div>
+        </motion.section>
       </div>
     </div>
   );

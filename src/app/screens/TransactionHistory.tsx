@@ -1,5 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Search, Filter, X, Calendar, ChevronDown, Wallet, MessageSquare } from 'lucide-react';
+import { motion } from 'motion/react';
+import { sectionVariants } from '../utils/animations';
 import { EmptyState } from '../components/EmptyState';
 import { CategoryBadge } from '../components/CategoryBadge';
 import { AmountDisplay } from '../components/AmountDisplay';
@@ -424,6 +426,7 @@ export const TransactionHistory = () => {
   return (
     <div className="pb-28 bg-background min-h-screen">
       {/* Header */}
+      <motion.section custom={0} variants={sectionVariants} initial="hidden" animate="visible">
       <div className="px-5 pt-4 pb-4 sticky top-0 z-10">
         <h1 className="text-xl font-bold tracking-[-0.01em] mb-4">История операций</h1>
 
@@ -492,6 +495,7 @@ export const TransactionHistory = () => {
           </div>
         )}
       </div>
+      </motion.section>
 
       {/* Transaction List */}
       <div className="px-5 py-4">
@@ -516,8 +520,9 @@ export const TransactionHistory = () => {
 
           return (
             <>
-              {shownGroups.map(([date, dayTransactions]) => (
-                <div key={date} className="mb-6">
+              {shownGroups.map(([date, dayTransactions], gi) => (
+                <motion.section key={date} custom={1 + gi} variants={sectionVariants} initial="hidden" animate="visible">
+                <div className="mb-6">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-sm font-medium text-muted-foreground">{date}</h3>
                     <span className="text-sm text-muted-foreground">{dayTransactions.length} операций</span>
@@ -535,6 +540,7 @@ export const TransactionHistory = () => {
                     ))}
                   </div>
                 </div>
+                </motion.section>
               ))}
 
               {hasMore && (
@@ -554,7 +560,9 @@ export const TransactionHistory = () => {
             </>
           );
         })() : (
+          <motion.section custom={0} variants={sectionVariants} initial="hidden" animate="visible">
           <EmptyState icon="Banknote" title="Нет транзакций" description="Здесь будут отображаться все ваши операции" />
+          </motion.section>
         )}
       </div>
 

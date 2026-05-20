@@ -13,8 +13,8 @@
 }
 
 @layer utilities {
-  .blur-enter { --tw-enter-blur: 12px; }
-  .blur-exit  { --tw-exit-blur:  12px; }
+  .blur-enter { --tw-enter-blur: 4px; }
+  .blur-exit  { --tw-exit-blur:  4px; }
 
   .shadow-xs { box-shadow: var(--shadow-xs); }
   .shadow-sm { box-shadow: var(--shadow-sm); }

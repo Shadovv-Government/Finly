@@ -1,5 +1,7 @@
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, Tooltip } from 'recharts';
 import { EmptyState } from '../components/EmptyState';
+import { motion } from 'motion/react';
+import { sectionVariants } from '../utils/animations';
 import { Calendar } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useAnalytics, getPeriodRange, PeriodType } from '../hooks/useAnalytics';
@@ -150,6 +152,7 @@ export const Analytics = () => {
       </div>
 
       {/* Summary Cards */}
+      <motion.section custom={0} variants={sectionVariants} initial="hidden" animate="visible">
       <div className="px-5 py-4">
         {loading ? (
           <div className="grid grid-cols-3 gap-3">
@@ -174,8 +177,10 @@ export const Analytics = () => {
           </div>
         )}
       </div>
+      </motion.section>
 
       {/* Bar Chart */}
+      <motion.section custom={1} variants={sectionVariants} initial="hidden" animate="visible">
       <div className="px-5 py-4">
         <h2 className="font-bold mb-4">Доходы vs Расходы</h2>
         <div className="card-premium p-5">
@@ -235,9 +240,11 @@ export const Analytics = () => {
           )}
         </div>
       </div>
+      </motion.section>
 
       {/* Trend Chart */}
       {trendData.length > 1 && (
+        <motion.section custom={2} variants={sectionVariants} initial="hidden" animate="visible">
         <div className="px-5 py-4">
           <h2 className="font-bold mb-4">Динамика</h2>
           <div className="card-premium p-5">
@@ -275,9 +282,11 @@ export const Analytics = () => {
             </div>
           </div>
         </div>
+        </motion.section>
       )}
 
       {/* Pie Chart */}
+      <motion.section custom={3} variants={sectionVariants} initial="hidden" animate="visible">
       <div className="px-5 py-4">
         <h2 className="font-bold mb-4">Структура расходов</h2>
         <div className="card-premium p-5">
@@ -310,8 +319,10 @@ export const Analytics = () => {
           )}
         </div>
       </div>
+      </motion.section>
 
       {/* Top Categories */}
+      <motion.section custom={4} variants={sectionVariants} initial="hidden" animate="visible">
       <div className="px-5 pb-4">
         <h2 className="font-bold mb-4">Топ категорий</h2>
         {pieData.length > 0 ? (
@@ -338,6 +349,7 @@ export const Analytics = () => {
           <div className="card-premium p-8 text-center text-muted-foreground">Нет данных</div>
         )}
       </div>
+      </motion.section>
 
       {/* Period Picker BottomSheet */}
       <BottomSheet

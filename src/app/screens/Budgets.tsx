@@ -1,6 +1,8 @@
 import { Plus, Edit2, Trash2, AlertCircle } from 'lucide-react';
 import { EmptyState } from '../components/EmptyState';
 import { CategoryBadge } from '../components/CategoryBadge';
+import { motion } from 'motion/react';
+import { sectionVariants, cardVariants } from '../utils/animations';
 import { useBudgets } from '../hooks/useBudgets';
 import { useCategories } from '../hooks/useCategories';
 import { useAnalytics } from '../hooks/useAnalytics';
@@ -77,6 +79,7 @@ export const Budgets = () => {
   return (
     <div className="pb-28 bg-background min-h-screen">
       {/* Header */}
+      <motion.section custom={0} variants={sectionVariants} initial="hidden" animate="visible">
       <div className="px-5 pt-4 pb-4">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-bold tracking-[-0.01em]">Бюджеты</h1>
@@ -114,9 +117,11 @@ export const Budgets = () => {
           </button>
         </div>
       </div>
+      </motion.section>
 
       {/* Total Budget Card */}
       {filteredBudgets.length > 0 && (
+        <motion.section custom={1} variants={sectionVariants} initial="hidden" animate="visible">
         <div className="px-5 py-3">
           <div className="card-premium p-5">
             <div className="mb-3">
@@ -142,11 +147,12 @@ export const Budgets = () => {
             </p>
           </div>
         </div>
+        </motion.section>
       )}
 
       {/* Budget List */}
       <div className="px-5 py-3 space-y-3">
-        {filteredBudgets.map(budget => {
+        {filteredBudgets.map((budget, index) => {
           const category = categories.find(c => c.id === budget.categoryId);
           const spent = expensesByCategory.find(c => c.categoryId === budget.categoryId)?.amount || 0;
           const percentage = (spent / budget.amount) * 100;
@@ -155,7 +161,7 @@ export const Budgets = () => {
           const isWarning = percentage >= 80;
 
           return (
-            <div key={budget.id} className="card-premium p-5">
+            <motion.div key={budget.id} custom={index} variants={cardVariants} initial="hidden" animate="visible" className="card-premium p-5">
               <div className="flex items-center gap-3 mb-3">
                 <CategoryBadge categoryId={budget.categoryId} size="md" />
                 <div className="flex-1">
@@ -213,14 +219,16 @@ export const Budgets = () => {
                   </span>
                 </div>
               </div>
-            </div>
+            </motion.div>
           );
         })}
       </div>
 
       {/* Empty State */}
       {filteredBudgets.length === 0 && (
+        <motion.section custom={0} variants={sectionVariants} initial="hidden" animate="visible">
         <EmptyState icon="Wallet" title="Нет бюджетов" description="Создайте первый бюджет, чтобы контролировать расходы" action={{ label: 'Создать бюджет', onClick: handleAddBudget }} />
+        </motion.section>
       )}
 
       {/* Форма добавления/редактирования бюджета */}

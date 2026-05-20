@@ -1,5 +1,7 @@
 import { Plus, Edit2, Trash2 } from 'lucide-react';
 import { Wallet } from 'lucide-react';
+import { motion } from 'motion/react';
+import { sectionVariants, cardVariants } from '../utils/animations';
 import { useCategories } from '../hooks/useCategories';
 import { useState } from 'react';
 import { Category } from '../../db/types';
@@ -105,6 +107,7 @@ export const Categories = () => {
   return (
     <div className="pb-28 bg-background min-h-screen">
       {/* Header */}
+      <motion.section custom={0} variants={sectionVariants} initial="hidden" animate="visible">
       <div className="px-5 pt-4 pb-4">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-bold tracking-[-0.01em]">Категории</h1>
@@ -120,18 +123,24 @@ export const Categories = () => {
           </button>
         </div>
       </div>
+      </motion.section>
 
       {/* Expense Categories */}
+      <motion.section custom={1} variants={sectionVariants} initial="hidden" animate="visible">
       <div className="px-5 py-4">
         <h2 className="font-bold mb-3 text-red-600 dark:text-red-400">Расходы</h2>
         <div className="grid grid-cols-3 gap-3">
           {categories
             .filter(c => c.type === 'expense')
-            .map(category => {
+            .map((category, index) => {
               const IconComponent = getLucideIcon(category.icon, Wallet);
               return (
-                <div
+                <motion.div
                   key={category.id}
+                  custom={index}
+                  variants={cardVariants}
+                  initial="hidden"
+                  animate="visible"
                   className="relative card-premium p-4 flex flex-col items-center gap-2"
                 >
                   {editMode && !category.isSystem && (
@@ -165,12 +174,12 @@ export const Categories = () => {
                   {category.isSystem && (
                     <span className="text-xs text-muted-foreground mt-1">Системная</span>
                   )}
-                </div>
+                </motion.div>
               );
             })}
 
           {/* Add Category Card */}
-          <button 
+          <button
             onClick={() => handleAddCategory('expense')}
             className="bg-card border-2 border-dashed border-border rounded-2xl p-4 flex flex-col items-center justify-center gap-2 hover:bg-muted transition-colors"
           >
@@ -183,18 +192,24 @@ export const Categories = () => {
           </button>
         </div>
       </div>
+      </motion.section>
 
       {/* Income Categories */}
+      <motion.section custom={2} variants={sectionVariants} initial="hidden" animate="visible">
       <div className="px-5 py-4">
         <h2 className="font-bold mb-3 text-green-600 dark:text-green-400">Доходы</h2>
         <div className="grid grid-cols-3 gap-3">
           {categories
             .filter(c => c.type === 'income')
-            .map(category => {
+            .map((category, index) => {
               const IconComponent = getLucideIcon(category.icon, Wallet);
               return (
-                <div
+                <motion.div
                   key={category.id}
+                  custom={index}
+                  variants={cardVariants}
+                  initial="hidden"
+                  animate="visible"
                   className="relative card-premium p-4 flex flex-col items-center gap-2"
                 >
                   {editMode && !category.isSystem && (
@@ -228,12 +243,12 @@ export const Categories = () => {
                   {category.isSystem && (
                     <span className="text-xs text-muted-foreground mt-1">Системная</span>
                   )}
-                </div>
+                </motion.div>
               );
             })}
 
           {/* Add Category Card */}
-          <button 
+          <button
             onClick={() => handleAddCategory('income')}
             className="bg-card border-2 border-dashed border-border rounded-2xl p-4 flex flex-col items-center justify-center gap-2 hover:bg-muted transition-colors"
           >
@@ -246,6 +261,7 @@ export const Categories = () => {
           </button>
         </div>
       </div>
+      </motion.section>
 
       {/* Форма добавления/редактирования категории */}
       <CategoryForm

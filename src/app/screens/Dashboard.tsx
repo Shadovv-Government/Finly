@@ -1,6 +1,7 @@
 import { Bell, Camera, Calendar, TrendingUp, Wallet, Target, Folder, Repeat, Sparkles, ImagePlus } from 'lucide-react';
 import { EmptyState } from '../components/EmptyState';
 import { motion } from 'motion/react';
+import { sectionVariants } from '../utils/animations';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { Link } from 'react-router';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
@@ -273,15 +274,6 @@ const AVATAR_COLORS = [
   'from-orange-400 to-red-500',
   'from-pink-400 to-rose-500',
 ];
-
-const sectionVariants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: i * 0.05, duration: 0.35, ease: 'easeOut' as const }
-  }),
-};
 
 export const Dashboard = () => {
   const [period, setPeriod] = useState<PeriodType>('month');
