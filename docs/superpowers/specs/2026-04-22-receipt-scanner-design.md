@@ -1,7 +1,7 @@
 # Receipt Scanner — Design Spec
 
 **Date:** 2026-04-22  
-**Status:** Approved
+**Status:** ✅ Реализовано. Дополнительно к OCR добавлены: QR-декодирование (BarcodeDetector API + jsQR) и AI-распознавание (Gemini 2.5 Flash / Claude Vision). Итоговая реализация: `useReceiptScanner.ts`, `ReceiptScannerModal.tsx`, `geminiReceiptParser.ts`, `claudeReceiptParser.ts`, `imagePreprocess.ts`.
 
 ## Overview
 

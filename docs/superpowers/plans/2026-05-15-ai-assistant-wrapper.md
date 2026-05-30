@@ -885,6 +885,12 @@ git commit -m "chore: add OpenRouter env variable stubs"
 
 ## Self-Review
 
+## Implementation Status: ✅ Завершено
+
+План реализован. Ключевое отличие от плана: API-ключ OpenRouter перемещён на серверную сторону. Вместо клиентского `VITE_OPENROUTER_API_KEY` используется Vercel Function (`api/ai-chat.ts`) как прокси, получающая `OPENROUTER_API_KEY` из серверных переменных окружения. Это исключает попадание ключа в клиентский JS-бандл. Клиент (`aiClient.ts`) теперь обращается к `/api/ai-chat` вместо `openrouter.ai` напрямую. Локальный `.env` с `VITE_*` переменными больше не нужен.
+
+---
+
 **Spec coverage check:**
 - ✅ `contextBuilder.ts` — balance, income, expenses, top categories, budgets, goals, upcoming payments
 - ✅ `aiClient.ts` — OpenRouter (OpenAI-compatible), `AIClientConfig`, typed errors

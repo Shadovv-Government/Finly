@@ -1,7 +1,7 @@
 # Chat Upgrade: Intent Registry + Follow-up Suggestions
 
 **Date:** 2026-05-04  
-**Status:** Approved
+**Status:** ✅ Реализовано. `chatContext.ts` рефакторен в intent-реестр с 15+ интентами и follow-up suggestions. Протестирован: 26 тестов, все интенты покрыты.
 
 ## Problem
 

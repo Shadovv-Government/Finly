@@ -1,7 +1,7 @@
 # AI Assistant Wrapper — Design Spec
 
 **Date:** 2026-05-15  
-**Status:** Approved
+**Status:** ✅ Реализовано. Ключевое отличие от дизайна: API-ключ перенесён на серверную сторону (Vercel Function `api/ai-chat.ts` → OpenRouter) вместо клиентского `VITE_OPENROUTER_API_KEY`. Всё остальное соответствует спецификации: `contextBuilder.ts`, `aiClient.ts`, `useAIChat.ts`, чат-UI в `AIAssistant.tsx`.
 
 ## Overview
 

@@ -298,7 +298,8 @@ interface User {
   name: string;
   createdAt: number;    // timestamp
   deviceId?: string;    // navigator.userAgent
-  avatarColor?: string; // цвет аватара
+  avatarColor?: string; // CSS gradient (from-amber-400 to-pink-500)
+  avatarDataUrl?: string; // своё фото (base64 data URL)
 }
 ```
 

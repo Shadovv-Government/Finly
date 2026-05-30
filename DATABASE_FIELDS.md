@@ -149,6 +149,7 @@
 | createdAt | number (timestamp) | Дата регистрации/создания аккаунта (Unix timestamp) |
 | deviceId | string (optional) | Идентификатор устройства (обычно navigator.userAgent) |
 | avatarColor | string (optional) | CSS gradient цвет аватара (например, `'from-amber-400 to-pink-500'`) |
+| avatarDataUrl | string (optional) | Своё фото пользователя в формате base64 data URL (сжатое) |
 
 **Индексы:** `id`, `createdAt`
 

@@ -1,7 +1,7 @@
 # Biometric Authentication (Face ID / Fingerprint) — Design Spec
 
 **Date:** 2026-03-24
-**Status:** Approved
+**Status:** ✅ Реализовано (соответствует спецификации)
 
 ---
 

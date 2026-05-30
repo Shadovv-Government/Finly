@@ -38,81 +38,110 @@ npm run test:coverage
 #### Операции
 - Добавление доходов и расходов через форму с полями: сумма, тип, категория, дата/время, комментарий
 - Редактирование и удаление операций
-- Быстрое добавление через нижнюю панель навигации
+- Быстрое добавление через нижнюю панель (AI-парсинг естественного языка или ручная форма)
+- Голосовой ввод для быстрого добавления (Speech Recognition API)
 
 #### История операций
 - Список всех операций с пагинацией
 - Фильтры по периоду (день / неделя / месяц / произвольный диапазон)
 - Фильтры по категориям
 - Поиск по тексту комментария
+- Свайп-жесты для быстрых действий (SwipeableRow)
 
 #### Категории
-- Расширенный системный набор категорий доходов и расходов
+- 9 системных категорий расходов и 4 системных категории доходов
 - Системные категории с иконками Lucide React и HEX-цветами
-- Поддержка пользовательских категорий
+- Поддержка пользовательских категорий с произвольными иконками и цветами
+- Защита от удаления системных категорий
+- При удалении пользовательской категории — переназначение или удаление связанных транзакций
 
 #### Аналитика
 - Баланс за выбранный период
-- Расходы по категориям с круговыми диаграммами
-- Графики динамики (Recharts)
-- Тренды расходов
+- Расходы и доходы по категориям с круговыми диаграммами (Recharts)
+- Графики динамики расходов и доходов (дневные и месячные тренды)
+- Сравнение категорий месяц к месяцу (MoM delta)
+- Анализ расходов по дням недели
+- Паттерны доходов
+- Прогноз расходов до конца месяца
+- Норма сбережений
+- Крупнейшие транзакции
+- Средний дневной расход
+- Выявление аномальных трат (более 2× от среднего по категории)
+- Выявление возможных дубликатов транзакций
 
 ### Расширенные возможности
 
 #### Бюджеты и лимиты
 - Месячные и недельные бюджеты по категориям
 - Индикатор прогресса и предупреждения о перерасходе
+- Уведомления при 80% и 100% исчерпания бюджета
 
-#### Цели и «копилки»
+#### Цели (копилки)
 - Создание финансовых целей с целевой суммой и дедлайном
 - Прогресс-бар по каждой цели
 - Расчёт необходимого ежемесячного взноса
+- Уведомления о достижении цели и приближении дедлайна
 
 #### Повторяющиеся операции
 - Шаблоны для регулярных платежей (аренда, подписки)
 - Интервалы: daily, weekly, monthly, yearly
-- Автодобавление по расписанию
+- Автоматическое создание транзакций по расписанию (с кулдауном 1 час)
 - Отдельный экран управления повторяющимися операциями
 
 #### Уведомления
-- Панель уведомлений на дашборде с группировкой по дате
+- Панель уведомлений на дашборде с группировкой по дате (Сегодня/Вчера/На этой неделе/Ранее)
 - Persist уведомлений в IndexedDB и статусы read/unread
-- Сигналы о перерасходе бюджета, дедлайнах целей, повторяющихся платежах и аномальных тратах
+- 9 типов уведомлений: перерасход бюджета, предупреждение о бюджете, достижение цели, приближение к цели, дедлайн цели, повторяющийся платёж сегодня, предстоящий платёж, аномальная трата, дубликат транзакции
+- Действия в уведомлениях с навигацией к соответствующему экрану
+- Настройки уведомлений: 4 переключателя (Push, Бюджеты, Цели, Платежи)
 
 #### Сканирование чеков
-- OCR-сканирование чеков через Tesseract.js
-- Автозаполнение суммы, комментария и даты после распознавания
-- Поддержка русского и английского языков
+- **QR-код:** распознавание фискальных чеков ФНС России через BarcodeDetector API (нативный) или jsQR (fallback)
+- **AI-распознавание:** Gemini Vision (бесплатный) или Claude Vision (по API-ключу) для высокой точности
+- **OCR:** Tesseract.js с поддержкой русского и английского языков
+- Автозаполнение суммы, магазина и даты после распознавания
+- Ручное редактирование результатов перед подтверждением
+- Предупреждение при низкой уверенности распознавания
 
 #### Импорт/экспорт данных
-- Экспорт операций в CSV/JSON
-- Импорт из JSON для переноса истории
+- Экспорт всех данных в JSON (с версией схемы)
+- Экспорт транзакций в CSV
+- Импорт из JSON с валидацией, проверкой версии и ограничениями (размер файла, количество записей)
+- Полная очистка данных
 
 #### Темы и персонализация
 - Светлая и тёмная темы (автоматическое переключение по системным настройкам)
-- Сохранение предпочтений в localStorage
+- Сохранение предпочтений в IndexedDB
 - Кастомизация через CSS-переменные
+- Режим reduced motion для доступности
+- Аватар пользователя (градиент или своё фото)
 
 #### Биометрическая аутентификация
-- Экран блокировки (LockScreen) с PIN-кодом
-- Настройка биометрии (BiometricSetupCard) — Face ID / Touch ID через Web Authentication API
-- Включение/отключение в настройках безопасности
+- Экран блокировки (LockScreen) с WebAuthn (Face ID / Touch ID / fingerprint)
+- Авто-lock после 5 минут неактивности (настраивается)
+- PIN-код как fallback при недоступности биометрии
+- Авто-сброс биометрии при NotFoundError/InvalidStateError
+- Настройка биометрии при регистрации и в настройках безопасности
+- Кнопка «Войти без биометрии (сброс)» после 3 неудачных попыток
 
 ### AI-ассистент
 
 #### Локальный AI (всегда доступен)
-- Автокатегоризация операций на основе паттернов
+- Автокатегоризация операций на основе паттернов (LRU-кэш → пользовательские правила → правиловый движок → ML → fallback)
 - Парсинг естественного языка («кофе 450 рублей в Старбаксе»)
 - Обучение на исправлениях пользователя (confidence, usageCount)
-- Рекомендации по бюджету и целям
-- Поиск аномальных трат
-- Локальная ML-классификация текста операций (TensorFlow.js)
+- 15+ intent-обработчиков для офлайн-чата (баланс, расходы, доходы, бюджеты, цели, прогноз, аномалии, советы и др.)
+- Follow-up suggestions после каждого ответа
+- Локальная ML-классификация через TensorFlow.js с MC Dropout (оценка неуверенности)
+- 24 входных признака, z-score нормализация, 5-уровневый пайплайн классификации
+- Фоновое дообучение ML-модели через Background Sync API
 
-#### AI-чат ассистент (премиум)
+#### AI-чат ассистент (онлайн)
 - Полноценный чат с финансовым AI-ассистентом на русском языке
-- Контекстные ответы на основе реальных данных пользователя (баланс, расходы, бюджеты)
+- Контекстные ответы на основе реальных данных пользователя (баланс, расходы, бюджеты, цели, платежи)
 - Краткие и точные ответы без выдуманных цифр
-- Офлайн-режим: при недоступности сервера переключается на локальные ответы
+- Офлайн-режим: при недоступности сервера автоматически переключается на локальный движок
+- Быстрые подсказки для начала диалога
 
 **Как это работает под капотом:**
 
@@ -170,146 +199,215 @@ npm run test:coverage
 
 ## PWA и Offline
 
-- **Service Worker (Workbox)** кэширует статические ресурсы
+- **Service Worker (Workbox)** кэширует статические ресурсы и ML-модели
 - **IndexedDB** хранит все пользовательские данные локально
 - Работа без интернета: приложение полностью функционально offline
 - Установка как приложения: добавление на домашний экран
-- Web App Manifest с иконками 192x192 и 512x512
+- Web App Manifest с иконками 192×192, 512×512 и 2048×2048
+- **Background Sync** для фонового дообучения ML-модели (тэг `finly-fine-tune`)
 
 ## Технологии
 
 ### Frontend
-- **TypeScript** — строгая типизация
-- **React 18.3.1** — UI-фреймворк
-- **React Router 7.13.1** — клиентская маршрутизация
-- **Zustand 4.5.2** — управление состоянием
-- **react-hook-form 7.55.0** — управление формами
-- **TensorFlow.js 4.22.0** — локальная ML-классификация
-- **Tesseract.js 7.0.0** — OCR для сканирования чеков
-- **UI-компоненты:** Radix UI (полный набор), shadcn/ui, cmdk, vaul (bottom sheets), embla-carousel
-- **Стили:** Tailwind CSS 4.1.12, class-variance-authority, tailwind-merge
-- **Графики:** Recharts 2.15.2
-- **Иконки:** Lucide React 0.487.0, Material Icons 5.15.15
-- **Анимации:** motion 12.23.24, canvas-confetti
-- **Уведомления:** sonner 2.0.3
-- **Даты:** date-fns 3.6.0
-- **Жесты и свайпы:** кастомные компоненты (например, `SwipeableRow`)
+- **TypeScript 5.4** — строгая типизация
+- **React 18.3** — UI-фреймворк
+- **React Router 7.13** — клиентская маршрутизация с lazy loading
+- **Zustand 4.5** — управление состоянием
+- **react-hook-form 7.55** — управление формами
+- **TensorFlow.js 4.22** — локальная ML-классификация (MC Dropout, 5-уровневый пайплайн)
+- **Tesseract.js 7.0** — OCR для сканирования чеков (rus + eng)
+- **jsQR** — декодирование QR-кодов (фискальные чеки ФНС)
+- **UI-компоненты:** Radix UI (полный набор из 27+ пакетов), shadcn/ui, cmdk, vaul (bottom sheets), embla-carousel
+- **Стили:** Tailwind CSS 4.1, class-variance-authority, tailwind-merge, tw-animate-css
+- **Графики:** Recharts 2.15
+- **Иконки:** Lucide React 0.487, Material Icons 5.15
+- **Анимации:** motion 12.23, canvas-confetti
+- **Уведомления:** sonner 2.0
+- **Даты:** date-fns 3.6
+- **UUID:** uuid 13.0
+- **Тема:** next-themes 0.4
 
 ### Хранение данных
 - **IndexedDB** — браузерная NoSQL-база
-- **Dexie.js 3.2.7** — ORM-обёртка над IndexedDB
+- **Dexie.js 3.2** — ORM-обёртка над IndexedDB (3 версии схемы)
+
+### AI и ML
+- **Клиентская ML:** TensorFlow.js с кастомным классификатором (WebGL-бэкенд)
+- **AI-чат:** OpenRouter API (OpenAI-совместимый) через Vercel Function-прокси
+- **AI-распознавание чеков:** Gemini 2.5 Flash (бесплатный) / Claude Vision (по API-ключу)
+- **Локальный AI:** правиловый движок, NLP-парсинг, intent-роутер (15+ интентов)
 
 ### PWA
-- **Vite 6.3.5** — сборщик проекта
-- **vite-plugin-pwa 1.2.0** — генерация Service Worker и Manifest
-- **Workbox** — стратегии кэширования
+- **Vite 6.3** — сборщик проекта
+- **vite-plugin-pwa 1.2** — генерация Service Worker (injectManifest) и Manifest
+- **Workbox 7.1** — стратегии кэширования (CacheFirst, NetworkFirst, StaleWhileRevalidate)
 
 ### Инфраструктура
 - **Git** — система контроля версий
-- **Деплой:** Vercel
-- **CI/CD:** GitHub Actions (build + test при push/PR)
+- **Деплой:** Vercel (статический SPA + serverless-функция для AI-прокси)
+- **CI/CD:** GitHub Actions (3 воркфлоу: CI/CD, Lighthouse, Quality Gates)
 
 ### Тестирование
-- **Vitest 4.1.1** — тест-раннер
+- **Vitest 4.1** — тест-раннер
 - **Testing Library** — @testing-library/react, @testing-library/dom, @testing-library/user-event, @testing-library/jest-dom
 - **@vitest/coverage-v8** — отчёт покрытия
-- **jsdom 29.0.1** — DOM-окружение
+- **jsdom 29.0** — DOM-окружение
+- **fake-indexeddb** — мок IndexedDB для тестов
 
 ## Структура проекта
 
 ```
 finly/
+├── api/
+│   └── ai-chat.ts                 # Vercel Function: прокси к OpenRouter
+├── public/
+│   ├── manifest.json               # PWA-манифест
+│   ├── favicon.svg
+│   └── pwa-*.svg                   # PWA-иконки (192, 512, 2048)
+├── scripts/
+│   └── debug_classify.cjs          # Отладка ML-классификатора
+├── docs/
+│   └── superpowers/                # Планы разработки и спеки
+│       ├── plans/                  # Планы реализации
+│       └── specs/                  # Дизайн-спецификации
+├── .github/workflows/
+│   ├── ci.yml                      # Build + test + deploy to Vercel
+│   ├── lighthouse.yml              # Lighthouse CI performance audits
+│   └── quality.yml                 # Security audit, bundle size, test coverage, PWA validation
 ├── src/
+│   ├── main.tsx                    # Точка входа
+│   ├── bootstrap.tsx               # Корневой рендер + lazy seed
+│   ├── sw.ts                       # Service Worker (Workbox)
 │   ├── app/
+│   │   ├── App.tsx                 # Корневой компонент: провайдеры + AuthGuard + recurring processor
+│   │   ├── Layout.tsx              # Основной лейаут: Outlet + BottomNav + BottomSheet
+│   │   ├── routes.tsx              # Конфигурация React Router с lazy loading
+│   │   ├── constants.ts            # Константы и конфигурация
 │   │   ├── components/
-│   │   │   ├── ui/             # Базовые компоненты (shadcn/ui)
-│   │   │   ├── figma/          # Figma-компоненты
+│   │   │   ├── ui/                 # ~50 компонентов shadcn/ui (button, card, dialog, sheet, sidebar...)
+│   │   │   ├── figma/              # Figma-компоненты
 │   │   │   ├── AddTransactionForm.tsx
+│   │   │   ├── AIQuickInput.tsx
 │   │   │   ├── AmountDisplay.tsx
+│   │   │   ├── BiometricSetupCard.tsx
 │   │   │   ├── BottomNav.tsx
 │   │   │   ├── BottomSheet.tsx
+│   │   │   ├── BudgetForm.tsx
 │   │   │   ├── CategoryBadge.tsx
+│   │   │   ├── CategoryForm.tsx
+│   │   │   ├── ContributeBottomSheet.tsx
 │   │   │   ├── EmptyState.tsx
+│   │   │   ├── ErrorBoundary.tsx
+│   │   │   ├── GoalForm.tsx
 │   │   │   ├── NotificationsPanel.tsx
-│   │   │   └── ReceiptScannerModal.tsx
+│   │   │   ├── QuickActionBar.tsx
+│   │   │   ├── ReceiptScannerModal.tsx
+│   │   │   ├── RecurringTemplateForm.tsx
+│   │   │   └── SwipeableRow.tsx
 │   │   ├── contexts/
-│   │   │   ├── AuthContext.tsx # Авторизация и профиль пользователя
-│   │   │   ├── SettingsContext.tsx # Настройки приложения (локальные/сессионные)
-│   │   │   └── ThemeContext.tsx # Темы (light/dark/system)
-│   │   ├── hooks/              # Кастомные React-хуки
-│   │   │   ├── useAnalytics.ts
-│   │   │   ├── useBiometric.ts
-│   │   │   ├── useBudgets.ts
-│   │   │   ├── useCategories.ts
-│   │   │   ├── useGoals.ts
-│   │   │   ├── useNotificationPanel.ts
-│   │   │   ├── useNotifications.ts
-│   │   │   ├── useReceiptScanner.ts
-│   │   │   ├── useRecurringTemplates.ts
-│   │   │   ├── useSpeechInput.ts
-│   │   │   ├── useTransactionForm.ts
-│   │   │   └── useTransactions.ts
+│   │   │   ├── AuthContext.tsx      # Авторизация, профиль пользователя, биометрия
+│   │   │   ├── ThemeContext.tsx     # Темы (light/dark/system)
+│   │   │   └── SettingsContext.tsx  # Настройки приложения (reduced motion)
+│   │   ├── hooks/
+│   │   │   ├── useAIChat.ts        # AI-чат (онлайн + офлайн fallback)
+│   │   │   ├── useAIInsights.ts    # Инсайты и обзор дашборда
+│   │   │   ├── useAnalytics.ts     # Данные аналитики
+│   │   │   ├── useBiometric.ts     # WebAuthn биометрический лок
+│   │   │   ├── useBudgetNotifications.ts # Генерация уведомлений о бюджетах
+│   │   │   ├── useBudgets.ts       # CRUD бюджетов
+│   │   │   ├── useCategories.ts    # CRUD категорий
+│   │   │   ├── useCountUp.ts       # Анимированный счётчик
+│   │   │   ├── useGoals.ts         # CRUD целей
+│   │   │   ├── useMLModel.ts       # Интеграция TF.js классификатора
+│   │   │   ├── useNotificationPanel.ts # Сборка панели уведомлений
+│   │   │   ├── useNotifications.ts # Управление уведомлениями
+│   │   │   ├── useReceiptScanner.ts # OCR + QR + AI сканирование чеков
+│   │   │   ├── useRecurringTemplates.ts # CRUD повторяющихся платежей
+│   │   │   ├── useReducedMotion.ts # Доступность
+│   │   │   ├── useSpeechInput.ts   # Голосовой ввод
+│   │   │   ├── useTransactionForm.ts # Состояние формы + NLP-парсинг
+│   │   │   ├── useTransactions.ts  # CRUD транзакций
+│   │   │   ├── chatContext.ts      # Офлайн AI: intent-роутер (15+ интентов)
+│   │   │   ├── insightsEngine.ts   # Построитель карточек инсайтов
+│   │   │   └── nlpParser.ts        # Извлечение периодов, форматирование
 │   │   ├── screens/
 │   │   │   ├── Dashboard.tsx
 │   │   │   ├── TransactionHistory.tsx
 │   │   │   ├── Analytics.tsx
-│   │   │   ├── Settings.tsx
 │   │   │   ├── Budgets.tsx
 │   │   │   ├── Goals.tsx
-│   │   │   ├── RecurringScreen.tsx
 │   │   │   ├── Categories.tsx
+│   │   │   ├── RecurringScreen.tsx
+│   │   │   ├── Settings.tsx
 │   │   │   ├── AIAssistant.tsx
-│   │   │   ├── Onboarding.tsx
-│   │   │   ├── Registration.tsx
 │   │   │   ├── AddTransaction.tsx
 │   │   │   ├── LockScreen.tsx
+│   │   │   ├── Onboarding.tsx
+│   │   │   ├── Registration.tsx
 │   │   │   ├── PrivacyPolicy.tsx
 │   │   │   ├── TermsOfService.tsx
-│   │   │   └── ComponentShowcase.tsx
-│   │   ├── data/               # Данные и константы
-│   │   ├── App.tsx             # Корневой компонент с провайдерами
-│   │   ├── Layout.tsx          # Лейаут с нижней навигацией
-│   │   └── routes.tsx          # Маршрутизация (react-router)
+│   │   │   └── ComponentShowcase.tsx (dev only)
+│   │   └── utils/
+│   │       ├── animations.ts       # Анимационные утилиты
+│   │       ├── dataEvents.ts       # События данных
+│   │       ├── errorHandler.ts     # Обработка ошибок (+ тесты)
+│   │       ├── formatCurrency.ts   # Форматирование валют (+ тесты)
+│   │       ├── imagePreprocess.ts  # Предобработка изображений для OCR
+│   │       ├── lucideIcons.tsx     # Динамический рендер иконок Lucide
+│   │       ├── notificationIcons.ts # Иконки для типов уведомлений
+│   │       ├── notifications.ts    # Helper-функции уведомлений
+│   │       └── recurringProcessor.ts # Процессор повторяющихся платежей
 │   ├── db/
-│   │   ├── db.ts               # Dexie-конфигурация (FinlyDB)
-│   │   ├── types.ts            # TypeScript-типы сущностей
-│   │   ├── validators.ts       # Валидация данных
-│   │   ├── seed.ts             # Начальные данные (категории)
-│   │   ├── readme.md           # Документация по БД
-│   │   ├── operations/         # CRUD-операции (модульная структура)
-│   │   │   ├── index.ts
-│   │   │   ├── transactions.ts
-│   │   │   ├── categories.ts
-│   │   │   ├── budgets.ts
-│   │   │   ├── goals.ts
-│   │   │   ├── recurring.ts
-│   │   │   ├── settings.ts
-│   │   │   ├── users.ts
-│   │   │   ├── aiPatterns.ts
-│   │   │   ├── biometric.ts
-│   │   │   └── notifications.ts
-│   │   ├── analytics.ts        # Аналитические запросы
-│   │   ├── ai.ts               # AI-автокатегоризация
-│   │   └── exportImport.ts     # Экспорт/импорт данных
+│   │   ├── db.ts                   # Dexie-конфигурация (FinlyDB, 3 версии схемы)
+│   │   ├── types.ts                # TypeScript-типы всех сущностей
+│   │   ├── validators.ts           # Валидация данных (русскоязычные сообщения)
+│   │   ├── seed.ts                 # Начальные данные (категории) + миграции
+│   │   ├── analytics.ts            # ~25 аналитических запросов
+│   │   ├── ai.ts                   # AI-автокатегоризация и NLP-парсинг
+│   │   ├── recurring.ts            # Обработка повторяющихся платежей
+│   │   ├── exportImport.ts         # Экспорт/импорт (JSON с версией, CSV)
+│   │   ├── readme.md               # Документация по БД
+│   │   └── operations/             # CRUD-операции (модульная структура)
+│   │       ├── index.ts            # Ре-экспорт всех операций
+│   │       ├── transactions.ts     # CRUD транзакций
+│   │       ├── categories.ts       # CRUD категорий
+│   │       ├── budgets.ts          # CRUD бюджетов
+│   │       ├── goals.ts            # CRUD целей
+│   │       ├── recurring.ts        # CRUD шаблонов
+│   │       ├── settings.ts         # CRUD настроек
+│   │       ├── users.ts            # CRUD пользователей
+│   │       ├── aiPatterns.ts       # CRUD AI-паттернов
+│   │       ├── biometric.ts        # Биометрические настройки
+│   │       └── notifications.ts    # CRUD уведомлений
+│   ├── lib/
+│   │   ├── classifier/
+│   │   │   ├── finly_runtime.ts    # TF.js классификатор v4.3 (MC Dropout)
+│   │   │   ├── finly_runtime.test.ts
+│   │   │   └── finly_db.ts         # Интеграция классификатора с IndexedDB
+│   │   ├── geminiReceiptParser.ts  # Gemini Vision — распознавание чеков
+│   │   └── claudeReceiptParser.ts  # Claude Vision — распознавание чеков
+│   ├── services/
+│   │   └── ai/
+│   │       ├── aiClient.ts         # HTTP-клиент к /api/ai-chat
+│   │       ├── aiClient.test.ts
+│   │       ├── contextBuilder.ts   # Сборка финансового слепка для AI-контекста
+│   │       └── contextBuilder.test.ts
 │   ├── styles/
-│   │   ├── index.css           # Основные стили
-│   │   ├── tailwind.css        # Tailwind-конфигурация
-│   │   ├── theme.css           # CSS-переменные тем
-│   │   └── fonts.css           # Шрифты
-│   └── main.tsx                # Точка входа
-├── public/
-│   ├── manifest.json           # PWA-манифест
-│   ├── pwa-192x192.svg         # Иконка 192x192
-│   ├── pwa-512x512.svg         # Иконка 512x512
-│   └── favicon.svg
-├── index.html                  # HTML-шаблон
-├── vite.config.ts              # Конфигурация Vite + PWA
-├── tsconfig.json               # Конфигурация TypeScript
-├── tsconfig.node.json          # Конфигурация TypeScript (node)
-├── package.json                # Зависимости и скрипты
-├── api/
-│   └── ai-chat.ts              # Vercel Function: прокси к OpenRouter
-└── vercel.json                 # Настройки деплоя
+│   │   ├── index.css               # Глобальные стили
+│   │   ├── theme.css               # CSS-переменные light/dark + Tailwind тема
+│   │   ├── tailwind.css            # Tailwind-импорт
+│   │   └── fonts.css               # Шрифты
+│   └── test/
+│       └── setup.ts                # Конфигурация тестов
+├── index.html                      # HTML-точка входа (CSP, theme-color, loading spinner)
+├── vite.config.ts                  # Vite + PWA + Tailwind + ручные чанки
+├── vitest.config.ts                # Конфигурация тестов
+├── tsconfig.json                   # Конфигурация TypeScript
+├── tsconfig.node.json
+├── vercel.json                     # Vercel SPA rewrites
+├── .env.example                    # OPENROUTER_API_KEY + OPENROUTER_MODEL
+├── .eslintrc.cjs
+└── .lighthouserc.cjs
 ```
 
 ## Скрипты
@@ -336,7 +434,9 @@ npm run test:watch  # режим наблюдения
 npm run test:ui     # визуальный UI
 ```
 
-Покрытие: 10+ тестовых файлов — компоненты (`AddTransactionForm`, `ErrorBoundary`), хуки (`useCategories`, `useTransactionForm`, `useTransactions`), утилиты (`errorHandler`, `formatCurrency`), операции БД (`categories`, `transactions`) и валидаторы.
+Покрытие: 345+ тестов в 27+ тестовых файлах — компоненты (`AddTransactionForm`, `ErrorBoundary`, `ReceiptScannerModal`), хуки (`useCategories`, `useTransactionForm`, `useTransactions`, `useAIChat`, `useReceiptScanner`, `useBudgetNotifications`), утилиты (`errorHandler`, `formatCurrency`, `nlpParser`), операции БД (`transactions`, `categories`, `budgets`, `goals`, `users`), AI-контекст (`chatContext` — 26 тестов, все 20+ интентов), валидаторы, AI-клиент, контекст-билдер, и путь обновления IndexedDB (v1→v2→v3).
+
+Порог покрытия: 50% (branches, functions, lines, statements).
 
 CI/CD: сборка и тесты запускаются автоматически через GitHub Actions при push и pull request.
 
@@ -363,35 +463,42 @@ CI/CD: сборка и тесты запускаются автоматичес�
 - **Budget** — categoryId, amount, period (week/month), startDate, currency
 - **Goal** — name, targetAmount, currentAmount, deadline, icon, color, isActive
 - **RecurringTemplate** — amount, type, categoryId, interval, nextDate, isActive, comment
-- **AppSettings** — key-value хранилище (theme, baseCurrency, onboardingComplete)
+- **AppSettings** — key-value хранилище (theme, baseCurrency, onboardingComplete, biometric_*)
 - **AIPattern** — pattern, categoryId, confidence (0-1), usageCount
-- **User** — id (uuid), name, createdAt, deviceId, avatarColor
-- **NotificationItem** — type, title, subtitle, icon/meta, read, createdAt, expiresAt
+- **User** — id (uuid), name, createdAt, deviceId, avatarColor, avatarDataUrl
+- **NotificationItem** — type, title, subtitle, icon, iconColor, iconBg, data (JSON), read, createdAt, expiresAt
 
 ## Особенности реализации
 
 ### Архитектура
 - **Offline-first:** все данные хранятся локально в IndexedDB
-- **Отсутствие бэкенда:** приложение полностью клиентское
-- **Модульная структура:** разделение на screens, components, contexts, hooks
-- **Защищённые роуты:** Redirect на /register если пользователь не авторизован
+- **Отсутствие бэкенда:** приложение полностью клиентское, кроме AI-прокси на Vercel
+- **Модульная структура:** разделение на screens, components, contexts, hooks, utils, db/operations
+- **Защищённые роуты:** Redirect на /register если пользователь не авторизован; LockScreen если включена биометрия
+- **Background Sync:** фоновое дообучение ML-модели через Service Worker
 
 ### UI/UX
 - Адаптивный дизайн для мобильных и десктопных устройств
 - Нижняя панель навигации (BottomNav) для мобильных
 - BottomSheet для форм добавления операций
+- Свайп-жесты для быстрых действий (SwipeableRow)
 - Темная/светлая тема с системным детектированием
 - Уведомления через Toaster (Sonner) и панель уведомлений с persist в IndexedDB
 - 9 типов уведомлений: бюджеты, цели, дедлайны, повторяющиеся платежи, аномальные траты, дубликаты
 - Группировка уведомлений по дате (Сегодня, Вчера, На этой неделе, Ранее)
 - Действия в уведомлениях с навигацией к соответствующему экрану
 - Настройки уведомлений: 4 переключателя (Push, Бюджеты, Цели, Платежи)
+- Red индикатор на колокольчике при непрочитанных уведомлениях
+- Аватар пользователя с возможностью загрузки своего фото
 
 ### Производительность
-- Code splitting через React Router
+- Code splitting через React Router lazy loading
+- Агрессивное ручное разделение чанков в vite.config.ts (отдельные чанки для TF.js подсистем, MUI, Recharts, Dexie, Radix UI, Tesseract, motion, date-fns, Lucide, React, Workbox, Zustand)
 - Tailwind CSS с tree-shaking
-- Кэширование ресурсов через Service Worker
+- Кэширование ресурсов через Service Worker (CacheFirst для ML-моделей и шрифтов, NetworkFirst для HTML)
 - Индексы в IndexedDB для быстрого поиска
+- Terser minification с drop_console и drop_debugger в продакшене
+- CSP в index.html: все ресурсы только с `'self'`
 
 ## Лицензия
 

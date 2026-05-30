@@ -3,7 +3,7 @@
 ## 1. Общая концепция
 
 - **Тип приложения:** Progressive Web App (PWA) — работает в браузере и устанавливается на устройство
-- **Backend отсутствует:** всё хранится локально на клиенте, нет серверных API-запросов
+- **Backend:** только serverless-функция на Vercel для AI-прокси (`api/ai-chat.ts`); все пользовательские данные хранятся локально
 - **Offline-first:** приложение полностью функционально без подключения к интернету
 - **Платформы:** мобильные и десктопные устройства (responsive-вёрстка)
 
@@ -18,26 +18,36 @@
 | React | ^18.3.1 | UI-фреймворк |
 | React Router | ^7.13.1 | Клиентская маршрутизация |
 | Zustand | ^4.5.2 | Глобальное состояние |
-| Radix UI | 1.x/2.x пакеты (@radix-ui/react-*) | Headless UI-компоненты |
-| shadcn/ui | — | Готовые компоненты |
+| Radix UI | 1.x/2.x пакеты (@radix-ui/react-*) | Headless UI-компоненты (27+ пакетов) |
+| shadcn/ui | — | Готовые компоненты (~50 компонентов) |
 | Tailwind CSS | 4.1.12 | Утилитарные стили |
 | Recharts | 2.15.2 | Графики и визуализация |
 | Lucide React | 0.487.0 | Иконки |
 | Material Icons | ^5.15.15 | Дополнительные иконки |
 | Motion | 12.23.24 | Анимации |
+| next-themes | 0.4.6 | Абстракция темизации |
 
 ### Хранение данных
 - **IndexedDB** — браузерная NoSQL-база (key-value + индексы)
 - **Dexie.js** ^3.2.7 — ORM-обёртка над IndexedDB
 
+### AI / ML
+- **TensorFlow.js** ^4.22.0 — локальная ML-классификация (MC Dropout)
+- **Tesseract.js** ^7.0.0 — OCR для сканирования чеков
+- **jsQR** — декодирование QR-кодов (фискальные чеки)
+- **OpenRouter API** — AI-чат (проксируется через Vercel Function)
+- **Gemini 2.5 Flash** — AI-распознавание чеков (бесплатный)
+- **Claude Vision API** — AI-распознавание чеков (по API-ключу)
+
 ### PWA
 - **Vite** 6.3.5 — сборщик проекта
-- **vite-plugin-pwa** ^1.2.0 — генерация Service Worker и Manifest
+- **vite-plugin-pwa** ^1.2.0 — генерация Service Worker (injectManifest) и Manifest
 - **Workbox** ^7.1.0 — стратегии кэширования
 
 ### Инфраструктура
 - **GitHub** — хостинг кода
-- **Vercel** — хостинг приложения
+- **Vercel** — хостинг приложения (статический SPA + serverless-функция)
+- **GitHub Actions** — CI/CD (3 воркфлоу: ci, lighthouse, quality)
 
 ---
 
@@ -50,7 +60,8 @@
 ├──────────────────────────────────────────────┤
 │        Context Layer                         │
 │   ThemeContext (light/dark/system)           │
-│   AuthContext (user profile, registration)   │
+│   AuthContext (user profile, biometric)      │
+│   SettingsContext (reduced motion)           │
 ├──────────────────────────────────────────────┤
 │        Routing Layer                         │
 │   react-router-dom (ProtectedRoute)          │
@@ -66,6 +77,7 @@
 ├──────────────────────────────────────────────┤
 │        PWA Layer                             │
 │   Service Worker (Workbox) + Manifest        │
+│   Background Sync (finly-fine-tune)          │
 └──────────────────────────────────────────────┘
 ```
 
@@ -119,7 +131,7 @@ type RecurringInterval = 'daily' | 'weekly' | 'monthly' | 'yearly';
   id?: number;          // autoIncrement
   amount: number;
   type: TransactionType;
-  categoryId: string;
+  categoryId?: string;  // опционален — fallback на категорию "Другое"
   date: number;         // timestamp
   comment?: string;
   currency: string;     // RUB, USD
@@ -195,7 +207,25 @@ type RecurringInterval = 'daily' | 'weekly' | 'monthly' | 'yearly';
   name: string;
   createdAt: number;
   deviceId?: string;    // navigator.userAgent
-  avatarColor?: string;
+  avatarColor?: string; // CSS gradient (from-amber-400 to-pink-500)
+  avatarDataUrl?: string; // своё фото (base64 data URL)
+}
+```
+
+**`NotificationItem`**
+```typescript
+{
+  id?: number;
+  type: NotificationType;  // 9 типов
+  title: string;
+  subtitle: string;
+  icon: string;            // lucide icon name
+  iconColor: string;       // tailwind color class
+  iconBg: string;          // tailwind bg class
+  data?: Record<string, any>; // categoryId, goalId, transactionId...
+  read: boolean;
+  createdAt: number;
+  expiresAt?: number;
 }
 ```
 
@@ -206,22 +236,22 @@ type RecurringInterval = 'daily' | 'weekly' | 'monthly' | 'yearly';
 ```
 src/db/
 ├── types.ts           — TypeScript-интерфейсы
-├── db.ts              — Класс Dexie, схема БД (singleton)
-├── seed.ts            — Начальное заполнение (категории, настройки)
-├── validators.ts      — Валидация данных
-├── analytics.ts       — Аналитика для графиков и дашбордов
-├── ai.ts              — Авто-категоризация и рекомендации
+├── db.ts              — Класс Dexie, схема БД (singleton, 3 версии)
+├── seed.ts            — Начальное заполнение (категории, настройки) + миграции
+├── validators.ts      — Валидация данных (русскоязычные сообщения)
+├── analytics.ts       — ~25 аналитических запросов для графиков и дашбордов
+├── ai.ts              — Авто-категоризация, NLP-парсинг, рекомендации
 ├── recurring.ts       — Обработка повторяющихся платежей
-├── exportImport.ts    — Экспорт/импорт (JSON, CSV)
+├── exportImport.ts    — Экспорт/импорт (JSON с версией схемы, CSV)
 ├── operations/        — CRUD-функции (модульная структура)
 │   ├── index.ts       — Ре-экспорт всех операций
 │   ├── transactions.ts — CRUD транзакций (+ тесты)
 │   ├── categories.ts  — CRUD категорий (+ тесты)
-│   ├── budgets.ts     — CRUD бюджетов
-│   ├── goals.ts       — CRUD целей
+│   ├── budgets.ts     — CRUD бюджетов (+ тесты)
+│   ├── goals.ts       — CRUD целей (+ тесты)
 │   ├── recurring.ts   — CRUD повторяющихся платежей
 │   ├── settings.ts    — CRUD настроек
-│   ├── users.ts       — CRUD пользователей
+│   ├── users.ts       — CRUD пользователей (+ тесты)
 │   ├── aiPatterns.ts  — CRUD AI паттернов
 │   ├── biometric.ts   — Биометрические настройки
 │   └── notifications.ts — CRUD уведомлений
@@ -274,7 +304,7 @@ CRUD-операции разделены по отдельным файлам д
 | Файл | Сущность | Основные функции |
 |------|----------|------------------|
 | `transactions.ts` | **Transactions** | `addTransaction`, `getTransaction`, `updateTransaction`, `deleteTransaction`, `getTransactionsByPeriod`, `getTransactionsByCategory`, `getAllTransactions` |
-| `categories.ts` | **Categories** | `addCategory`, `getCategory`, `updateCategory`, `deleteCategory`, `getCategories`, `getCategoriesByType`, `getExpenseCategories`, `getIncomeCategories` |
+| `categories.ts` | **Categories** | `addCategory`, `getCategory`, `updateCategory`, `deleteCategory`, `getCategories`, `getCategoriesByType`, `getExpenseCategories`, `getIncomeCategories`, `reassignCategoryTransactions`, `deleteCategoryWithTransactions` |
 | `budgets.ts` | **Budgets** | `addBudget`, `getBudget`, `updateBudget`, `deleteBudget`, `getBudgetByCategory`, `getActiveBudgets` |
 | `goals.ts` | **Goals** | `addGoal`, `getGoal`, `updateGoal`, `deleteGoal`, `getGoals`, `getActiveGoals`, `contributeToGoal` |
 | `recurring.ts` | **Recurring** | `addRecurringTemplate`, `getRecurringTemplate`, `updateRecurringTemplate`, `deleteRecurringTemplate`, `getActiveRecurringTemplates` |
@@ -282,11 +312,9 @@ CRUD-операции разделены по отдельным файлам д
 | `users.ts` | **Users** | `createUser`, `getUser`, `updateUser`, `deleteUser`, `getCurrentUser` |
 | `aiPatterns.ts` | **AI Patterns** | `addAIPattern`, `getAIPattern`, `updateAIPattern`, `deleteAIPattern` |
 | `biometric.ts` | **Biometric** | `getBiometricSettings`, `setBiometricSetting`, `clearBiometricSettings` |
-| `notifications.ts` | **Notifications** | `addNotification`, `getAllNotifications`, `markAllNotificationsAsRead`, `clearReadNotifications`, `clearExpiredNotifications` |
+| `notifications.ts` | **Notifications** | `addNotification`, `getAllNotifications`, `getUnreadNotifications`, `markNotificationAsRead`, `markAllNotificationsAsRead`, `clearReadNotifications`, `clearAllNotifications`, `getUnreadCount`, `clearExpiredNotifications` |
 
 Все функции экспортируются через `operations/index.ts`.
-
-**Тесты:** `transactions.test.ts`, `categories.test.ts`, `budgets.test.ts`, `goals.test.ts`, `users.test.ts`
 
 ---
 
@@ -294,11 +322,16 @@ CRUD-операции разделены по отдельным файлам д
 
 | Категория | Функции |
 |-----------|---------|
-| **Баланс** | `getBalanceByPeriod`, `getCurrentBalance` |
+| **Баланс** | `getBalanceByPeriod`, `getCurrentBalance`, `getTotalSavings`, `getBalanceWithSavings` |
 | **Расходы по категориям** | `getExpensesByCategory`, `getIncomeByCategory` |
-| **Тренды** | `getSpendingTrend`, `getMonthlyTrend` |
+| **Тренды** | `getSpendingTrend`, `getIncomeTrend`, `getMonthlyTrend` |
 | **Бюджеты** | `getBudgetProgressForPeriod`, `getAllBudgetsProgress` |
 | **Цели** | `getGoalsProgress` |
+| **Прогноз** | `getMonthForecast` |
+| **Сравнение** | `getCategoryMoMDelta` (месяц к месяцу) |
+| **Анализ** | `getSavingsRate`, `getLargestTransactions`, `getAverageDailySpend`, `getSpendByDayOfWeek`, `getAnomalousTransactions`, `getIncomePattern` |
+| **Платежи** | `getRecurringUpcoming` |
+| **Поиск** | `findCategoryByName` |
 | **Статистика** | `getSummaryStats` |
 
 ---
@@ -308,7 +341,7 @@ CRUD-операции разделены по отдельным файлам д
 | Категория | Функции |
 |-----------|---------|
 | **Паттерны** | `findBestMatch`, `findAllMatches`, `learnPattern`, `recordPatternFeedback` |
-| **Парсинг** | `parseNaturalLanguage` |
+| **Парсинг** | `parseNaturalLanguage`, `inferCategoryId` |
 | **Рекомендации** | `generateSuggestions` |
 
 ---
@@ -317,9 +350,11 @@ CRUD-операции разделены по отдельным файлам д
 
 | Функция | Описание |
 |---------|----------|
+| `getNextDate` | Вычислить следующую дату по интервалу |
+| `getDaysUntilDue` | Дней до платежа |
 | `getDueTemplates` | Шаблоны на сегодня |
 | `getUpcomingPayments` | Предстоящие платежи на N дней |
-| `processDueTemplates` | Обработать_due_ шаблоны |
+| `processDueTemplates` | Обработать все due шаблоны (с кулдауном 1 час) |
 | `createManualTransactionFromTemplate` | Создать вручную по шаблону |
 | `getRecurringStats` | Статистика по шаблонам |
 
@@ -345,6 +380,10 @@ CRUD-операции разделены по отдельным файлам д
 | `validateGoal` | Валидация цели |
 | `validateRecurringTemplate` | Валидация шаблона |
 | `validateAIPattern` | Валидация AI-паттерна |
+| `assertValid` | Бросить ошибку если не валидно |
+| `validateWithWarnings` | Валидировать с предупреждениями |
+
+Все сообщения об ошибках на русском языке.
 
 **Result:**
 ```typescript
@@ -363,43 +402,55 @@ interface ValidationResult {
 
 | Компонент | Назначение |
 |-----------|------------|
-| `AddTransactionForm.tsx` | Форма добавления операции |
+| `AddTransactionForm.tsx` | Форма добавления операции (AI-парсинг + ручной ввод) |
+| `AIQuickInput.tsx` | Быстрый ввод с AI-подсказками |
 | `AmountDisplay.tsx` | Отображение суммы с форматированием |
+| `BiometricSetupCard.tsx` | Карточка настройки биометрии |
 | `BottomNav.tsx` | Нижняя панель навигации |
 | `BottomSheet.tsx` | Выезжающая панель (мобильная) |
+| `BudgetForm.tsx` | Форма создания/редактирования бюджета |
 | `CategoryBadge.tsx` | Бейдж категории с иконкой и цветом |
+| `CategoryForm.tsx` | Форма создания/редактирования категории |
+| `ContributeBottomSheet.tsx` | Панель внесения вклада в цель |
 | `EmptyState.tsx` | Пустое состояние списка |
-| `ui/` | Базовые компоненты shadcn/ui |
+| `ErrorBoundary.tsx` | Граница ошибок с route-level key |
+| `GoalForm.tsx` | Форма создания/редактирования цели |
+| `NotificationsPanel.tsx` | Панель уведомлений с группировкой по дате |
+| `QuickActionBar.tsx` | Бар быстрых действий на дашборде |
+| `ReceiptScannerModal.tsx` | Модальное окно сканера чеков |
+| `RecurringTemplateForm.tsx` | Форма создания/редактирования шаблона |
+| `SwipeableRow.tsx` | Строка со свайп-жестом |
+| `ui/` | ~50 базовых компонентов shadcn/ui |
 | `figma/` | Компоненты из Figma-макета |
 
 ### 8.2 Контексты (`contexts/`)
 
 | Контекст | Назначение |
 |----------|------------|
-| `ThemeContext.tsx` | Темы: light/dark/system, сохранение в localStorage |
-| `AuthContext.tsx` | Авторизация: user, register, updateProfile, logout |
-| `SettingsContext.tsx` | Состояние и доступ к пользовательским настройкам |
+| `ThemeContext.tsx` | Темы: light/dark/system, сохранение в IndexedDB |
+| `AuthContext.tsx` | Авторизация: user, register, updateProfile, logout + биометрия |
+| `SettingsContext.tsx` | Настройки: reduced motion |
 
 ### 8.3 Экраны (`screens/`)
 
 | Экран | Описание |
 |-------|----------|
-| `Dashboard.tsx` | Главная панель с балансом и быстрыми действиями |
-| `TransactionHistory.tsx` | История операций с фильтрами |
-| `Analytics.tsx` | Графики и аналитика расходов |
-| `Settings.tsx` | Настройки приложения |
-| `Budgets.tsx` | Управление бюджетами |
-| `Goals.tsx` | Финансовые цели |
+| `Dashboard.tsx` | Главная панель с балансом, быстрыми действиями, инсайтами, уведомлениями |
+| `TransactionHistory.tsx` | История операций с фильтрами, поиском, свайп-действиями |
+| `Analytics.tsx` | Графики и аналитика: баланс, категории, тренды, сравнения, прогноз |
+| `Settings.tsx` | Настройки: профиль, тема, безопасность, данные, уведомления |
+| `Budgets.tsx` | Управление бюджетами с индикаторами прогресса |
+| `Goals.tsx` | Финансовые цели с прогресс-барами |
 | `RecurringScreen.tsx` | Управление повторяющимися операциями |
-| `Categories.tsx` | Категории операций |
-| `AIAssistant.tsx` | AI-ассистент |
+| `Categories.tsx` | Управление категориями (добавление, редактирование, удаление) |
+| `AIAssistant.tsx` | AI-ассистент: инсайты + чат (онлайн/офлайн) |
+| `AddTransaction.tsx` | Добавление транзакции: NLP-парсинг, голосовой ввод, сканер чеков |
+| `LockScreen.tsx` | Экран блокировки (WebAuthn + PIN fallback) |
 | `Onboarding.tsx` | Онбординг для новых пользователей |
-| `Registration.tsx` | Регистрация/вход пользователя |
-| `LockScreen.tsx` | Экран блокировки (PIN/биометрия) |
-| `AddTransaction.tsx` | Экран добавления транзакции |
+| `Registration.tsx` | Регистрация пользователя + настройка биометрии |
 | `PrivacyPolicy.tsx` | Политика конфиденциальности |
 | `TermsOfService.tsx` | Условия использования |
-| `ComponentShowcase.tsx` | Демонстрация компонентов |
+| `ComponentShowcase.tsx` | Демонстрация компонентов (dev only) |
 
 **Всего: 16 экранов**
 
@@ -415,6 +466,7 @@ interface ValidationResult {
 /recurring           → RecurringScreen
 /categories          → Categories
 /ai-assistant        → AIAssistant
+/add                 → AddTransaction
 /components          → ComponentShowcase (только в development)
 /onboarding          → Onboarding
 /register            → Registration
@@ -431,14 +483,19 @@ interface ValidationResult {
 ### Service Worker (Workbox)
 
 **Стратегии кэширования:**
-- `CacheFirst` — шрифты (Google Fonts)
-- `NetworkFirst` — навигация (pages)
-- `StaleWhileRevalidate` — статические ресурсы
+- `CacheFirst` — ML-модели (TensorFlow.js), шрифты, статические ресурсы
+- `NetworkFirst` — HTML-страницы (навигация)
+- `StaleWhileRevalidate` — изображения, иконки
+- Очистка устаревшего кэша при активации SW
 
 **Кэшируемые файлы:**
 ```javascript
 globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}']
 ```
+
+### Background Sync
+
+Service Worker регистрирует тэг `finly-fine-tune`. Когда устройство в сети и неактивно, браузер отправляет событие синхронизации, и SW запускает инкрементальное дообучение ML-модели через WebGL.
 
 ### Web App Manifest
 
@@ -450,7 +507,11 @@ globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}']
   "theme_color": "#7c3aed",
   "background_color": "#ffffff",
   "start_url": "/",
-  "orientation": "portrait"
+  "orientation": "portrait",
+  "shortcuts": [
+    { "name": "Добавить расход", "url": "/add?type=expense" },
+    { "name": "Добавить доход", "url": "/add?type=income" }
+  ]
 }
 ```
 
@@ -513,17 +574,21 @@ this.version(2).stores({
 });
 ```
 
+Текущая версия схемы: **v3**.
+
 ---
 
 ## 12. Безопасность
 
-- **Отсутствие бэкенда:** все данные только на устройстве пользователя
-- **Нет сетевых запросов:** приложение не отправляет данные на сервер
-- **Локальное хранение:** IndexedDB + localStorage для настроек
+- **Данные на устройстве:** все пользовательские данные только в IndexedDB
+- **AI-прокси:** единственный сетевой запрос — к Vercel Function; API-ключ OpenRouter хранится только в серверных переменных окружения
+- **CSP:** Content Security Policy в index.html ограничивает ресурсы `'self'`
+- **Биометрия:** WebAuthn с `userVerification: 'required'`, платформенный аутентификатор
+- **Нет сбора данных:** приложение не отправляет пользовательские данные на сторонние серверы
 
 ---
 
-## 13. Структура состояний (Zustand + Custom Hooks)
+## 13. Структура состояний (Custom Hooks)
 
 ### Хуки для работы с данными
 
@@ -533,22 +598,40 @@ this.version(2).stores({
 | `useCategories` | Категории доходов/расходов |
 | `useBudgets` | Управление бюджетами и лимитами |
 | `useGoals` | Финансовые цели и прогресс |
-| `useAnalytics` | Аналитические данные для графиков |
+| `useAnalytics` | Аналитические данные для графиков (Promise.all + cancellation ref) |
 | `useRecurringTemplates` | CRUD и загрузка шаблонов повторяющихся операций |
 
-### Вспомогательные хуки
+### AI и ML хуки
 
 | Хук | Описание |
 |-----|----------|
-| `useBiometric` | Биометрическая аутентификация |
-| `useBudgetNotifications` | Генерация уведомлений о бюджетах |
-| `useNotificationPanel` | Сборка панели уведомлений и persist read-state |
-| `useNotifications` | Уведомления (Sonner) |
-| `useReceiptScanner` | OCR-сканирование чеков |
-| `useSpeechInput` | Голосовой ввод |
-| `useTransactionForm` | Логика формы транзакций |
+| `useAIInsights` | Инсайты для дашборда и AI-ассистента |
+| `useAIChat` | AI-чат: онлайн (OpenRouter) + офлайн fallback |
+| `useMLModel` | Интеграция TF.js классификатора |
 
-**Всего: 11+ хуков**
+### UI и взаимодействие
+
+| Хук | Описание |
+|-----|----------|
+| `useTransactionForm` | Логика формы транзакций + NLP-парсинг |
+| `useReceiptScanner` | OCR + QR + AI сканирование чеков |
+| `useSpeechInput` | Голосовой ввод (Speech Recognition API) |
+| `useBiometric` | Биометрическая аутентификация (WebAuthn) |
+| `useBudgetNotifications` | Генерация уведомлений о бюджетах (пороги 80%/99%/100%/120%) |
+| `useNotifications` | Push-уведомления (Sonner + Browser Notification API) |
+| `useNotificationPanel` | Сборка панели уведомлений, группировка по дате, persist read-state |
+| `useCountUp` | Анимированный счётчик чисел |
+| `useReducedMotion` | Доступность: режим reduced motion |
+
+**Всего: 17+ хуков**
+
+### AI модули (не хуки)
+
+| Модуль | Описание |
+|--------|----------|
+| `chatContext.ts` | Офлайн AI: intent-роутер (15+ интентов) с follow-up suggestions |
+| `insightsEngine.ts` | Построитель карточек инсайтов для дашборда |
+| `nlpParser.ts` | Извлечение периодов из естественного языка, форматирование |
 
 ---
 
@@ -556,21 +639,19 @@ this.version(2).stores({
 
 | Модуль | Функции |
 |--------|---------|
-| `formatCurrency.ts` | Форматирование сумм с валютой |
-| `errorHandler.ts` | Обработка и логирование ошибок |
+| `formatCurrency.ts` | Форматирование сумм с валютой (+ тесты) |
+| `errorHandler.ts` | Кастомные типы ошибок, `withRetry` (+ тесты) |
 | `notifications.ts` | Helper-функции для уведомлений |
-| `notificationIcons.ts` | Иконки для уведомлений |
-
-**Тесты:**
-- `formatCurrency.test.ts` — тесты форматирования
-- `errorHandler.test.ts` — тесты обработки ошибок
-- `useTransactionForm.test.ts` — тесты хука формы
-- `useCategories.test.ts` — тесты хука категорий
-- `useTransactions.test.ts` — тесты хука транзакций
+| `notificationIcons.ts` | Иконки для типов уведомлений |
+| `animations.ts` | Анимационные утилиты |
+| `dataEvents.ts` | События данных |
+| `imagePreprocess.ts` | Предобработка изображений для OCR |
+| `lucideIcons.tsx` | Динамический рендер иконок Lucide |
+| `recurringProcessor.ts` | Процессор повторяющихся платежей |
 
 ---
 
-## 14.5 Система уведомлений (`NotificationsPanel` + `useNotificationPanel`)
+## 15. Система уведомлений (`NotificationsPanel` + `useNotificationPanel`)
 
 ### Панель уведомлений
 
@@ -591,18 +672,19 @@ this.version(2).stores({
 | `budget-warning` | Потрачено 80–99% бюджета | AlertTriangle | Жёлтый |
 | `goal-done` | Накоплено ≥ 100% цели | CheckCircle2 | Зелёный |
 | `goal-near` | Накоплено 80–99% цели | Target | Фиолетовый |
-| `goal-deadline` | Дедлайн ≤ 7 дней или прошёл | Calendar / AlertTriangle | Оранжевый / Красный |
+| `goal-deadline` | Дедлайн ≤ 30 дней или прошёл | Calendar / AlertTriangle | Оранжевый / Красный |
 | `recurring-due` | Платёж должен сегодня | Clock | Красный |
 | `recurring-upcoming` | Платёж через 1–3 дня | Clock | Синий |
-| `anomalous-expense` | Трата > 2σ от среднего | TrendingUp | Синий |
+| `anomalous-expense` | Трата > 2× от среднего по категории | TrendingUp | Синий |
 | `duplicate-transaction` | 2 одинаковые операции за < 1ч | Copy | Жёлтый |
 
 ### Persist и прочтение
 
 - Уведомления сохраняются в IndexedDB (таблица `notifications`, схема v3)
-- При открытии панели все динамические уведомления помечаются как прочитанные
+- При открытии панели все уведомления помечаются как прочитанные
 - Кнопки действий: **"Прочитать все"**, **"Очистить прочитанные"**
 - Красный индикатор на колокольчике показывается только при наличии непрочитанных
+- `clearExpiredNotifications()` вызывается при каждом монтировании
 
 ### Действия в уведомлениях
 
@@ -619,41 +701,27 @@ this.version(2).stores({
 3. **Цели** — уведомления о достижениях и дедлайнах
 4. **Регулярные платежи** — напоминания о платежах
 
-### Хуки
-
-| Хук | Описание |
-|-----|----------|
-| `useNotificationPanel` | Генерация + persist уведомлений, группировка по дате |
-| `useNotifications` | Push-уведомления (Sonner + Browser Notification API) |
-
 ---
 
-## 15. Стилевая архитектура (`src/styles/`)
+## 16. Стилевая архитектура (`src/styles/`)
 
 | Файл | Описание |
 |------|----------|
-| `index.css` | Основные стили, utility-классы |
+| `index.css` | Основные стили, utility-классы (`scrollbar-hide`, `safe-area-inset-bottom`) |
 | `tailwind.css` | Конфигурация Tailwind CSS 4.x |
-| `theme.css` | CSS-переменные тем (light/dark) |
+| `theme.css` | CSS-переменные тем (light/dark), Tailwind `@theme inline` |
 | `fonts.css` | Подключение шрифтов |
-
-### Utility-классы
-
-```css
-.scrollbar-hide          /* Скрытие скроллбара */
-.safe-area-inset-bottom  /* Padding для iOS safe area */
-```
 
 ### Темизация
 
 - CSS-переменные для всех цветов
 - Поддержка `prefers-color-scheme: dark`
-- Переключение через `ThemeContext`
-- Сохранение в `localStorage`
+- Переключение через `ThemeContext` + `next-themes`
+- Сохранение в `IndexedDB`
 
 ---
 
-## 16. PWA-конфигурация (`vite.config.ts`)
+## 17. PWA-конфигурация (`vite.config.ts`)
 
 ### Manifest настройки
 
@@ -667,17 +735,14 @@ manifest: {
   display: 'standalone',
   start_url: '/',
   orientation: 'portrait',
+  shortcuts: [
+    { name: 'Добавить расход', url: '/add?type=expense' },
+    { name: 'Добавить доход', url: '/add?type=income' },
+  ],
   icons: [
-    {
-      src: '/pwa-192x192.svg',
-      sizes: '192x192',
-      type: 'image/svg+xml',
-    },
-    {
-      src: '/pwa-512x512.svg',
-      sizes: '512x512',
-      type: 'image/svg+xml',
-    },
+    { src: '/pwa-192x192.svg', sizes: '192x192', type: 'image/svg+xml' },
+    { src: '/pwa-512x512.svg', sizes: '512x512', type: 'image/svg+xml' },
+    { src: '/pwa-2048x2048.svg', sizes: '2048x2048', type: 'image/svg+xml' },
   ],
 }
 ```
@@ -686,18 +751,25 @@ manifest: {
 
 | Паттерн | Стратегия | Назначение |
 |---------|-----------|------------|
+| Модели/шрифты | CacheFirst | ML-модели, Google Fonts |
 | `**/*.{js,css,woff,woff2}` | CacheFirst | Статические ресурсы |
 | `**/*.{png,svg,ico}` | CacheFirst | Изображения, иконки |
-| `/` | NetworkFirst | HTML страницы |
+| `/` (навигация) | NetworkFirst | HTML страницы |
 | `*` | StaleWhileRevalidate | Остальные запросы |
+
+### Ручное разделение чанков
+
+Агрессивное разделение vendor-чанков для оптимизации загрузки:
+- Отдельные чанки для TF.js подсистем (core, backend-cpu, backend-webgl, converter, layers)
+- MUI, Recharts, Dexie, Radix UI, Tesseract, motion, date-fns, Lucide, React, Workbox, Zustand — каждый в своём чанке
 
 ---
 
-## 17. Маршрутизация
+## 18. Маршрутизация
 
 ### Защищённые роуты
 
-Требуют авторизации (Redirect на `/register`):
+Требуют авторизации (Redirect на `/register`) и разблокировки (LockScreen если включена биометрия):
 
 | Путь | Компонент |
 |------|-----------|
@@ -707,8 +779,10 @@ manifest: {
 | `/settings` | Settings |
 | `/budgets` | Budgets |
 | `/goals` | Goals |
+| `/recurring` | RecurringScreen |
 | `/categories` | Categories |
 | `/ai-assistant` | AIAssistant |
+| `/add` | AddTransaction |
 | `/components` | ComponentShowcase (development-only) |
 
 ### Публичные роуты
@@ -717,14 +791,14 @@ manifest: {
 
 | Путь | Компонент |
 |------|-----------|
-| `/onboarding` | Onboarding |
 | `/register` | Registration |
+| `/onboarding` | Onboarding |
 | `/privacy` | PrivacyPolicy |
 | `/terms` | TermsOfService |
 
 ---
 
-## 18. Жизненный цикл приложения
+## 19. Жизненный цикл приложения
 
 ### 1. Первый запуск
 
@@ -742,73 +816,46 @@ manifest: {
 ### 2. Добавление транзакции
 
 ```
-1. Пользователь нажимает «+» в BottomNav
-2. Открывается BottomSheet с AddTransactionForm
-3. useTransactionForm валидирует данные
-4. AI-парсинг комментария (parseNaturalLanguage)
-5. Поиск категории (findBestMatch)
-6. addTransaction() → IndexedDB
-7. Обновление кэша аналитики
-8. Уведомление об успехе (toast)
-9. Закрытие BottomSheet
+1. Пользователь нажимает «+» в BottomNav или использует быстрый ввод
+2. AI-парсинг текста (parseNaturalLanguage) или ручной ввод через форму
+3. ML-классификация: LRU-кэш → правила → ML → fallback
+4. useTransactionForm валидирует данные
+5. addTransaction() → IndexedDB
+6. Обновление кэша аналитики
+7. Уведомление об успехе (toast)
 ```
 
 ### 3. Обработка повторяющихся платежей
 
 ```
 1. При запуске: processDueTemplates()
-2. Поиск шаблонов с nextDate <= today
-3. Для каждого: createTransaction()
-4. Обновление nextDate по интервалу
-5. Уведомление о созданных транзакциях
+2. Проверка кулдауна (1 час с последнего запуска)
+3. Поиск шаблонов с nextDate <= today
+4. Для каждого: createTransaction()
+5. Обновление nextDate по интервалу
+6. Уведомление о созданных транзакциях
 ```
 
 ---
 
-## 19. Производительность
+## 20. Производительность
 
 ### Оптимизации
 
 | Техника | Реализация |
 |---------|------------|
-| Code splitting | React Router lazy loading |
+| Code splitting | React Router lazy loading + ручные чанки |
 | Tree shaking | Tailwind CSS, ES-модули |
 | Кэширование | Service Worker (Workbox) |
 | Индексы БД | Dexie индексация полей |
 | Мемоизация | React.memo, useMemo, useCallback |
+| Минификация | Terser с drop_console + drop_debugger |
+| CSP | Только 'self' для всех ресурсов |
 
 ### Размеры бандла
 
-- **main.js:** ~200-300 KB (gzipped)
-- **vendor.js:** ~500-700 KB (React, Recharts, Dexie)
-- **CSS:** ~20-30 KB (Tailwind purge)
-
----
-
-## 20. Расширяемость
-
-### Добавление новой фичи
-
-1. **Типы:** Добавить интерфейс в `src/db/types.ts`
-2. **БД:** Обновить схему в `src/db/db.ts`
-3. **CRUD:** Функции в `src/db/operations/*` (ре-экспорт через `src/db/operations/index.ts`)
-4. **Хук:** Создать `src/app/hooks/useNewFeature.ts`
-5. **UI:** Компоненты в `src/app/components/`
-6. **Экран:** `src/app/screens/NewFeatureScreen.tsx`
-7. **Роут:** Добавить в `src/app/routes.tsx`
-8. **Тесты:** `*.test.ts` файлы
-
-### Миграции БД
-
-```typescript
-this.version(3).stores({
-  newTable: '++id, indexedField',
-}).upgrade(async tx => {
-  // Миграция данных
-  const oldData = await tx.table('oldTable').toArray();
-  // ...
-});
-```
+- Отдельные чанки для крупных библиотек (TF.js, MUI, Recharts, Dexie, Tesseract, motion, date-fns, Lucide, Radix UI, React, Workbox, Zustand)
+- Каждый чанк загружается асинхронно и кэшируется Service Worker
 
 ---
 
@@ -825,20 +872,24 @@ this.version(3).stores({
 | tailwindcss | 4.1.12 | CSS framework |
 | lucide-react | 0.487.0 | Иконки |
 | recharts | 2.15.2 | Графики |
-| chart.js | ^4.4.2 | Альтернативные графики |
 | motion | 12.23.24 | Анимации |
 | sonner | 2.0.3 | Уведомления |
 | @mui/material | ^5.15.15 | Дополнительные UI-компоненты |
+| @mui/icons-material | ^5.15.15 | Дополнительные иконки |
 | react-hook-form | 7.55.0 | Управление формами |
 | date-fns | 3.6.0 | Работа с датами |
 | uuid | ^13.0.0 | Генерация UUID |
 | canvas-confetti | 1.9.4 | Анимация конфетти |
 | vaul | 1.1.2 | Drawer-компоненты |
 | embla-carousel-react | 8.6.0 | Карусель |
+| next-themes | 0.4.6 | Абстракция темизации |
+| @tensorflow/tfjs | ^4.22.0 | ML-классификация |
+| tesseract.js | ^7.0.0 | OCR сканирование |
+| jsqr | — | QR-декодирование |
 
 ### Дополнительные UI-компоненты (Radix UI + shadcn/ui)
 
-30+ компонентов: accordion, alert-dialog, aspect-ratio, avatar, checkbox, collapsible, context-menu, dialog, dropdown-menu, hover-card, label, menubar, navigation-menu, popover, progress, radio-group, scroll-area, select, separator, slider, slot, switch, tabs, toggle, toggle-group, tooltip, command, calendar, carousel, drawer, form, input-otp, resizable, menubar.
+30+ компонентов: accordion, alert-dialog, aspect-ratio, avatar, checkbox, collapsible, context-menu, dialog, dropdown-menu, hover-card, label, menubar, navigation-menu, popover, progress, radio-group, scroll-area, select, separator, slider, slot, switch, tabs, toggle, toggle-group, tooltip, command, calendar, carousel, drawer, form, input-otp, resizable, sheet, sidebar, breadcrumb, pagination, skeleton, table, textarea, badge, chart, sonner.
 
 ### Dev-зависимости
 
@@ -853,6 +904,7 @@ this.version(3).stores({
 | @testing-library/user-event | ^14.6.1 | Эмуляция пользовательского ввода |
 | @vitest/coverage-v8 | ^4.1.1 | Покрытие кода |
 | jsdom | ^29.0.1 | Среда тестирования |
+| fake-indexeddb | — | Мок IndexedDB для тестов |
 | eslint | ^8.57.0 | Линтинг |
 
 ---
@@ -871,34 +923,40 @@ this.version(3).stores({
 ### Покрытие
 
 - **Порог:** 50% branches, functions, lines, statements
-- **Команды:** `npm run test`, `npm run test:watch`, `npm run test:coverage`
+- **Количество:** 345+ тестов в 27+ тестовых файлах
+- **Команды:** `npm run test`, `npm run test:watch`, `npm run test:ui`, `npm run test:coverage`
 
-### Тест-файлы (10+)
+### Тест-файлы (27+)
 
 | Категория | Файлы |
 |-----------|-------|
-| **Компоненты** | `AddTransactionForm.test.tsx`, `ErrorBoundary.test.tsx` |
-| **Хуки** | `useTransactions.test.ts`, `useCategories.test.ts`, `useTransactionForm.test.ts` |
-| **Утилиты** | `formatCurrency.test.ts`, `errorHandler.test.ts` |
-| **БД операции** | `operations/transactions.test.ts`, `operations/categories.test.ts` |
+| **Компоненты** | `AddTransactionForm.test.tsx`, `ErrorBoundary.test.tsx`, `ReceiptScannerModal.test.tsx` |
+| **Хуки** | `useTransactions.test.ts`, `useCategories.test.ts`, `useTransactionForm.test.ts`, `useAIChat.test.ts`, `useReceiptScanner.test.ts`, `useBudgetNotifications.test.ts` |
+| **Утилиты** | `formatCurrency.test.ts`, `errorHandler.test.ts`, `nlpParser.test.ts` |
+| **БД операции** | `operations/transactions.test.ts`, `operations/categories.test.ts`, `operations/budgets.test.ts`, `operations/goals.test.ts`, `operations/users.test.ts` |
+| **AI/ML** | `chatContext.test.ts` (26 тестов, 20+ интентов), `aiClient.test.ts`, `contextBuilder.test.ts`, `classifier/finly_runtime.test.ts` |
 | **Валидаторы** | `db/validators.test.ts` |
 
 ---
 
 ## 23. CI/CD Pipeline
 
-### GitHub Actions (`.github/workflows/ci.yml`)
+### GitHub Actions (3 воркфлоу)
 
-**Триггеры:**
-- Push на `main` или `feature/*`
-- Pull Request в `main`
-
-**Джобы:**
+**1. CI/CD (`.github/workflows/ci.yml`)**
 
 | Джоб | Шаги | Описание |
 |------|------|----------|
 | **build** | Checkout → Node 20 → `npm ci` → `npm run lint` → `npm run build` | Проверка и сборка |
 | **deploy** | Vercel Action | Деплой на продакшен (только `main`) |
+
+**2. Lighthouse (`.github/workflows/lighthouse.yml`)**
+
+Lighthouse CI для performance-аудита.
+
+**3. Quality Gates (`.github/workflows/quality.yml`)**
+
+npm audit, проверка размера бандла (total JS < 3MB), test coverage (пороги 50%), PWA manifest/SW валидация.
 
 ---
 
@@ -906,14 +964,22 @@ this.version(3).stores({
 
 ### Реализовано
 
-- [x] Биометрическая аутентификация (PIN + WebAuthn Face ID / Touch ID) — частично реализовано
-- [x] Система уведомлений с persist, группировкой по дате и действиями
-- [x] Уведомления о повторяющихся платежах
-- [x] Уведомления об аномальных тратах и дубликатах
-- [x] Уведомления о дедлайнах целей
+- [x] Биометрическая аутентификация (WebAuthn Face ID / Touch ID + PIN fallback)
+- [x] Система уведомлений с persist, группировкой по дате и действиями (9 типов)
+- [x] Уведомления о повторяющихся платежах, аномальных тратах, дубликатах, дедлайнах целей
 - [x] Настройки уведомлений (4 переключателя)
+- [x] AI-чат ассистент (OpenRouter + офлайн fallback)
+- [x] Сканер чеков: QR + OCR + AI (Gemini/Claude Vision)
+- [x] Голосовой ввод
+- [x] Кастомные аватары (своё фото)
+- [x] Сравнение категорий месяц к месяцу
+- [x] Анализ расходов по дням недели
+- [x] Прогноз расходов до конца месяца
+- [x] Background Sync для ML-дообучения
 
 ### В планах
 
 - [ ] Мультивалютность с авто-конвертацией
-- [ ] Push-уведомления о лимитах
+- [ ] Push-уведомления через браузерный Notification API
+- [ ] Синхронизация между устройствами (CRDT/cloud sync)
+- [ ] SQLite WASM (PGlite) для реальных SQL-агрегаций

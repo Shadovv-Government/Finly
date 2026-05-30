@@ -718,3 +718,12 @@ git commit -m "feat: receipt scanner — offline OCR for AddTransaction"
 ## Known Limitation
 
 On first use of the scanner, Tesseract.js downloads `~12MB` of language data for `rus` + `eng` from its CDN. After the first download, Workbox (the PWA service worker) caches these assets and subsequent uses work fully offline. This means the very first scan requires a network connection.
+
+---
+
+## Implementation Status: ✅ Завершено
+
+План реализован полностью. Дополнительно к описанному добавлены:
+- QR-декодирование фискальных чеков (BarcodeDetector API + jsQR fallback) — `useReceiptScanner.ts`
+- AI-распознавание чеков через Gemini 2.5 Flash и Claude Vision — `src/lib/geminiReceiptParser.ts`, `src/lib/claudeReceiptParser.ts`
+- Предобработка изображений для улучшения точности OCR — `src/app/utils/imagePreprocess.ts`

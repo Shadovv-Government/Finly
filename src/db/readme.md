@@ -243,13 +243,13 @@ CRUD-операции разделены по отдельным файлам д
 | `getNotification(id)` | Получить уведомление по ID |
 | `getAllNotifications()` | Получить все (новые сверху) |
 | `getUnreadNotifications()` | Получить непрочитанные |
-| `markNotificationAsRead(id)` | Пометить как прочитанное |
+| `markNotificationAsRead(id)` | Пометить одно как прочитанное |
 | `markAllNotificationsAsRead()` | Пометить все как прочитанные |
 | `deleteNotification(id)` | Удалить уведомление |
 | `clearReadNotifications()` | Удалить все прочитанные |
 | `clearAllNotifications()` | Полная очистка |
 | `getUnreadCount()` | Количество непрочитанных |
-| `clearExpiredNotifications()` | Удалить просроченные |
+| `clearExpiredNotifications()` | Удалить просроченные (expiresAt < now) |
 
 **Пример:**
 ```typescript
@@ -280,6 +280,8 @@ await setSetting('theme', 'dark');
 |---------|----------|
 | `getBalanceByPeriod(start, end)` | Баланс за период (доходы − расходы) |
 | `getCurrentBalance()` | Текущий общий баланс |
+| `getTotalSavings()` | Общая сумма накоплений (цели) |
+| `getBalanceWithSavings()` | Баланс с учётом сбережений |
 
 ### Расходы по категориям
 
@@ -293,6 +295,7 @@ await setSetting('theme', 'dark');
 | Функция | Описание |
 |---------|----------|
 | `getSpendingTrend(days)` | Дневной тренд расходов (N дней) |
+| `getIncomeTrend(days)` | Дневной тренд доходов (N дней) |
 | `getMonthlyTrend(months)` | Месячный тренд (N месяцев) |
 
 ### Бюджеты
@@ -307,6 +310,26 @@ await setSetting('theme', 'dark');
 | Функция | Описание |
 |---------|----------|
 | `getGoalsProgress()` | Прогресс всех целей с расчётом ежемесячного взноса |
+
+### Прогноз и сравнение
+
+| Функция | Описание |
+|---------|----------|
+| `getMonthForecast()` | Прогноз расходов до конца месяца |
+| `getCategoryMoMDelta()` | Сравнение категорий месяц к месяцу |
+
+### Анализ
+
+| Функция | Описание |
+|---------|----------|
+| `getSavingsRate(start, end)` | Норма сбережений (доходы − расходы) / доходы |
+| `getLargestTransactions(limit, start, end)` | Крупнейшие транзакции за период |
+| `getAverageDailySpend(start, end)` | Средний дневной расход |
+| `getSpendByDayOfWeek(start, end)` | Расходы по дням недели |
+| `getAnomalousTransactions(start, end)` | Аномальные траты (> 2× от среднего) |
+| `getIncomePattern()` | Паттерны доходов |
+| `getRecurringUpcoming(daysAhead)` | Предстоящие повторяющиеся платежи |
+| `findCategoryByName(query)` | Поиск категории по названию |
 
 ### Статистика
 
@@ -346,6 +369,7 @@ const trend = await getSpendingTrend(30); // 30 дней
 | Функция | Описание |
 |---------|----------|
 | `parseNaturalLanguage(text)` | Распарсить фразу типа «кофе 450 рублей» |
+| `inferCategoryId(text, type)` | Угадать категорию по тексту (поиск по названиям и паттернам) |
 
 ### Рекомендации
 
@@ -382,10 +406,12 @@ suggestions.forEach(s => console.log(s.message));
 
 | Функция | Описание |
 |---------|----------|
+| `getNextDate(currentDate, interval)` | Вычислить следующую дату по интервалу |
+| `getDaysUntilDue(nextDate)` | Дней до даты платежа |
 | `getDueTemplates()` | Получить шаблоны, которые нужно обработать сегодня |
-| `getUpcomingPayments(days)` | Получить предстоящие платежи на N дней |
-| `processDueTemplates()` | Обработать все просроченные шаблоны |
-| `createManualTransactionFromTemplate(id)` | Создать транзакцию вручную |
+| `getUpcomingPayments(daysAhead)` | Получить предстоящие платежи на N дней вперёд |
+| `processDueTemplates()` | Обработать все due шаблоны (с кулдауном 1 час) |
+| `createManualTransactionFromTemplate(id)` | Создать транзакцию вручную по шаблону |
 | `getRecurringStats()` | Статистика по шаблонам (месячная сумма) |
 
 **Пример:**
@@ -434,15 +460,19 @@ upcoming.forEach(u => {
 
 **Пример:**
 ```typescript
-import { exportToFile, importFromFile, exportCSVToFile } from './exportImport';
+import { exportToFile, importFromFile, exportCSVToFile, importData } from './exportImport';
 
-// Экспорт
+// Экспорт (с версией схемы)
 await exportToFile('my-finly-backup.json');
 await exportCSVToFile('transactions.csv');
 
-// Импорт из файла (через input[type=file])
+// Импорт из файла (через input[type=file]) — с валидацией версии
 const file = fileInput.files[0];
 const result = await importFromFile(file);
+// result: { imported: { transactions, categories, budgets, goals, ... }, errors: [] }
+
+// Импорт с опциями объединения (merge/replace)
+await importData(jsonData, { merge: true });
 console.log(`Импортировано: ${result.imported.transactions} транзакций`);
 ```
 
