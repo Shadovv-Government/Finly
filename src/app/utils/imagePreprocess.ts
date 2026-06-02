@@ -3,6 +3,13 @@
 const MIN_LONG_SIDE = 1600;
 const MAX_LONG_SIDE = 4096;
 
+/**
+ * OCR-optimised preprocessing: grayscale + percentile contrast + Otsu binarization.
+ * Produces pure black-on-white — ideal for Tesseract.
+ *
+ * EXIF orientation is handled automatically by the browser's Image element;
+ * naturalWidth/naturalHeight already reflect the displayed orientation.
+ */
 export async function preprocessReceiptImage(file: File): Promise<File> {
   return new Promise((resolve) => {
     const img = new Image();
@@ -104,13 +111,4 @@ function binarizeOtsu(data: Uint8ClampedArray) {
     const v = data[i * 4] >= threshold ? 255 : 0;
     data[i * 4] = data[i * 4 + 1] = data[i * 4 + 2] = v;
   }
-}
-
-export function fileToBase64(file: File | Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve((reader.result as string).split(',')[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
 }

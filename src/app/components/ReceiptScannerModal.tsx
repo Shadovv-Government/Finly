@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AlertTriangle, X, Sparkles, ScanText, Tag, Package } from 'lucide-react';
+import { AlertTriangle, X, ScanText, Tag, Package } from 'lucide-react';
 import type { ReceiptData, ReceiptScanError } from '../hooks/useReceiptScanner';
 
 interface ReceiptScannerModalProps {
@@ -110,16 +110,6 @@ export function ReceiptScannerModal({
                   <div className="flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700 dark:bg-green-950 dark:text-green-300">
                     <ScanText className="h-3 w-3" />
                     QR-код
-                  </div>
-                ) : result.engine === 'gemini' ? (
-                  <div className="flex items-center gap-1.5 rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-                    <Sparkles className="h-3 w-3" />
-                    Gemini AI
-                  </div>
-                ) : result.engine === 'claude' ? (
-                  <div className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-primary/15 dark:text-violet-300">
-                    <Sparkles className="h-3 w-3" />
-                    Claude AI
                   </div>
                 ) : (
                   <div className="flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">

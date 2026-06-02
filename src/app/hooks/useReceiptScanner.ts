@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import { preprocessReceiptImage, fileToBase64, toGrayscaleContrast } from '../utils/imagePreprocess';
-import { parseReceiptWithGemini, getGeminiApiKey } from '../lib/geminiReceiptParser';
-import { parseReceiptWithClaude, getAnthropicApiKey } from '../lib/claudeReceiptParser';
+import { preprocessReceiptImage, toGrayscaleContrast } from '../utils/imagePreprocess';
 
 export interface ReceiptData {
   amount: number | null;
@@ -12,7 +10,7 @@ export interface ReceiptData {
   currency?: string | null;
   categoryHint?: string | null;
   items?: string[];
-  engine?: 'qr' | 'gemini' | 'claude' | 'tesseract';
+  engine?: 'qr' | 'tesseract';
 }
 
 export type ReceiptScanError = 'low_confidence' | 'ocr_error';
@@ -55,6 +53,22 @@ declare class BarcodeDetector {
   detect(img: ImageBitmapSource): Promise<Array<{ rawValue: string }>>;
 }
 
+// Maximum dimension for QR scanning bitmaps.
+// Phone cameras produce 12–48MP photos — loading those at full resolution
+// exhausts mobile browser memory and makes QR modules too sparse to detect.
+// 2048px keeps a ~4MP RGBA bitmap (~16 MB), well within mobile limits,
+// while preserving enough module density for reliable detection.
+const QR_MAX_DIM = 2048;
+
+// Shared createImageBitmap options: resize to avoid memory pressure + honour EXIF.
+const BITMAP_OPTS: ImageBitmapOptions = {
+  resizeWidth: QR_MAX_DIM,
+  resizeHeight: QR_MAX_DIM,
+  // 'from-image' tells the browser to apply EXIF orientation.
+  // Without this, portrait photos may have sideways QR codes.
+  imageOrientation: 'from-image',
+};
+
 async function tryQrCode(file: File): Promise<ReceiptData | null> {
   // Try native BarcodeDetector first (fast, Chrome/Edge/Safari 17.4+).
   const hasBarcodeDetector = typeof window !== 'undefined' && 'BarcodeDetector' in window;
@@ -62,7 +76,7 @@ async function tryQrCode(file: File): Promise<ReceiptData | null> {
   if (hasBarcodeDetector) {
     try {
       const detector = new BarcodeDetector({ formats: ['qr_code'] });
-      const bitmap = await createImageBitmap(file);
+      const bitmap = await createImageBitmap(file, BITMAP_OPTS);
       const codes = await detector.detect(bitmap);
       bitmap.close();
       if (codes.length) {
@@ -99,7 +113,8 @@ async function tryQrCodeJsQR(file: File): Promise<ReceiptData | null> {
         img.src = url;
       });
     } else {
-      source = await createImageBitmap(file);
+      // Resize at decode-time — cuts mobile memory from 48MP → ~4MP.
+      source = await createImageBitmap(file, BITMAP_OPTS);
     }
 
     const srcW = 'naturalWidth' in source ? source.naturalWidth : source.width;
@@ -110,17 +125,11 @@ async function tryQrCodeJsQR(file: File): Promise<ReceiptData | null> {
     // DNS receipt at 250px → 800px (3.2×), Пятёрочка at 607px → 800px (1.3×).
     // Cap the long side at 2000px to avoid excessive memory.
     const MIN_SHORT = 800;
-    const MAX_LONG  = 2000;
     let w = srcW;
     let h = srcH;
     const shortSide = Math.min(w, h);
-    const longSide  = Math.max(w, h);
     if (shortSide < MIN_SHORT) {
       const scale = MIN_SHORT / shortSide;
-      w = Math.round(w * scale);
-      h = Math.round(h * scale);
-    } else if (longSide > MAX_LONG) {
-      const scale = MAX_LONG / longSide;
       w = Math.round(w * scale);
       h = Math.round(h * scale);
     }
@@ -357,50 +366,15 @@ export function useReceiptScanner() {
         return;
       }
 
-      setStatusMessage('Подготовка изображения...');
+      // No QR found — fall back to Tesseract OCR.
+      setStatusMessage('QR не найден, запускаю OCR...');
       const preprocessed = await preprocessReceiptImage(file);
 
-      // Primary: Gemini Vision — free tier, no cost (15 RPM, 200 RPD)
-      const geminiKey = getGeminiApiKey();
-      if (geminiKey) {
-        try {
-          setStatusMessage('Gemini AI анализирует чек...');
-          const base64 = await fileToBase64(preprocessed);
-          const parsed = await parseReceiptWithGemini(base64, geminiKey);
-          setResult(parsed);
-          if (parsed.confidence < 60 || parsed.amount === null) {
-            setError('low_confidence');
-          }
-          return;
-        } catch {
-          setStatusMessage('Переключаюсь на другой движок...');
-        }
-      }
-
-      // Secondary: Claude Vision (paid, higher quality)
-      const anthropicKey = getAnthropicApiKey();
-      if (anthropicKey) {
-        try {
-          setStatusMessage('Claude AI анализирует чек...');
-          const base64 = await fileToBase64(preprocessed);
-          const parsed = await parseReceiptWithClaude(base64, anthropicKey);
-          setResult(parsed);
-          if (parsed.confidence < 60 || parsed.amount === null) {
-            setError('low_confidence');
-          }
-          return;
-        } catch {
-          setStatusMessage('Переключаюсь на OCR...');
-        }
-      }
-
-      // Fallback: Tesseract OCR
       setStatusMessage('OCR-распознавание...');
       const { createWorker } = await import('tesseract.js');
       const worker = await createWorker(['rus', 'eng'], 1, getReceiptScannerWorkerOptions());
       // PSM 6 = single uniform block — handles mixed font sizes on receipts.
       // preserve_interword_spaces keeps "1 250,00" intact for amount patterns.
-      // tessedit_char_whitelist limits the character set (helps legacy mode).
       await worker.setParameters({
         tessedit_pageseg_mode: '6' as never,
         preserve_interword_spaces: '1',
