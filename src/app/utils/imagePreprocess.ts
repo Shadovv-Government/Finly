@@ -84,6 +84,46 @@ export function toGrayscaleContrast(data: Uint8ClampedArray) {
   }
 }
 
+// 3×3 box blur — low-pass filter that eliminates moiré patterns when
+// photographing a monitor/screen. Each output pixel is the average of a 3×3
+// neighbourhood. Fast (single-pass, separable equivalent) and preserves QR
+// module edges when modules are ≥3px wide (our upscale target).
+// Operates in-place on grayscale data (reads R channel, writes R/G/B).
+export function boxBlur3x3(data: Uint8ClampedArray, width: number, height: number) {
+  // Accumulate one row of 3 columns: colSum[x] = sum of 3 vertical pixels at (x, y)
+  // We slide a 3×3 window: maintain 3 colSums, sum them for the kernel total.
+  const stride = width * 4;
+  const buf = new Uint8ClampedArray(data.length);
+
+  for (let y = 1; y < height - 1; y++) {
+    // Initialise column sums for the three rows of the window at x=0.
+    const row = y * stride;
+    let a = data[row - stride] + data[row] + data[row + stride];
+    let b = data[row - stride + 4] + data[row + 4] + data[row + stride + 4];
+    let c = data[row - stride + 8] + data[row + 8] + data[row + stride + 8];
+
+    for (let x = 1; x < width - 1; x++) {
+      // Shift window right: drop left column, add new right column.
+      const avg = Math.round((a + b + c) / 9);
+      const off = row + x * 4;
+      buf[off] = buf[off + 1] = buf[off + 2] = avg;
+      buf[off + 3] = data[off + 3]; // preserve alpha
+
+      // Slide window: a gets b, b gets c, c is new column.
+      const nx = (x + 2) * 4;
+      a = b;
+      b = c;
+      c = data[row - stride + nx] + data[row + nx] + data[row + stride + nx];
+    }
+  }
+
+  // Copy back, leaving the 1px border untouched (minor edge case — receipt
+  // QR codes are never at the extreme edge of the image).
+  for (let i = stride + 4; i < data.length - stride - 4; i++) {
+    if (buf[i] !== 0) data[i] = buf[i];
+  }
+}
+
 // Step 2: Otsu binarization — finds the optimal threshold that maximises
 // inter-class variance, producing pure black text on white background.
 // Thermal receipt paper responds very well to this approach.

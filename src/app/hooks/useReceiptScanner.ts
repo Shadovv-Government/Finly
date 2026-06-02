@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { preprocessReceiptImage, toGrayscaleContrast } from '../utils/imagePreprocess';
+import { preprocessReceiptImage, toGrayscaleContrast, boxBlur3x3 } from '../utils/imagePreprocess';
 
 export interface ReceiptData {
   amount: number | null;
@@ -60,14 +60,30 @@ declare class BarcodeDetector {
 // while preserving enough module density for reliable detection.
 const QR_MAX_DIM = 2048;
 
-// Shared createImageBitmap options: resize to avoid memory pressure + honour EXIF.
-const BITMAP_OPTS: ImageBitmapOptions = {
-  resizeWidth: QR_MAX_DIM,
-  resizeHeight: QR_MAX_DIM,
-  // 'from-image' tells the browser to apply EXIF orientation.
-  // Without this, portrait photos may have sideways QR codes.
-  imageOrientation: 'from-image',
-};
+// NOTE: We intentionally omit `imageOrientation` from createImageBitmap options.
+// The option was added in Chrome 93 and caused TypeError on Chrome 88-99
+// (unrecognized options threw instead of being ignored). Modern browsers
+// default to 'from-image' anyway; BarcodeDetector and jsQR detect QR codes
+// in any orientation, so orientation correction is unimportant for QR scanning.
+async function bitmapFromFile(file: File): Promise<ImageBitmap> {
+  return createImageBitmap(file, {
+    resizeWidth: QR_MAX_DIM,
+    resizeHeight: QR_MAX_DIM,
+  });
+}
+
+// Load a File as HTMLImageElement via blob URL — the most compatible approach
+// across all browsers and file formats. Image elements respect EXIF orientation
+// automatically and support HEIC/HEIF on iOS Safari.
+function imageFromFile(file: File): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image decode failed')); };
+    img.src = url;
+  });
+}
 
 async function tryQrCode(file: File): Promise<ReceiptData | null> {
   // Try native BarcodeDetector first (fast, Chrome/Edge/Safari 17.4+).
@@ -76,7 +92,7 @@ async function tryQrCode(file: File): Promise<ReceiptData | null> {
   if (hasBarcodeDetector) {
     try {
       const detector = new BarcodeDetector({ formats: ['qr_code'] });
-      const bitmap = await createImageBitmap(file, BITMAP_OPTS);
+      const bitmap = await bitmapFromFile(file);
       const codes = await detector.detect(bitmap);
       bitmap.close();
       if (codes.length) {
@@ -84,11 +100,14 @@ async function tryQrCode(file: File): Promise<ReceiptData | null> {
         if (result) return result;
       }
     } catch {
-      // fall through to jsQR
+      // BarcodeDetector failed — fall through to jsQR.
+      // Common causes: unsupported image format, memory pressure, or the
+      // imageOrientation option rejection in Chrome <100.
     }
   }
 
   // Universal fallback: jsQR — pure JS, works in any browser including Firefox.
+  // Uses Image element for decoding (more compatible than createImageBitmap).
   return tryQrCodeJsQR(file);
 }
 
@@ -102,23 +121,11 @@ async function tryQrCodeJsQR(file: File): Promise<ReceiptData | null> {
   try {
     const { default: jsQR } = await import('jsqr');
 
-    // createImageBitmap throws InvalidStateError on SVG — load via <img> instead.
-    let source: HTMLImageElement | ImageBitmap;
-    if (file.type === 'image/svg+xml') {
-      source = await new Promise<HTMLImageElement>((resolve, reject) => {
-        const img = new Image();
-        const url = URL.createObjectURL(file);
-        img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
-        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('SVG не декодируется')); };
-        img.src = url;
-      });
-    } else {
-      // Resize at decode-time — cuts mobile memory from 48MP → ~4MP.
-      source = await createImageBitmap(file, BITMAP_OPTS);
-    }
-
-    const srcW = 'naturalWidth' in source ? source.naturalWidth : source.width;
-    const srcH = 'naturalHeight' in source ? source.naturalHeight : source.height;
+    // Use Image element for decoding — more compatible than createImageBitmap
+    // across mobile browsers. Image handles EXIF, HEIC, and unusual JPEG variants.
+    const img = await imageFromFile(file);
+    const srcW = img.naturalWidth;
+    const srcH = img.naturalHeight;
 
     // Upscale narrow images so QR modules have at least ~3px each.
     // We anchor on the SHORT side: receipts are portrait, so width limits module density.
@@ -140,8 +147,7 @@ async function tryQrCodeJsQR(file: File): Promise<ReceiptData | null> {
     // willReadFrequently keeps the canvas in CPU memory — without it each getImageData
     // triggers a GPU→CPU transfer, which is slow when we call it 3 times per scan.
     const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
-    ctx.drawImage(source as CanvasImageSource, 0, 0, w, h);
-    if ('close' in source) source.close();
+    ctx.drawImage(img, 0, 0, w, h);
 
     // Attempt jsQR on a region. Each call gets a fresh ImageData copy so
     // toGrayscaleContrast mutations in one pass don't affect others.
@@ -169,6 +175,28 @@ async function tryQrCodeJsQR(file: File): Promise<ReceiptData | null> {
     const y50 = Math.floor(h * 0.5);
     const roi50 = tryRegion(0, y50, w, h - y50, `нижние 50% (y=${y50})`);
     if (roi50) return roi50;
+
+    // ── Monitor/screen scan fallback ───────────────────────────────────
+    // Photographing a screen creates moiré patterns (camera sensor grid ×
+    // monitor pixel grid) — high-frequency noise that confuses QR detectors.
+    // A 3×3 box blur acts as a low-pass filter: kills moiré while preserving
+    // QR module edges (modules are ≥3px after our upscale).
+    //
+    // We blur the canvas in-place and re-run all three regions.
+    // The blur is cheap — <5ms on a 2000px canvas.
+    const fullImage = ctx.getImageData(0, 0, w, h);
+    toGrayscaleContrast(fullImage.data);
+    boxBlur3x3(fullImage.data, w, h);
+    ctx.putImageData(fullImage, 0, 0);
+
+    const bFull = tryRegion(0, 0, w, h, 'blur: полное изображение');
+    if (bFull) return bFull;
+
+    const by30 = tryRegion(0, y30, w, h - y30, `blur: нижние 30% (y=${y30})`);
+    if (by30) return by30;
+
+    const by50 = tryRegion(0, y50, w, h - y50, `blur: нижние 50% (y=${y50})`);
+    if (by50) return by50;
 
     return null;
   } catch {
