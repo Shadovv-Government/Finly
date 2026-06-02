@@ -207,7 +207,6 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
             aria-label="Сканировать чек"
             type="file"
             accept="image/*"
-            capture="environment"
             className="sr-only"
             onChange={handleReceiptFile}
           />

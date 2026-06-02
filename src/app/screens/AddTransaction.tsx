@@ -222,7 +222,6 @@ export const AddTransaction = () => {
                 <input
                   type="file"
                   accept="image/*"
-                  capture="environment"
                   className="sr-only"
                   onChange={handleReceiptFile}
                 />
