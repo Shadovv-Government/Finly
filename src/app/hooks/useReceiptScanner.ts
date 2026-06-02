@@ -130,13 +130,23 @@ async function tryQrCodeJsQR(file: File): Promise<ReceiptData | null> {
     // Upscale narrow images so QR modules have at least ~3px each.
     // We anchor on the SHORT side: receipts are portrait, so width limits module density.
     // DNS receipt at 250px → 800px (3.2×), Пятёрочка at 607px → 800px (1.3×).
-    // Cap the long side at 2000px to avoid excessive memory.
     const MIN_SHORT = 800;
     let w = srcW;
     let h = srcH;
     const shortSide = Math.min(w, h);
     if (shortSide < MIN_SHORT) {
       const scale = MIN_SHORT / shortSide;
+      w = Math.round(w * scale);
+      h = Math.round(h * scale);
+    }
+
+    // Downscale large photos — phone cameras produce 12–48MP images (e.g. 4032×3024).
+    // Without a cap, the canvas + 6× getImageData calls consume ~290 MB on mobile,
+    // triggering OOM. Capping the long side at QR_MAX_DIM (2048px) keeps memory
+    // under ~75 MB while preserving enough density for reliable QR detection.
+    const longSide = Math.max(w, h);
+    if (longSide > QR_MAX_DIM) {
+      const scale = QR_MAX_DIM / longSide;
       w = Math.round(w * scale);
       h = Math.round(h * scale);
     }
