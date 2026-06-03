@@ -9,6 +9,7 @@ import { useBudgetNotifications } from '../hooks/useBudgetNotifications';
 import { Category } from '../../db/types';
 import { formatDateInputValue } from '../utils/formatCurrency';
 import { getLucideIcon } from '../utils/lucideIcons';
+import { ensureMicPermission, getSpeechErrorMessage } from '../hooks/useSpeechInput';
 
 interface ParsedResult {
   amount: number;
@@ -228,11 +229,20 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
     await parseText(normalizedTranscript, true);
   }, [parseText]);
 
-  const startRecording = useCallback(() => {
+  const startRecording = useCallback(async () => {
     if (!hasVoice) return;
+
+    // Запрос микрофона (однократно, с учётом платформы)
+    const hasPermission = await ensureMicPermission();
+    if (!hasPermission) {
+      setStatusText(getSpeechErrorMessage('not-allowed'));
+      return;
+    }
+
     liveTranscriptRef.current = '';
     shouldProcessOnEndRef.current = false;
     hasProcessedTranscriptRef.current = false;
+
     const recognition = new SpeechRecognitionAPI();
     recognition.lang = 'ru-RU';
     recognition.interimResults = true;
@@ -252,10 +262,11 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
       }
     };
 
-    recognition.onerror = () => {
+    recognition.onerror = (e: any) => {
       recognitionRef.current = null;
       setIsRecording(false);
-      setStatusText('Ошибка. Попробуйте ещё раз.');
+      const errorType = e?.error || 'unknown';
+      setStatusText(getSpeechErrorMessage(errorType));
     };
 
     recognition.onend = () => {
@@ -275,9 +286,15 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
     };
 
     recognitionRef.current = recognition;
-    recognition.start();
-    setIsRecording(true);
-    setStatusText('Слушаю...');
+    try {
+      recognition.start();
+      setIsRecording(true);
+      setStatusText('Слушаю...');
+    } catch {
+      // Синхронное исключение при start() — бывает на Android
+      recognitionRef.current = null;
+      setStatusText(getSpeechErrorMessage('not-allowed'));
+    }
   }, [SpeechRecognitionAPI, hasVoice, processVoiceTranscript]);
 
   const stopRecording = () => {

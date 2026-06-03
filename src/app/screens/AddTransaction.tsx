@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { useCategories } from '../hooks/useCategories';
 import { useTransactions } from '../hooks/useTransactions';
 import { useBudgetNotifications } from '../hooks/useBudgetNotifications';
-import { useSpeechInput } from '../hooks/useSpeechInput';
+import { useSpeechInput, getSpeechErrorMessage } from '../hooks/useSpeechInput';
 import { useReceiptScanner } from '../hooks/useReceiptScanner';
 import type { ReceiptData } from '../hooks/useReceiptScanner';
 import { ReceiptScannerModal } from '../components/ReceiptScannerModal';
@@ -242,6 +242,8 @@ export const AddTransaction = () => {
                   onClick={() => speech.start((transcript) => {
                     setQuickInput(transcript);
                     processText(transcript);
+                  }, (errorType) => {
+                    toast.error(getSpeechErrorMessage(errorType));
                   })}
                   className={`transition-colors ${
                     speech.state === 'listening'
