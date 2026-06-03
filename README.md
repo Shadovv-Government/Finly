@@ -262,10 +262,8 @@ finly/
 │   └── ai-chat.ts                 # Vercel Function: прокси к OpenRouter
 ├── public/
 │   ├── manifest.json               # PWA-манифест
-│   ├── favicon.svg
-│   └── pwa-*.svg                   # PWA-иконки (192, 512, 2048)
-├── scripts/
-│   └── debug_classify.cjs          # Отладка ML-классификатора
+│   ├── favicon.svg                  # Иконка сайта
+│   └── icon.png                     # PWA-иконка
 ├── docs/
 │   └── superpowers/                # Планы разработки и спеки
 │       ├── plans/                  # Планы реализации

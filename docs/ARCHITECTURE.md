@@ -740,9 +740,10 @@ manifest: {
     { name: 'Добавить доход', url: '/add?type=income' },
   ],
   icons: [
-    { src: '/pwa-192x192.svg', sizes: '192x192', type: 'image/svg+xml' },
-    { src: '/pwa-512x512.svg', sizes: '512x512', type: 'image/svg+xml' },
-    { src: '/pwa-2048x2048.svg', sizes: '2048x2048', type: 'image/svg+xml' },
+    { src: '/icon.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+    { src: '/icon.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+    { src: '/icon.png', sizes: '2048x2048', type: 'image/png', purpose: 'any' },
+    { src: '/icon.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
   ],
 }
 ```
