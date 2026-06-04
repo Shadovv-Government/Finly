@@ -147,6 +147,7 @@ interface RecentTransactionsProps {
 }
 
 function RecentTransactions({ transactions, categories }: RecentTransactionsProps) {
+  const categoriesMap = useMemo(() => new Map(categories.map(c => [c.id, c])), [categories]);
   return (
     <div className="px-5 pb-4">
       <div className="flex items-center justify-between mb-4">
@@ -158,7 +159,7 @@ function RecentTransactions({ transactions, categories }: RecentTransactionsProp
       <div className="card-premium overflow-hidden">
         {transactions.length > 0 ? (
           transactions.map((transaction, index) => {
-            const category = categories.find(c => c.id === transaction.categoryId);
+            const category = categoriesMap.get(transaction.categoryId);
             const time = new Date(transaction.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
             return (
               <div
@@ -331,17 +332,22 @@ export const Dashboard = () => {
       const dataUrl = reader.result as string;
       const img = new Image();
       img.onload = async () => {
-        const canvas = document.createElement('canvas');
-        const size = 200;
-        const ratio = Math.min(size / img.width, size / img.height, 1);
-        canvas.width = img.width * ratio;
-        canvas.height = img.height * ratio;
-        const ctx = canvas.getContext('2d')!;
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        const compressed = canvas.toDataURL('image/jpeg', 0.8);
-        await updateProfile({ avatarDataUrl: compressed });
-        setIsAvatarDialogOpen(false);
+        try {
+          const canvas = document.createElement('canvas');
+          const size = 200;
+          const ratio = Math.min(size / img.width, size / img.height, 1);
+          canvas.width = img.width * ratio;
+          canvas.height = img.height * ratio;
+          const ctx = canvas.getContext('2d')!;
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const compressed = canvas.toDataURL('image/jpeg', 0.8);
+          await updateProfile({ avatarDataUrl: compressed });
+          setIsAvatarDialogOpen(false);
+        } finally {
+          img.src = '';
+        }
       };
+      img.onerror = () => { img.src = ''; };
       img.src = dataUrl;
     };
     reader.readAsDataURL(file);
@@ -392,7 +398,9 @@ export const Dashboard = () => {
               ) : (
                 getInitial(user?.name || 'U')
               )}
-              <Camera className="w-4 h-4 absolute opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 sm:opacity-0 transition-opacity flex items-center justify-center">
+                <Camera className="w-4 h-4" />
+              </div>
             </button>
           </div>
         </div>
@@ -413,7 +421,7 @@ export const Dashboard = () => {
             { value: 'day' as PeriodType, label: 'День' },
             { value: 'week' as PeriodType, label: 'Неделя' },
             { value: 'month' as PeriodType, label: 'Месяц' },
-            { value: 'custom' as PeriodType, label: 'Период' },
+            { value: 'custom' as PeriodType, label: period === 'custom' ? `${customStartDate.getDate()}.${customStartDate.getMonth() + 1} - ${customEndDate.getDate()}.${customEndDate.getMonth() + 1}` : 'Период' },
           ].map(p => (
             <button
               key={p.value}
@@ -424,7 +432,7 @@ export const Dashboard = () => {
                   : 'text-muted-foreground hover:text-foreground font-medium'
               }`}
             >
-              {p.label}
+              <span className="block truncate max-w-[80px] sm:max-w-none">{p.label}</span>
             </button>
           ))}
         </div>
@@ -608,7 +616,16 @@ export const Dashboard = () => {
               Отмена
             </button>
             <button
-              onClick={() => { setPeriod('custom'); setIsCustomPeriodOpen(false); }}
+              onClick={() => {
+                if (customStartDate > customEndDate) {
+                  // Swap dates
+                  const temp = customStartDate;
+                  setCustomStartDate(customEndDate);
+                  setCustomEndDate(temp);
+                }
+                setPeriod('custom');
+                setIsCustomPeriodOpen(false);
+              }}
               className="flex-1 py-3 text-white rounded-xl font-medium shadow-lg transition-all duration-200 hover:scale-[1.01] active:scale-[0.98]" style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-light))' }}
             >
               Применить

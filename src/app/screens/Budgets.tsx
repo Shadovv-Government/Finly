@@ -16,9 +16,10 @@ export const Budgets = () => {
   const [editingBudget, setEditingBudget] = useState<Budget | undefined>(undefined);
   const [deletingBudgetId, setDeletingBudgetId] = useState<number | null>(null);
 
-  const { budgets, add, update, remove } = useBudgets();
+  const { budgets, loading: budgetsLoading, add, update, remove } = useBudgets();
   const { categories } = useCategories();
   const { expensesByCategory } = useAnalytics({ period: periodFilter });
+  const expensesMap = useMemo(() => new Map(expensesByCategory.map(e => [e.categoryId, e.amount])), [expensesByCategory]);
 
   // Фильтруем бюджеты по периоду
   const filteredBudgets = useMemo(() => {
@@ -32,7 +33,7 @@ export const Budgets = () => {
 
   const totalSpent = useMemo(() => {
     return filteredBudgets.reduce((sum, budget) => {
-      const spent = expensesByCategory.find(c => c.categoryId === budget.categoryId)?.amount || 0;
+      const spent = expensesMap.get(budget.categoryId) || 0;
       return sum + spent;
     }, 0);
   }, [filteredBudgets, expensesByCategory]);
@@ -65,9 +66,14 @@ export const Budgets = () => {
   // Удалить бюджет
   const handleDeleteConfirm = async () => {
     if (deletingBudgetId === null) return;
-    await remove(deletingBudgetId);
+    try {
+      await remove(deletingBudgetId);
+    } catch (e) {
+      console.error('Failed to remove budget', e);
+    }
     setDeletingBudgetId(null);
   };
+  const deletingBudget = useMemo(() => budgets.find(b => b.id === deletingBudgetId), [budgets, deletingBudgetId]);
 
   // Получаем цвет прогресс-бара
   const getProgressColor = (percentage: number): string => {
@@ -135,8 +141,8 @@ export const Budgets = () => {
               <div
                 className="h-full transition-all duration-500 rounded-full"
                 style={{
-                  width: `${Math.min((totalSpent / totalBudget) * 100, 100)}%`,
-                  backgroundColor: getProgressColor((totalSpent / totalBudget) * 100),
+                  width: `${totalBudget > 0 ? Math.min((totalSpent / totalBudget) * 100, 100) : 0}%`,
+                  backgroundColor: getProgressColor(totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0),
                   transition: 'width 600ms cubic-bezier(0.34,1.56,0.64,1)'
                 }}
               />
@@ -152,10 +158,31 @@ export const Budgets = () => {
 
       {/* Budget List */}
       <div className="px-5 py-3 space-y-3">
-        {filteredBudgets.map((budget, index) => {
+        {budgetsLoading && budgets.length === 0 ? (
+          [1, 2, 3].map(i => (
+            <div key={i} className="card-premium p-5 animate-pulse">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-xl bg-muted/50" />
+                <div className="flex-1">
+                  <div className="h-4 bg-muted/50 rounded w-1/3 mb-2" />
+                  <div className="h-3 bg-muted/50 rounded w-1/4" />
+                </div>
+                <div className="flex gap-1">
+                  <div className="w-8 h-8 rounded-lg bg-muted/50" />
+                  <div className="w-8 h-8 rounded-lg bg-muted/50" />
+                </div>
+              </div>
+              <div className="h-3 bg-muted/50 rounded-full w-full mb-3" />
+              <div className="flex justify-between">
+                <div className="h-3 bg-muted/50 rounded w-1/4" />
+                <div className="h-3 bg-muted/50 rounded w-8" />
+              </div>
+            </div>
+          ))
+        ) : filteredBudgets.map((budget, index) => {
           const category = categories.find(c => c.id === budget.categoryId);
-          const spent = expensesByCategory.find(c => c.categoryId === budget.categoryId)?.amount || 0;
-          const percentage = (spent / budget.amount) * 100;
+          const spent = expensesMap.get(budget.categoryId) || 0;
+          const percentage = budget.amount > 0 ? (spent / budget.amount) * 100 : 0;
           const remaining = budget.amount - spent;
           const isOver = percentage >= 100;
           const isWarning = percentage >= 80;
@@ -246,7 +273,9 @@ export const Budgets = () => {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-card rounded-2xl p-6 max-w-sm w-full">
             <h3 className="text-lg font-bold mb-2">Удалить бюджет?</h3>
-            <p className="text-muted-foreground mb-6">Это действие нельзя отменить.</p>
+            <p className="text-muted-foreground mb-6">
+              Бюджет {deletingBudget ? `для категории "${categories.find(c => c.id === deletingBudget.categoryId)?.name}"` : ''} будет удалён. Это действие нельзя отменить.
+            </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setDeletingBudgetId(null)}

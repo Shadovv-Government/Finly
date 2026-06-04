@@ -78,6 +78,7 @@ export function useTransactionForm(): UseTransactionFormReturn {
           amount: parsed.amount > 0 ? parsed.amount.toString() : prev.amount,
           type: parsed.type,
           comment: parsed.comment || prev.comment,
+          date: parsed.date ? new Date(parsed.date) : prev.date,
         }));
 
         // Пытаемся найти категорию по комментарию

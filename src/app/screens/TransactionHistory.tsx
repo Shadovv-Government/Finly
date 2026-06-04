@@ -61,13 +61,17 @@ function CategoryIcon({ name, className, color }: { name: string; className?: st
 }
 
 function parseRuAmount(v: string): number {
-  const s = v.replace(/\s/g, '');
+  const s = v.replace(/[^\d.,]/g, '');
   if (!s) return 0;
-  // comma = decimal separator → dots are thousands separators
-  if (s.includes(',')) return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
-  // dot followed by exactly 3 digits = thousands separator (Russian "4.000")
-  const dotIdx = s.lastIndexOf('.');
-  if (dotIdx !== -1 && s.length - dotIdx - 1 === 3) return parseFloat(s.replace(/\./g, '')) || 0;
+  
+  const lastDot = s.lastIndexOf('.');
+  const lastComma = s.lastIndexOf(',');
+  
+  if (lastDot > -1 && lastComma > -1) {
+    if (lastComma > lastDot) return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
+    return parseFloat(s.replace(/,/g, '')) || 0;
+  }
+  if (lastComma > -1) return parseFloat(s.replace(/,/g, '.')) || 0;
   return parseFloat(s) || 0;
 }
 
@@ -86,7 +90,7 @@ function EditTransactionSheet({ transaction, categories, onClose, onSave }: Edit
     setCategoryId(transaction.categoryId ?? '');
     setDate(new Date(transaction.date));
     setComment(transaction.comment ?? '');
-  }, [transaction?.id]);
+  }, [transaction]);
 
   const filteredCategories = useMemo(
     () => categories.filter(c => c.type === type),
@@ -350,8 +354,9 @@ function TransactionFilters({
 // ==================== TransactionHistory ====================
 
 export const TransactionHistory = () => {
-  const { transactions, remove, update } = useTransactions();
+  const { transactions, loading, remove, update } = useTransactions();
   const { categories } = useCategories();
+  const categoriesMap = useMemo(() => new Map(categories.map(c => [c.id, c])), [categories]);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -390,7 +395,7 @@ export const TransactionHistory = () => {
 
     if (dateFrom) {
       const [y, m, d] = dateFrom.split('-').map(Number);
-      filtered = filtered.filter(t => t.date >= new Date(y, m - 1, d).getTime());
+      filtered = filtered.filter(t => t.date >= new Date(y, m - 1, d, 0, 0, 0, 0).getTime());
     }
     if (dateTo) {
       const [y, m, d] = dateTo.split('-').map(Number);
@@ -474,8 +479,8 @@ export const TransactionHistory = () => {
               onClick={() => { setDateFrom(''); setDateTo(''); }}
               className="flex items-center gap-1 px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full whitespace-nowrap flex-shrink-0 text-sm"
             >
-              {new Date(dateFrom).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
-              {dateTo ? ` — ${new Date(dateTo).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}` : ''}
+              {new Date(dateFrom + 'T00:00:00').toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+              {dateTo ? ` — ${new Date(dateTo + 'T00:00:00').toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}` : ''}
               <X className="w-3 h-3" />
             </button>
           )}
@@ -499,7 +504,26 @@ export const TransactionHistory = () => {
 
       {/* Transaction List */}
       <div className="px-5 py-4">
-        {Object.keys(groupedTransactions).length > 0 ? (() => {
+        {loading && transactions.length === 0 ? (
+          <div className="space-y-4">
+            <div className="h-6 bg-muted/50 rounded w-24 mb-3 animate-pulse" />
+            <div className="card-premium overflow-hidden">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className={`flex items-center gap-3 p-4 bg-card ${i !== 5 ? 'border-b border-border' : ''}`}>
+                  <div className="w-12 h-12 rounded-xl bg-muted/50 animate-pulse flex-shrink-0" />
+                  <div className="flex-1">
+                    <div className="h-4 bg-muted/50 rounded w-1/3 mb-2 animate-pulse" />
+                    <div className="h-3 bg-muted/50 rounded w-1/2 animate-pulse" />
+                  </div>
+                  <div className="text-right">
+                    <div className="h-5 bg-muted/50 rounded w-16 mb-2 animate-pulse ml-auto" />
+                    <div className="h-3 bg-muted/50 rounded w-10 animate-pulse ml-auto" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : Object.keys(groupedTransactions).length > 0 ? (() => {
           const groupEntries = Object.entries(groupedTransactions);
           const shownGroups: [string, Transaction[]][] = [];
           let count = 0;
@@ -525,19 +549,38 @@ export const TransactionHistory = () => {
                 <div className="mb-6">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-sm font-medium text-muted-foreground">{date}</h3>
-                    <span className="text-sm text-muted-foreground">{dayTransactions.length} операций</span>
+                    <span className="text-sm text-muted-foreground">
+                      {dayTransactions.length} {
+                        ['операция', 'операции', 'операций'][
+                          (dayTransactions.length % 100 > 4 && dayTransactions.length % 100 < 20) ? 2 :
+                          [2, 0, 1, 1, 1, 2][Math.min(dayTransactions.length % 10, 5)]
+                        ]
+                      }
+                    </span>
                   </div>
                   <div className="card-premium overflow-hidden">
-                    {dayTransactions.map((transaction, index) => (
-                      <TransactionItem
-                        key={transaction.id}
-                        transaction={transaction}
-                        category={categories.find(c => c.id === transaction.categoryId)}
-                        isLast={index === dayTransactions.length - 1}
-                        onDelete={() => transaction.id !== undefined && remove(transaction.id)}
-                        onEdit={() => setEditingTransaction(transaction)}
-                      />
-                    ))}
+                    {dayTransactions.map((transaction, index) => {
+                      const category = categoriesMap.get(transaction.categoryId);
+                      return (
+                        <TransactionItem
+                          key={transaction.id}
+                          transaction={transaction}
+                          category={category}
+                          isLast={index === dayTransactions.length - 1}
+                          onDelete={async () => {
+                            if (transaction.id !== undefined) {
+                              try {
+                                await remove(transaction.id);
+                                setVisiblePages(1);
+                              } catch (e) {
+                                console.error('Failed to remove transaction', e);
+                              }
+                            }
+                          }}
+                          onEdit={() => setEditingTransaction(transaction)}
+                        />
+                      );
+                    })}
                   </div>
                 </div>
                 </motion.section>
@@ -585,7 +628,7 @@ export const TransactionHistory = () => {
         transaction={editingTransaction}
         categories={categories}
         onClose={() => setEditingTransaction(null)}
-        onSave={async (id, updates) => { await update(id, updates); }}
+        onSave={async (id, updates) => { await update(id, updates); setVisiblePages(1); }}
       />
     </div>
   );

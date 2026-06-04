@@ -27,9 +27,16 @@ export function getNextDate(currentDate: number, interval: RecurringInterval): n
     case 'weekly':
       date.setDate(date.getDate() + 7);
       break;
-    case 'monthly':
-      date.setMonth(date.getMonth() + 1);
+    case 'monthly': {
+      const currentMonth = date.getMonth();
+      date.setMonth(currentMonth + 1);
+      // Если произошло перепрыгивание через месяц (например, 31 января -> 3 марта (в невисокосный))
+      // значит в целевом месяце нет такого дня. Устанавливаем на последний день целевого месяца.
+      if (date.getMonth() !== (currentMonth + 1) % 12) {
+        date.setDate(0);
+      }
       break;
+    }
     case 'yearly':
       date.setFullYear(date.getFullYear() + 1);
       break;
@@ -131,27 +138,31 @@ export async function processDueTemplates(): Promise<{
 
   for (const template of dueTemplates) {
     try {
-      // Create one transaction per missed period (backfill)
-      let nextDate = template.nextDate;
-      const now = Date.now();
+      await db.transaction('rw', db.tables, async () => {
+        // Create one transaction per missed period (backfill)
+        let nextDate = template.nextDate;
+        const now = Date.now();
+        const templateTransactions = [];
 
-      while (nextDate <= now) {
-        const transactionId = await addTransaction({
-          amount: template.amount,
-          type: template.type,
-          categoryId: template.categoryId,
-          date: nextDate,
-          currency: 'RUB',
-          rate: 1,
-          comment: template.comment,
-          templateId: template.id,
-        });
-        result.transactions.push(transactionId);
-        nextDate = getNextDate(nextDate, template.interval);
-      }
+        while (nextDate <= now) {
+          const transactionId = await addTransaction({
+            amount: template.amount,
+            type: template.type,
+            categoryId: template.categoryId,
+            date: nextDate,
+            currency: 'RUB',
+            rate: 1,
+            comment: template.comment,
+            templateId: template.id,
+          });
+          templateTransactions.push(transactionId);
+          nextDate = getNextDate(nextDate, template.interval);
+        }
 
-      await db.recurringTemplates.update(template.id!, { nextDate });
-      result.processed++;
+        await db.recurringTemplates.update(template.id!, { nextDate });
+        result.transactions.push(...templateTransactions);
+        result.processed++;
+      });
     } catch (error) {
       result.errors.push({
         templateId: template.id!,

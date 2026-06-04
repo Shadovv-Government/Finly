@@ -43,6 +43,7 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
 
   // Debounced ML classification: runs 500ms after comment stops changing
   useEffect(() => {
+    let isMounted = true;
     const comment = formData.comment.trim();
     if (!comment) {
       setMlSuggestion(null);
@@ -53,6 +54,7 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
     const timer = setTimeout(async () => {
       const amount = parseFloat(formData.amount) || undefined;
       const result = await classify(comment, amount, formData.date);
+      if (!isMounted) return;
       if (result && result.confidence > 0.4) {
         const cat = categories.find(
           c => c.name.toLowerCase() === result.categoryName.toLowerCase() && c.type === formData.type,
@@ -70,6 +72,7 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
       setIsMlClassifying(false);
     }, 500);
     return () => {
+      isMounted = false;
       clearTimeout(timer);
       setIsMlClassifying(false);
     };
@@ -117,7 +120,7 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose 
     if (!categoryId) {
       const fallbackCategory = categories.find(
         c => c.id === (formData.type === 'expense' ? 'cat_other_expense' : 'inc_other')
-      );
+      ) || categories.find(c => c.type === formData.type);
       if (fallbackCategory) {
         categoryId = fallbackCategory.id;
       }

@@ -292,7 +292,7 @@ export async function importData(
               if (existingIds.has(category.id)) {
                 await db.categories.update(category.id, category);
               } else {
-                await db.categories.add(category);
+                await db.categories.put(category);
               }
               result.imported.categories++;
             } catch (error) {
@@ -320,7 +320,7 @@ export async function importData(
                 }
               }
 
-              await db.transactions.add(transaction);
+              await db.transactions.put(transaction);
               result.imported.transactions++;
             } catch (error) {
               result.errors.push(`Ошибка импорта операции: ${error}`);
@@ -336,7 +336,7 @@ export async function importData(
                 result.errors.push(`Некорректный бюджет: ${validation.errors.join('; ')}`);
                 continue;
               }
-              await db.budgets.add(budget);
+              await db.budgets.put(budget);
               result.imported.budgets++;
             } catch (error) {
               result.errors.push(`Ошибка импорта бюджета: ${error}`);
@@ -352,7 +352,7 @@ export async function importData(
                 result.errors.push(`Некорректная цель: ${validation.errors.join('; ')}`);
                 continue;
               }
-              await db.goals.add(goal);
+              await db.goals.put(goal);
               result.imported.goals++;
             } catch (error) {
               result.errors.push(`Ошибка импорта цели: ${error}`);
@@ -368,7 +368,7 @@ export async function importData(
                 result.errors.push(`Некорректный регулярный платёж: ${validation.errors.join('; ')}`);
                 continue;
               }
-              await db.recurringTemplates.add(template);
+              await db.recurringTemplates.put(template);
               result.imported.recurringTemplates++;
             } catch (error) {
               result.errors.push(`Ошибка импорта регулярного платежа: ${error}`);
@@ -410,7 +410,7 @@ export async function importData(
                 result.errors.push(`Некорректный AI-паттерн: ${validation.errors.join('; ')}`);
                 continue;
               }
-              await db.aiPatterns.add(pattern);
+              await db.aiPatterns.put(pattern);
               result.imported.aiPatterns++;
             } catch (error) {
               result.errors.push(`Ошибка импорта AI-паттерна: ${error}`);

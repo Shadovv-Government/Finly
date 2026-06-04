@@ -297,7 +297,7 @@ export function useNotificationPanel() {
     ];
 
     // Sort by createdAt descending
-    return merged.sort((a, b) => b.createdAt - a.createdAt);
+    return merged.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   }, [dynamicNotifications, recurringItems, persistedNotifications]);
 
   const hasUnread = allNotifications.some(n => !n.read);
@@ -314,7 +314,10 @@ export function useNotificationPanel() {
       n => !existingKeys.has(`${n.type}-${JSON.stringify(n.data)}`)
     );
     const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 дней
-    await Promise.all(toAdd.map(n => addNotification({ ...n, read: true, expiresAt })));
+    await Promise.all(toAdd.map(n => {
+      const { id, ...newNotification } = n;
+      return addNotification({ ...newNotification, read: true, expiresAt });
+    }));
     await loadNotifications();
   }, [dynamicNotifications, recurringItems, persistedNotifications, loadNotifications]);
 

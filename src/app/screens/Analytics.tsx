@@ -25,13 +25,12 @@ function formatDateRange(start: number, end: number): string {
   const s = new Date(start);
   const e = new Date(end);
   const sameMonth = s.getMonth() === e.getMonth() && s.getFullYear() === e.getFullYear();
-  const sameYear = s.getFullYear() === e.getFullYear();
 
   if (sameMonth) {
     return `${s.getDate()} — ${e.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}`;
   }
-  return `${s.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })} — ${e.toLocaleDateString('ru-RU', {
-    day: 'numeric', month: 'long', year: sameYear ? undefined : 'numeric',
+  return `${s.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })} — ${e.toLocaleDateString('ru-RU', {
+    day: 'numeric', month: 'long', year: 'numeric',
   })}`;
 }
 
@@ -83,6 +82,9 @@ export const Analytics = () => {
 
   const [selectedWeekIdx, setSelectedWeekIdx] = useState<number | null>(null);
 
+  // Сбрасываем выбранную неделю при смене данных
+  useMemo(() => { setSelectedWeekIdx(null); }, [weeklyData]);
+
   const trendData = useMemo(() => {
     if (transactions.length === 0) return [];
     const totalDays = Math.ceil((periodRange.end - periodRange.start) / (24 * 60 * 60 * 1000));
@@ -100,7 +102,9 @@ export const Analytics = () => {
         ts = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
       } else {
         const ws = new Date(d);
-        ws.setDate(d.getDate() - d.getDay());
+        // JS getDay(): 0 = Sun, 1 = Mon, ..., 6 = Sat
+        const diff = d.getDay() === 0 ? 6 : d.getDay() - 1;
+        ws.setDate(d.getDate() - diff);
         key = `${ws.getFullYear()}-${ws.getMonth()}-${ws.getDate()}`;
         label = ws.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
         ts = ws.getTime();
@@ -388,7 +392,12 @@ export const Analytics = () => {
                 <input
                   type="date"
                   value={toLocalDate(customStart)}
-                  onChange={e => { setCustomStart(new Date(e.target.value).getTime()); setPeriod('custom'); }}
+                  onChange={e => {
+                    const val = e.target.value;
+                    if (!val) return;
+                    setCustomStart(new Date(val + 'T00:00:00').getTime()); 
+                    setPeriod('custom'); 
+                  }}
                   className="flex-1 bg-transparent outline-none text-sm"
                 />
               </div>
@@ -399,7 +408,9 @@ export const Analytics = () => {
                   type="date"
                   value={toLocalDate(customEnd)}
                   onChange={e => {
-                    const d = new Date(e.target.value);
+                    const val = e.target.value;
+                    if (!val) return;
+                    const d = new Date(val + 'T00:00:00');
                     setCustomEnd(new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999).getTime());
                     setPeriod('custom');
                   }}

@@ -9,7 +9,7 @@ import { useBudgetNotifications } from '../hooks/useBudgetNotifications';
 import { Category } from '../../db/types';
 import { formatDateInputValue } from '../utils/formatCurrency';
 import { getLucideIcon } from '../utils/lucideIcons';
-import { ensureMicPermission, getSpeechErrorMessage } from '../hooks/useSpeechInput';
+import { ensureMicPermission, getSpeechErrorMessage, revokeMicPermissionCache } from '../hooks/useSpeechInput';
 
 interface ParsedResult {
   amount: number;
@@ -69,6 +69,9 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
   useEffect(() => {
     return () => {
       clearAutoSubmit();
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
     };
   }, []);
 
@@ -88,10 +91,14 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
     setIsAdding(true);
     try {
       const fallbackId = result.type === 'expense' ? 'cat_other_expense' : 'inc_other';
-      const category =
+      let category =
         result.category ??
         categories.find(c => c.id === fallbackId) ??
         categories.find(c => c.name === 'Другое' && c.type === result.type);
+        
+      if (!category) {
+        category = categories.find(c => c.type === result.type);
+      }
 
 
       // Защита: если ни ML, ни system fallback не дали категорию — НЕ сохраняем
@@ -266,6 +273,9 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
       recognitionRef.current = null;
       setIsRecording(false);
       const errorType = e?.error || 'unknown';
+      if (errorType === 'not-allowed') {
+        revokeMicPermissionCache();
+      }
       setStatusText(getSpeechErrorMessage(errorType));
     };
 
@@ -292,6 +302,7 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
       setStatusText('Слушаю...');
     } catch {
       // Синхронное исключение при start() — бывает на Android
+      revokeMicPermissionCache();
       recognitionRef.current = null;
       setStatusText(getSpeechErrorMessage('not-allowed'));
     }
@@ -441,18 +452,21 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
               })}
             </div>
           )}
-          {(parsedResult.comment || parsedResult.date) && (
-            <div className="flex items-center justify-between gap-2 mb-1">
-              {parsedResult.comment && (
-                <p className="text-sm text-muted-foreground">{parsedResult.comment}</p>
-              )}
-              {parsedResult.date && (
-                <span className="text-xs text-muted-foreground whitespace-nowrap">
-                  {formatDateInputValue(parsedResult.date)}
-                </span>
-              )}
-            </div>
-          )}
+          <div className="flex items-center justify-between gap-2 mb-2">
+            {parsedResult.comment && (
+              <p className="text-sm text-muted-foreground">{parsedResult.comment}</p>
+            )}
+            <input
+              aria-label="Дата операции"
+              type="date"
+              value={formatDateInputValue(parsedResult.date ?? Date.now())}
+              onChange={e => {
+                const newDate = parseDateInputValue(e.target.value).getTime();
+                setParsedResult(prev => prev ? { ...prev, date: newDate } : null);
+              }}
+              className="text-xs bg-transparent border-b border-dashed border-muted-foreground/50 text-muted-foreground focus:outline-none focus:border-primary text-right flex-shrink-0"
+            />
+          </div>
           <div className="flex gap-2 mt-3">
             <button
               onClick={handleDiscard}

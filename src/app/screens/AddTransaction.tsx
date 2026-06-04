@@ -77,6 +77,10 @@ export const AddTransaction = () => {
             toast.success(`Категория определена: ${match.category.name}`);
           }
         }
+        // Установить дату
+        if (parsed.date) {
+          setSelectedDate(new Date(parsed.date));
+        }
         setQuickInput('');
         toast.success('Данные распознаны');
       } else {

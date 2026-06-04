@@ -46,6 +46,15 @@ declare global {
 const isIOS = typeof navigator !== 'undefined' &&
   /iPad|iPhone|iPod/.test(navigator.userAgent);
 
+let micPermissionGrantedCached = false;
+
+export function revokeMicPermissionCache() {
+  micPermissionGrantedCached = false;
+  try {
+    localStorage.removeItem('finly_mic_permission_granted');
+  } catch {}
+}
+
 /**
  * Проверяет/запрашивает доступ к микрофону ровно один раз.
  *
@@ -58,12 +67,27 @@ async function ensureMicPermission(): Promise<boolean> {
   // iOS: SpeechRecognition сам запросит микрофон при первом старте
   if (isIOS) return true;
 
+  if (micPermissionGrantedCached) return true;
+
+  try {
+    if (localStorage.getItem('finly_mic_permission_granted') === 'true') {
+      micPermissionGrantedCached = true;
+      return true;
+    }
+  } catch {}
+
   // Проверяем состояние разрешения через Permissions API
   try {
     const result = await navigator.permissions.query({
       name: 'microphone' as PermissionName,
     });
-    if (result.state === 'granted') return true;  // Уже разрешено — ничего не делаем
+    if (result.state === 'granted') {
+      micPermissionGrantedCached = true;
+      try {
+        localStorage.setItem('finly_mic_permission_granted', 'true');
+      } catch {}
+      return true;  // Уже разрешено — ничего не делаем
+    }
     if (result.state === 'denied')  return false;  // Явно запрещено
     // 'prompt' — идём в getUserMedia ниже
   } catch {
@@ -79,6 +103,10 @@ async function ensureMicPermission(): Promise<boolean> {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     stream.getTracks().forEach(t => t.stop());
+    micPermissionGrantedCached = true;
+    try {
+      localStorage.setItem('finly_mic_permission_granted', 'true');
+    } catch {}
     return true;
   } catch {
     return false;
@@ -172,6 +200,9 @@ export function useSpeechInput(): UseSpeechInputResult {
 
     recognition.onerror = (event) => {
       const errorType: SpeechErrorType = (event.error as SpeechErrorType) || 'unknown';
+      if (errorType === 'not-allowed') {
+        revokeMicPermissionCache();
+      }
       setLastError(errorType);
       setState('error');
       recognitionRef.current = null;
@@ -195,6 +226,7 @@ export function useSpeechInput(): UseSpeechInputResult {
       recognition.start();
     } catch {
       // Браузер может выбросить синхронное исключение при start()
+      revokeMicPermissionCache();
       setLastError('not-allowed');
       setState('error');
       recognitionRef.current = null;
