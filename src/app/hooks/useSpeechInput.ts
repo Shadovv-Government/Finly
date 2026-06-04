@@ -52,7 +52,9 @@ export function revokeMicPermissionCache() {
   micPermissionGrantedCached = false;
   try {
     localStorage.removeItem('finly_mic_permission_granted');
-  } catch {}
+  } catch {
+    // Ignore error
+  }
 }
 
 /**
@@ -74,7 +76,9 @@ async function ensureMicPermission(): Promise<boolean> {
       micPermissionGrantedCached = true;
       return true;
     }
-  } catch {}
+  } catch {
+    // Ignore error
+  }
 
   // Проверяем состояние разрешения через Permissions API
   try {
@@ -85,7 +89,9 @@ async function ensureMicPermission(): Promise<boolean> {
       micPermissionGrantedCached = true;
       try {
         localStorage.setItem('finly_mic_permission_granted', 'true');
-      } catch {}
+      } catch {
+        // Ignore error
+      }
       return true;  // Уже разрешено — ничего не делаем
     }
     if (result.state === 'denied')  return false;  // Явно запрещено
@@ -106,7 +112,9 @@ async function ensureMicPermission(): Promise<boolean> {
     micPermissionGrantedCached = true;
     try {
       localStorage.setItem('finly_mic_permission_granted', 'true');
-    } catch {}
+    } catch {
+      // Ignore error
+    }
     return true;
   } catch {
     return false;

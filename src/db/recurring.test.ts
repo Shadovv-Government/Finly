@@ -6,6 +6,8 @@ vi.mock('./db', () => ({
       filter: vi.fn(),
       update: vi.fn(),
     },
+    transaction: vi.fn(),
+    tables: [],
   },
 }));
 
@@ -23,6 +25,11 @@ const FIXED_NOW = new Date('2026-05-15T12:00:00.000Z').getTime();
 beforeEach(() => {
   vi.useFakeTimers({ now: FIXED_NOW });
   vi.clearAllMocks();
+
+  (db.transaction as any).mockImplementation(async (...args: unknown[]) => {
+    const callback = args.at(-1) as () => Promise<unknown>;
+    return callback();
+  });
 });
 afterEach(() => vi.useRealTimers());
 

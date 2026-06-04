@@ -5,24 +5,29 @@ vi.mock('./db', () => ({
     transactions: {
       toArray: vi.fn(),
       add: vi.fn(),
+      put: vi.fn(),
     },
     categories: {
       toArray: vi.fn(),
       add: vi.fn(),
+      put: vi.fn(),
       update: vi.fn(),
       get: vi.fn(),
     },
     budgets: {
       toArray: vi.fn(),
       add: vi.fn(),
+      put: vi.fn(),
     },
     goals: {
       toArray: vi.fn(),
       add: vi.fn(),
+      put: vi.fn(),
     },
     recurringTemplates: {
       toArray: vi.fn(),
       add: vi.fn(),
+      put: vi.fn(),
     },
     settings: {
       toArray: vi.fn(),
@@ -32,6 +37,7 @@ vi.mock('./db', () => ({
     aiPatterns: {
       toArray: vi.fn(),
       add: vi.fn(),
+      put: vi.fn(),
     },
     transaction: vi.fn(),
   },
@@ -88,12 +94,12 @@ describe('exportImport', () => {
 
   it('wraps import in a transaction and reports failure without partial success counts', async () => {
     (db.categories.toArray as any).mockResolvedValue([]);
-    (db.categories.add as any).mockResolvedValue(undefined);
+    (db.categories.put as any).mockResolvedValue(undefined);
     (db.categories.get as any).mockResolvedValue({
       id: 'cat-1',
       name: 'Продукты',
     });
-    (db.transactions.add as any).mockRejectedValue(new Error('write failed'));
+    (db.transactions.put as any).mockRejectedValue(new Error('write failed'));
 
     const result = await importData({
       version: '1.0',
@@ -226,10 +232,10 @@ describe('importData – version checks', () => {
 describe('importData – merge and filter options', () => {
   beforeEach(() => {
     (db.categories.toArray as any).mockResolvedValue([]);
-    (db.categories.add as any).mockResolvedValue(undefined);
+    (db.categories.put as any).mockResolvedValue(undefined);
     (db.categories.update as any).mockResolvedValue(undefined);
     (db.categories.get as any).mockResolvedValue({ id: 'cat-1', name: 'Еда' });
-    (db.transactions.add as any).mockResolvedValue(undefined);
+    (db.transactions.put as any).mockResolvedValue(undefined);
     (db.settings.put as any).mockResolvedValue(undefined);
     (db.settings.get as any).mockResolvedValue(undefined);
   });
@@ -254,7 +260,7 @@ describe('importData – merge and filter options', () => {
       { mergeCategories: false },
     );
 
-    expect(db.categories.add).not.toHaveBeenCalled();
+    expect(db.categories.put).not.toHaveBeenCalled();
     expect(db.categories.update).not.toHaveBeenCalled();
     expect(result.warnings.some(w => w.includes('уже существует'))).toBe(true);
   });
@@ -311,10 +317,10 @@ describe('exportData → importData round-trip', () => {
     (db.aiPatterns.toArray as any).mockResolvedValue([]);
 
     // importData phase
-    (db.categories.add as any).mockResolvedValue(undefined);
+    (db.categories.put as any).mockResolvedValue(undefined);
     (db.categories.update as any).mockResolvedValue(undefined);
     (db.categories.get as any).mockResolvedValue(cat);
-    (db.transactions.add as any).mockResolvedValue(undefined);
+    (db.transactions.put as any).mockResolvedValue(undefined);
     (db.settings.put as any).mockResolvedValue(undefined);
   });
 
