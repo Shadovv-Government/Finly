@@ -7,7 +7,7 @@ import { useTransactions } from '../hooks/useTransactions';
 import { useNotifications } from '../hooks/useNotifications';
 import { useBudgetNotifications } from '../hooks/useBudgetNotifications';
 import { Category } from '../../db/types';
-import { formatDateInputValue } from '../utils/formatCurrency';
+import { formatDateInputValue, parseDateInputValue } from '../utils/formatCurrency';
 import { getLucideIcon } from '../utils/lucideIcons';
 import { ensureMicPermission, getSpeechErrorMessage, revokeMicPermissionCache } from '../hooks/useSpeechInput';
 

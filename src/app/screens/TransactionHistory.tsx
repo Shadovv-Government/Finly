@@ -560,7 +560,7 @@ export const TransactionHistory = () => {
                   </div>
                   <div className="card-premium overflow-hidden">
                     {dayTransactions.map((transaction, index) => {
-                      const category = categoriesMap.get(transaction.categoryId);
+                      const category = transaction.categoryId ? categoriesMap.get(transaction.categoryId) : undefined;
                       return (
                         <TransactionItem
                           key={transaction.id}

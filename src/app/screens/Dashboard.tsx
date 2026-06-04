@@ -159,7 +159,7 @@ function RecentTransactions({ transactions, categories }: RecentTransactionsProp
       <div className="card-premium overflow-hidden">
         {transactions.length > 0 ? (
           transactions.map((transaction, index) => {
-            const category = categoriesMap.get(transaction.categoryId);
+            const category = transaction.categoryId ? categoriesMap.get(transaction.categoryId) : undefined;
             const time = new Date(transaction.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
             return (
               <div
