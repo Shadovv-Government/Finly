@@ -3,7 +3,7 @@ import { EmptyState } from '../components/EmptyState';
 import { motion } from 'motion/react';
 import { sectionVariants } from '../utils/animations';
 import { Calendar } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useAnalytics, getPeriodRange, PeriodType } from '../hooks/useAnalytics';
 import { useTransactions } from '../hooks/useTransactions';
 import { BottomSheet } from '../components/BottomSheet';
@@ -46,9 +46,11 @@ export const Analytics = () => {
     endDate: period === 'custom' ? customEnd : undefined,
   });
 
-  const periodRange = period === 'custom'
-    ? { start: customStart, end: customEnd }
-    : getPeriodRange(period);
+  const periodRange = useMemo(() => {
+    return period === 'custom'
+      ? { start: customStart, end: customEnd }
+      : getPeriodRange(period);
+  }, [period, customStart, customEnd]);
 
   const { transactions } = useTransactions({
     period,
@@ -83,7 +85,9 @@ export const Analytics = () => {
   const [selectedWeekIdx, setSelectedWeekIdx] = useState<number | null>(null);
 
   // Сбрасываем выбранную неделю при смене данных
-  useMemo(() => { setSelectedWeekIdx(null); }, [weeklyData]);
+  useEffect(() => {
+    setSelectedWeekIdx(null);
+  }, [weeklyData]);
 
   const trendData = useMemo(() => {
     if (transactions.length === 0) return [];
