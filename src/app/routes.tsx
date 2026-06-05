@@ -4,6 +4,7 @@ import { Layout } from './Layout';
 import { useAuth } from './contexts/AuthContext';
 
 const LockScreen = lazy(() => import('./screens/LockScreen').then(m => ({ default: m.LockScreen })));
+const Landing = lazy(() => import('./screens/Landing').then(m => ({ default: m.Landing })));
 
 const lazyRoute = <T extends Record<string, ComponentType<any>>>(
   loader: () => Promise<T>,
@@ -57,6 +58,24 @@ function AppLoading() {
   );
 }
 
+function RootRoute() {
+  const { user } = useAuth();
+
+  if (!user) {
+    return (
+      <Suspense fallback={<AppLoading />}>
+        <Landing />
+      </Suspense>
+    );
+  }
+
+  return (
+    <ProtectedRoute>
+      <Layout />
+    </ProtectedRoute>
+  );
+}
+
 export const router = createBrowserRouter([
   {
     path: '/onboarding',
@@ -76,11 +95,7 @@ export const router = createBrowserRouter([
   },
   {
     path: '/',
-    Component: () => (
-      <ProtectedRoute>
-        <Layout />
-      </ProtectedRoute>
-    ),
+    Component: RootRoute,
     HydrateFallback: AppLoading,
     children: [
       { index: true, lazy: lazyRoute(() => import('./screens/Dashboard'), 'Dashboard') },
@@ -99,3 +114,4 @@ export const router = createBrowserRouter([
   },
   { path: '*', element: <Navigate to="/" replace /> },
 ]);
+
