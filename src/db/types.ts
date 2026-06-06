@@ -12,6 +12,7 @@ export interface Category {
   color: string; // hex code
   isSystem: boolean; // нельзя удалить системные
   parentId?: string; // для подкатегорий (опционально)
+  isEssential?: boolean; // для премиум-аналитики: обязательные категории расходов
 }
 
 export interface Transaction {

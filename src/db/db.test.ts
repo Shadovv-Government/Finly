@@ -13,12 +13,16 @@ describe('FinlyDatabase schema versions', () => {
         constructor(_name: string) {}
 
         version(versionNumber: number) {
-          return {
+          const self = {
             stores(schema: Record<string, string>) {
               storesCalls[versionNumber] = schema;
-              return this;
+              return self;
+            },
+            upgrade(_fn: (tx: unknown) => Promise<void>) {
+              return self;
             },
           };
+          return self;
         }
       }
 

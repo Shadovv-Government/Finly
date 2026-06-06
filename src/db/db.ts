@@ -60,6 +60,25 @@ class FinlyDatabase extends Dexie {
       // Уведомления с persist и статусом прочтения
       notifications: '++id, type, read, createdAt, expiresAt',
     });
+
+    this.version(4).stores({
+      transactions: '++id, date, categoryId, type, createdAt',
+      categories: 'id, type, isSystem',
+      budgets: '++id, categoryId, period, startDate',
+      goals: '++id, isActive, deadline',
+      recurringTemplates: '++id, nextDate, isActive',
+      settings: 'key',
+      aiPatterns: '++id, pattern, categoryId',
+      users: 'id, createdAt',
+      notifications: '++id, type, read, createdAt, expiresAt',
+    }).upgrade(async tx => {
+      const ESSENTIAL_KEYWORDS = ['продукт', 'жиль', 'коммуналь', 'транспорт', 'здоров', 'аптек', 'связ', 'интернет'];
+      const sysCats = await tx.table('categories').where('isSystem').equals(1).toArray();
+      for (const cat of sysCats) {
+        const isEssential = ESSENTIAL_KEYWORDS.some(kw => (cat.name || '').toLowerCase().includes(kw));
+        await tx.table('categories').update(cat.id, { isEssential });
+      }
+    });
   }
 }
 
