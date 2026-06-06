@@ -2,8 +2,10 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, 
 import { EmptyState } from '../components/EmptyState';
 import { motion } from 'motion/react';
 import { sectionVariants } from '../utils/animations';
-import { Calendar } from 'lucide-react';
+import { Calendar, Crown } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { usePremium } from '../hooks/usePremium';
 import { useAnalytics, getPeriodRange, PeriodType } from '../hooks/useAnalytics';
 import { useTransactions } from '../hooks/useTransactions';
 import { BottomSheet } from '../components/BottomSheet';
@@ -39,6 +41,8 @@ export const Analytics = () => {
   const [customStart, setCustomStart] = useState<number>(getPeriodRange('month').start);
   const [customEnd, setCustomEnd] = useState<number>(getPeriodRange('month').end - 1);
   const [isPeriodPickerOpen, setIsPeriodPickerOpen] = useState(false);
+  const { isPremium } = usePremium();
+  const navigate = useNavigate();
 
   const { balance, expensesByCategory, loading } = useAnalytics({
     period,
@@ -156,6 +160,27 @@ export const Analytics = () => {
             <span className="font-medium text-sm">{periodLabel}</span>
           </div>
           <span className="text-xs text-muted-foreground">Изменить</span>
+        </button>
+
+        {/* Premium Banner */}
+        <button
+          onClick={() => navigate('/premium')}
+          className={`w-full mt-3 flex items-center gap-3 px-5 py-3 rounded-xl border transition-colors ${
+            isPremium
+              ? 'bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20'
+              : 'bg-gradient-to-r from-amber-500/10 to-purple-500/10 border-amber-500/20 hover:border-amber-500/40'
+          }`}
+        >
+          <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
+            <Crown className="w-5 h-5 text-amber-500" />
+          </div>
+          <div className="flex-1 text-left">
+            <div className="text-sm font-semibold">Premium Аналитика</div>
+            <div className="text-xs text-muted-foreground">
+              {isPremium ? 'Прогнозы, сравнения, AI-отчёты' : '11 премиум-функций — разблокировать'}
+            </div>
+          </div>
+          <span className="text-amber-500">{isPremium ? '🔮' : '→'}</span>
         </button>
       </div>
 

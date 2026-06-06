@@ -107,6 +107,7 @@ export const router = createBrowserRouter([
       { path: 'recurring', lazy: lazyRoute(() => import('./screens/RecurringScreen'), 'Recurring') },
       { path: 'categories', lazy: lazyRoute(() => import('./screens/Categories'), 'Categories') },
       { path: 'ai-assistant', lazy: lazyRoute(() => import('./screens/AIAssistant'), 'AIAssistant') },
+      { path: 'premium', lazy: lazyRoute(() => import('./screens/PremiumAnalytics'), 'PremiumAnalytics') },
       ...(process.env.NODE_ENV !== 'production'
         ? [{ path: 'components', lazy: lazyRoute(() => import('./screens/ComponentShowcase'), 'ComponentShowcase') }]
         : []),
