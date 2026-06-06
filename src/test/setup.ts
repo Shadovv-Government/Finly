@@ -89,6 +89,7 @@ vi.mock('dexie', () => {
 
     version = vi.fn().mockReturnThis();
     stores = vi.fn().mockReturnThis();
+    upgrade = vi.fn().mockReturnThis();
     open = vi.fn(() => Promise.resolve());
     close = vi.fn();
     delete = vi.fn(() => Promise.resolve());
