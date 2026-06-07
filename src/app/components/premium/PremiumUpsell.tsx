@@ -69,7 +69,7 @@ export const PremiumUpsell = () => {
           <Crown className="w-10 h-10 text-white" />
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <h1 className="text-3xl font-bold tracking-tight mb-2">Premium</h1>
+          <h1 className="text-3xl font-bold tracking-tight mb-2">Pro</h1>
           <p className="text-white/80 text-base mb-5">
             Глубокая аналитика вашего бюджета
           </p>
@@ -129,7 +129,7 @@ export const PremiumUpsell = () => {
           ) : (
             <span className="inline-flex items-center justify-center gap-2">
               <Crown className="w-5 h-5" />
-              Получить Premium
+              Получить Pro
             </span>
           )}
         </motion.button>
