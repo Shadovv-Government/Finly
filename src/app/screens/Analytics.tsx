@@ -2,13 +2,18 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, 
 import { EmptyState } from '../components/EmptyState';
 import { motion } from 'motion/react';
 import { sectionVariants } from '../utils/animations';
-import { Calendar, Crown } from 'lucide-react';
+import { Calendar, Crown, TrendingUp, BarChart2, Heart, Sparkles } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { usePremium } from '../hooks/usePremium';
 import { useAnalytics, getPeriodRange, PeriodType } from '../hooks/useAnalytics';
 import { useTransactions } from '../hooks/useTransactions';
 import { BottomSheet } from '../components/BottomSheet';
+import { ProUpsellCompact } from '../components/premium/ProUpsellCompact';
+import { PredictiveTab } from '../components/premium/PredictiveTab';
+import { ComparativeTab } from '../components/premium/ComparativeTab';
+import { HealthTab } from '../components/premium/HealthTab';
+import { AIInsightsPanel } from '../components/premium/AIInsightsPanel';
+import { PERIODS, type Period } from '../../lib/period';
 
 const PERIOD_LABELS: Record<PeriodType, string> = {
   day: 'День',
@@ -42,7 +47,9 @@ export const Analytics = () => {
   const [customEnd, setCustomEnd] = useState<number>(getPeriodRange('month').end - 1);
   const [isPeriodPickerOpen, setIsPeriodPickerOpen] = useState(false);
   const { isPremium } = usePremium();
-  const navigate = useNavigate();
+  const [mainTab, setMainTab] = useState<'basic' | 'pro'>('basic');
+  const [proTab, setProTab] = useState<'predictive' | 'comparative' | 'health' | 'ai'>('predictive');
+  const [proPeriod, setProPeriod] = useState<Period>('1m');
 
   const { balance, expensesByCategory, incomeByCategory, loading } = useAnalytics({
     period,
@@ -163,302 +170,371 @@ export const Analytics = () => {
   return (
     <div className="pb-28 bg-background min-h-screen">
       {/* Header */}
-      <div className="px-5 pt-4 pb-4">
-        <h1 className="text-xl font-bold tracking-[-0.01em] mb-4">Аналитика</h1>
+      <div className="px-5 pt-4 pb-3">
+        <h1 className="text-xl font-bold tracking-[-0.01em] mb-3">Аналитика</h1>
 
-        {/* Period Selector Button */}
-        <button
-          onClick={() => setIsPeriodPickerOpen(true)}
-          className="w-full flex items-center justify-between px-5 py-3 bg-card rounded-xl border border-border shadow-xs hover:shadow-sm transition-shadow"
-        >
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-muted-foreground" />
-            <span className="font-medium text-sm">{periodLabel}</span>
-          </div>
-          <span className="text-xs text-muted-foreground">Изменить</span>
-        </button>
+        {/* Main tab switcher: Базовая / Pro */}
+        <div className="flex gap-1 p-1 bg-muted rounded-xl mb-3">
+          <button
+            onClick={() => setMainTab('basic')}
+            className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
+              mainTab === 'basic'
+                ? 'bg-white dark:bg-card shadow-sm text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Базовая
+          </button>
+          <button
+            onClick={() => setMainTab('pro')}
+            className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-1.5 ${
+              mainTab === 'pro'
+                ? 'bg-white dark:bg-card shadow-sm text-violet-600'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Crown className={`w-3.5 h-3.5 ${mainTab === 'pro' ? 'text-violet-600' : ''}`} />
+            Pro
+          </button>
+        </div>
 
-        {/* Premium Banner */}
-        <button
-          onClick={() => navigate('/premium')}
-          className={`w-full mt-3 flex items-center gap-3 px-5 py-3 rounded-xl border transition-colors ${
-            isPremium
-              ? 'bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20'
-              : 'bg-gradient-to-r from-amber-500/10 to-purple-500/10 border-amber-500/20 hover:border-amber-500/40'
-          }`}
-        >
-          <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
-            <Crown className="w-5 h-5 text-amber-500" />
-          </div>
-          <div className="flex-1 text-left">
-            <div className="text-sm font-semibold">Premium Аналитика</div>
-            <div className="text-xs text-muted-foreground">
-              {isPremium ? 'Прогнозы, сравнения, AI-отчёты' : '11 премиум-функций — разблокировать'}
+        {/* Period picker — only for basic tab */}
+        {mainTab === 'basic' && (
+          <button
+            onClick={() => setIsPeriodPickerOpen(true)}
+            className="w-full flex items-center justify-between px-5 py-3 bg-card rounded-xl border border-border shadow-xs hover:shadow-sm transition-shadow"
+          >
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-muted-foreground" />
+              <span className="font-medium text-sm">{periodLabel}</span>
             </div>
-          </div>
-          <span className="text-amber-500">{isPremium ? '🔮' : '→'}</span>
-        </button>
-      </div>
-
-      {/* Summary Cards */}
-      <motion.section custom={0} variants={sectionVariants} initial="hidden" animate="visible">
-      <div className="px-5 py-4">
-        {loading ? (
-          <div className="grid grid-cols-3 gap-3">
-            {[1, 2, 3].map(i => <div key={i} className="bg-muted rounded-2xl p-4 h-20 animate-pulse" />)}
-          </div>
-        ) : (
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-gradient-to-br from-green-500 to-emerald-600 text-white rounded-2xl p-4">
-              <p className="text-xs opacity-90 mb-1">Доходы</p>
-              <p className="text-lg font-bold">+{formatShort(income)}</p>
-            </div>
-            <div className="bg-gradient-to-br from-red-500 to-rose-600 text-white rounded-2xl p-4">
-              <p className="text-xs opacity-90 mb-1">Расходы</p>
-              <p className="text-lg font-bold">−{formatShort(expense)}</p>
-            </div>
-            <div className={`bg-gradient-to-br text-white rounded-2xl p-4 shadow-lg ${balanceAmount >= 0 ? '' : 'from-gray-600 to-gray-700'}`} style={balanceAmount >= 0 ? { background: 'linear-gradient(135deg, var(--primary), var(--primary-light))' } : undefined}>
-              <p className="text-xs opacity-90 mb-1">Баланс</p>
-              <p className="text-lg font-bold">
-                {balanceAmount >= 0 ? '+' : '−'}{formatShort(Math.abs(balanceAmount))}
-              </p>
-            </div>
-          </div>
+            <span className="text-xs text-muted-foreground">Изменить</span>
+          </button>
         )}
       </div>
-      </motion.section>
 
-      {/* Metrics Strip */}
-      {!loading && transactions.length > 0 && (
-        <motion.section custom={1} variants={sectionVariants} initial="hidden" animate="visible">
-        <div className="px-5 pb-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="card-premium p-4">
-              <p className="text-xs text-muted-foreground mb-1">Ср. расход/день</p>
-              <p className="text-base font-bold">{formatShort(metricsData.avgDaily)} ₽</p>
-            </div>
-            <div className="card-premium p-4">
-              <p className="text-xs text-muted-foreground mb-1">Операций</p>
-              <p className="text-base font-bold">{metricsData.count}</p>
-            </div>
-            <div className="card-premium p-4">
-              <p className="text-xs text-muted-foreground mb-1">Крупнейший расход</p>
-              <p className="text-base font-bold">{metricsData.biggest > 0 ? `${formatShort(metricsData.biggest)} ₽` : '—'}</p>
-            </div>
-            <div className="card-premium p-4">
-              <p className="text-xs text-muted-foreground mb-1">Норма сбережений</p>
-              <p className={`text-base font-bold ${metricsData.savingsRate === null ? '' : metricsData.savingsRate >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                {metricsData.savingsRate === null ? '—' : `${metricsData.savingsRate > 0 ? '+' : ''}${metricsData.savingsRate}%`}
-              </p>
-            </div>
-          </div>
-        </div>
-        </motion.section>
-      )}
-
-      {/* Bar Chart */}
-      <motion.section custom={3} variants={sectionVariants} initial="hidden" animate="visible">
-      <div className="px-5 py-4">
-        <h2 className="font-bold mb-4">Доходы vs Расходы</h2>
-        <div className="card-premium p-5">
-          {weeklyData.length > 0 && weeklyData.some(w => w.income > 0 || w.expense > 0) ? (
-            <>
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={weeklyData}>
-                  <XAxis dataKey="week" stroke="currentColor" className="text-muted-foreground" fontSize={12} />
-                  <YAxis stroke="currentColor" className="text-muted-foreground" fontSize={12} tickFormatter={formatShort} />
-                  <Tooltip
-                    formatter={(v: number, name: string) => [`${v.toLocaleString('ru-RU')} ₽`, name === 'income' ? 'Доходы' : 'Расходы']}
-                    contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                  />
-                  <Bar dataKey="income" name="Доходы" fill="#22c55e" radius={[8, 8, 0, 0]} cursor="pointer" onClick={(_, index) => setSelectedWeekIdx(index)} />
-                  <Bar dataKey="expense" name="Расходы" fill="#ef4444" radius={[8, 8, 0, 0]} cursor="pointer" onClick={(_, index) => setSelectedWeekIdx(index)} />
-                </BarChart>
-              </ResponsiveContainer>
-              <div className="flex justify-center gap-6 mt-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-green-500" />
-                  <span className="text-sm">Доходы</span>
+      {mainTab === 'basic' && (
+        <>
+          {/* Summary Cards */}
+          <motion.section custom={0} variants={sectionVariants} initial="hidden" animate="visible">
+          <div className="px-5 py-4">
+            {loading ? (
+              <div className="grid grid-cols-3 gap-3">
+                {[1, 2, 3].map(i => <div key={i} className="bg-muted rounded-2xl p-4 h-20 animate-pulse" />)}
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-gradient-to-br from-green-500 to-emerald-600 text-white rounded-2xl p-4">
+                  <p className="text-xs opacity-90 mb-1">Доходы</p>
+                  <p className="text-lg font-bold">+{formatShort(income)}</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-red-500" />
-                  <span className="text-sm">Расходы</span>
+                <div className="bg-gradient-to-br from-red-500 to-rose-600 text-white rounded-2xl p-4">
+                  <p className="text-xs opacity-90 mb-1">Расходы</p>
+                  <p className="text-lg font-bold">−{formatShort(expense)}</p>
+                </div>
+                <div className={`bg-gradient-to-br text-white rounded-2xl p-4 shadow-lg ${balanceAmount >= 0 ? '' : 'from-gray-600 to-gray-700'}`} style={balanceAmount >= 0 ? { background: 'linear-gradient(135deg, var(--primary), var(--primary-light))' } : undefined}>
+                  <p className="text-xs opacity-90 mb-1">Баланс</p>
+                  <p className="text-lg font-bold">
+                    {balanceAmount >= 0 ? '+' : '−'}{formatShort(Math.abs(balanceAmount))}
+                  </p>
                 </div>
               </div>
+            )}
+          </div>
+          </motion.section>
 
-              {selectedWeekIdx !== null && weeklyData[selectedWeekIdx] && (
-                <div className="mt-4 p-4 bg-muted rounded-xl">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-semibold">{weeklyData[selectedWeekIdx].week}</span>
-                    <button onClick={() => setSelectedWeekIdx(null)} className="text-muted-foreground hover:text-foreground transition-colors">✕</button>
-                  </div>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="text-center">
-                      <p className="text-xs text-muted-foreground mb-1">Доходы</p>
-                      <p className="text-base font-bold text-green-600">+{weeklyData[selectedWeekIdx].income.toLocaleString('ru-RU')} ₽</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs text-muted-foreground mb-1">Расходы</p>
-                      <p className="text-base font-bold text-red-600">−{weeklyData[selectedWeekIdx].expense.toLocaleString('ru-RU')} ₽</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs text-muted-foreground mb-1">Баланс</p>
-                      <p className={`text-base font-bold ${weeklyData[selectedWeekIdx].income - weeklyData[selectedWeekIdx].expense >= 0 ? 'text-primary' : 'text-gray-500'}`}>
-                        {weeklyData[selectedWeekIdx].income - weeklyData[selectedWeekIdx].expense >= 0 ? '+' : '−'}
-                        {Math.abs(weeklyData[selectedWeekIdx].income - weeklyData[selectedWeekIdx].expense).toLocaleString('ru-RU')} ₽
-                      </p>
-                    </div>
-                  </div>
+          {/* Metrics Strip */}
+          {!loading && transactions.length > 0 && (
+            <motion.section custom={1} variants={sectionVariants} initial="hidden" animate="visible">
+            <div className="px-5 pb-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="card-premium p-4">
+                  <p className="text-xs text-muted-foreground mb-1">Ср. расход/день</p>
+                  <p className="text-base font-bold">{formatShort(metricsData.avgDaily)} ₽</p>
                 </div>
-              )}
-            </>
-          ) : (
-            <EmptyState icon="ChartColumn" title="Нет данных за период" description="Добавьте транзакции, и мы покажем красивую аналитику" />
+                <div className="card-premium p-4">
+                  <p className="text-xs text-muted-foreground mb-1">Операций</p>
+                  <p className="text-base font-bold">{metricsData.count}</p>
+                </div>
+                <div className="card-premium p-4">
+                  <p className="text-xs text-muted-foreground mb-1">Крупнейший расход</p>
+                  <p className="text-base font-bold">{metricsData.biggest > 0 ? `${formatShort(metricsData.biggest)} ₽` : '—'}</p>
+                </div>
+                <div className="card-premium p-4">
+                  <p className="text-xs text-muted-foreground mb-1">Норма сбережений</p>
+                  <p className={`text-base font-bold ${metricsData.savingsRate === null ? '' : metricsData.savingsRate >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    {metricsData.savingsRate === null ? '—' : `${metricsData.savingsRate > 0 ? '+' : ''}${metricsData.savingsRate}%`}
+                  </p>
+                </div>
+              </div>
+            </div>
+            </motion.section>
           )}
-        </div>
-      </div>
-      </motion.section>
 
-      {/* Trend Chart */}
-      {trendData.length > 1 && (
-        <motion.section custom={4} variants={sectionVariants} initial="hidden" animate="visible">
-        <div className="px-5 py-4">
-          <h2 className="font-bold mb-4">Динамика</h2>
-          <div className="card-premium p-5">
-            <ResponsiveContainer width="100%" height={180}>
-              <AreaChart data={trendData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="gExp" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="gInc" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="label" fontSize={11} stroke="currentColor" className="text-muted-foreground" tick={{ fontSize: 11 }} />
-                <YAxis fontSize={11} stroke="currentColor" className="text-muted-foreground" tickFormatter={formatShort} width={40} />
-                <Tooltip
-                  formatter={(v: number, name: string) => [`${v.toLocaleString('ru-RU')} ₽`, name === 'expense' ? 'Расходы' : 'Доходы']}
-                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                />
-                <Area type="monotone" dataKey="income" name="income" stroke="#22c55e" fill="url(#gInc)" strokeWidth={2} dot={false} />
-                <Area type="monotone" dataKey="expense" name="expense" stroke="#ef4444" fill="url(#gExp)" strokeWidth={2} dot={false} />
-              </AreaChart>
-            </ResponsiveContainer>
-            <div className="flex justify-center gap-6 mt-3">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-green-500" />
-                <span className="text-sm">Доходы</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-red-500" />
-                <span className="text-sm">Расходы</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        </motion.section>
-      )}
-
-      {/* Pie Chart */}
-      <motion.section custom={5} variants={sectionVariants} initial="hidden" animate="visible">
-      <div className="px-5 py-4">
-        <h2 className="font-bold mb-4">Структура расходов</h2>
-        <div className="card-premium p-5">
-          {pieData.length > 0 ? (
-            <>
-              <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2} dataKey="value">
-                    {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="space-y-2 mt-4">
-                {pieData.slice(0, 5).map(category => (
-                  <div key={category.name} className="flex items-center justify-between">
+          {/* Bar Chart */}
+          <motion.section custom={3} variants={sectionVariants} initial="hidden" animate="visible">
+          <div className="px-5 py-4">
+            <h2 className="font-bold mb-4">Доходы vs Расходы</h2>
+            <div className="card-premium p-5">
+              {weeklyData.length > 0 && weeklyData.some(w => w.income > 0 || w.expense > 0) ? (
+                <>
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={weeklyData}>
+                      <XAxis dataKey="week" stroke="currentColor" className="text-muted-foreground" fontSize={12} />
+                      <YAxis stroke="currentColor" className="text-muted-foreground" fontSize={12} tickFormatter={formatShort} />
+                      <Tooltip
+                        formatter={(v: number, name: string) => [`${v.toLocaleString('ru-RU')} ₽`, name === 'income' ? 'Доходы' : 'Расходы']}
+                        contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                      />
+                      <Bar dataKey="income" name="Доходы" fill="#22c55e" radius={[8, 8, 0, 0]} cursor="pointer" onClick={(_, index) => setSelectedWeekIdx(index)} />
+                      <Bar dataKey="expense" name="Расходы" fill="#ef4444" radius={[8, 8, 0, 0]} cursor="pointer" onClick={(_, index) => setSelectedWeekIdx(index)} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                  <div className="flex justify-center gap-6 mt-4">
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.color }} />
-                      <span className="text-sm">{category.name}</span>
+                      <div className="w-3 h-3 rounded-full bg-green-500" />
+                      <span className="text-sm">Доходы</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">{category.percentage.toFixed(1)}%</span>
-                      <span className="text-sm font-semibold">{category.value.toLocaleString('ru-RU')} ₽</span>
+                      <div className="w-3 h-3 rounded-full bg-red-500" />
+                      <span className="text-sm">Расходы</span>
+                    </div>
+                  </div>
+
+                  {selectedWeekIdx !== null && weeklyData[selectedWeekIdx] && (
+                    <div className="mt-4 p-4 bg-muted rounded-xl">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-semibold">{weeklyData[selectedWeekIdx].week}</span>
+                        <button onClick={() => setSelectedWeekIdx(null)} className="text-muted-foreground hover:text-foreground transition-colors">✕</button>
+                      </div>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="text-center">
+                          <p className="text-xs text-muted-foreground mb-1">Доходы</p>
+                          <p className="text-base font-bold text-green-600">+{weeklyData[selectedWeekIdx].income.toLocaleString('ru-RU')} ₽</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs text-muted-foreground mb-1">Расходы</p>
+                          <p className="text-base font-bold text-red-600">−{weeklyData[selectedWeekIdx].expense.toLocaleString('ru-RU')} ₽</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs text-muted-foreground mb-1">Баланс</p>
+                          <p className={`text-base font-bold ${weeklyData[selectedWeekIdx].income - weeklyData[selectedWeekIdx].expense >= 0 ? 'text-primary' : 'text-gray-500'}`}>
+                            {weeklyData[selectedWeekIdx].income - weeklyData[selectedWeekIdx].expense >= 0 ? '+' : '−'}
+                            {Math.abs(weeklyData[selectedWeekIdx].income - weeklyData[selectedWeekIdx].expense).toLocaleString('ru-RU')} ₽
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <EmptyState icon="ChartColumn" title="Нет данных за период" description="Добавьте транзакции, и мы покажем красивую аналитику" />
+              )}
+            </div>
+          </div>
+          </motion.section>
+
+          {/* Trend Chart */}
+          {trendData.length > 1 && (
+            <motion.section custom={4} variants={sectionVariants} initial="hidden" animate="visible">
+            <div className="px-5 py-4">
+              <h2 className="font-bold mb-4">Динамика</h2>
+              <div className="card-premium p-5">
+                <ResponsiveContainer width="100%" height={180}>
+                  <AreaChart data={trendData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="gExp" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="gInc" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#22c55e" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="label" fontSize={11} stroke="currentColor" className="text-muted-foreground" tick={{ fontSize: 11 }} />
+                    <YAxis fontSize={11} stroke="currentColor" className="text-muted-foreground" tickFormatter={formatShort} width={40} />
+                    <Tooltip
+                      formatter={(v: number, name: string) => [`${v.toLocaleString('ru-RU')} ₽`, name === 'expense' ? 'Расходы' : 'Доходы']}
+                      contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                    />
+                    <Area type="monotone" dataKey="income" name="income" stroke="#22c55e" fill="url(#gInc)" strokeWidth={2} dot={false} />
+                    <Area type="monotone" dataKey="expense" name="expense" stroke="#ef4444" fill="url(#gExp)" strokeWidth={2} dot={false} />
+                  </AreaChart>
+                </ResponsiveContainer>
+                <div className="flex justify-center gap-6 mt-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-green-500" />
+                    <span className="text-sm">Доходы</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-red-500" />
+                    <span className="text-sm">Расходы</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            </motion.section>
+          )}
+
+          {/* Pie Chart */}
+          <motion.section custom={5} variants={sectionVariants} initial="hidden" animate="visible">
+          <div className="px-5 py-4">
+            <h2 className="font-bold mb-4">Структура расходов</h2>
+            <div className="card-premium p-5">
+              {pieData.length > 0 ? (
+                <>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <PieChart>
+                      <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2} dataKey="value">
+                        {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="space-y-2 mt-4">
+                    {pieData.slice(0, 5).map(category => (
+                      <div key={category.name} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.color }} />
+                          <span className="text-sm">{category.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">{category.percentage.toFixed(1)}%</span>
+                          <span className="text-sm font-semibold">{category.value.toLocaleString('ru-RU')} ₽</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <p className="text-center text-muted-foreground py-8">Нет данных</p>
+              )}
+            </div>
+          </div>
+          </motion.section>
+
+          {/* Income Pie */}
+          {incomePieData.length > 0 && (
+            <motion.section custom={6} variants={sectionVariants} initial="hidden" animate="visible">
+            <div className="px-5 py-4">
+              <h2 className="font-bold mb-4">Структура доходов</h2>
+              <div className="card-premium p-5">
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie data={incomePieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2} dataKey="value">
+                      {incomePieData.map((entry, index) => <Cell key={`income-cell-${index}`} fill={entry.color} />)}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="space-y-2 mt-4">
+                  {incomePieData.slice(0, 5).map(category => (
+                    <div key={category.name} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.color }} />
+                        <span className="text-sm">{category.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">{category.percentage.toFixed(1)}%</span>
+                        <span className="text-sm font-semibold">{category.value.toLocaleString('ru-RU')} ₽</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            </motion.section>
+          )}
+
+          {/* Top Categories */}
+          <motion.section custom={7} variants={sectionVariants} initial="hidden" animate="visible">
+          <div className="px-5 pb-4">
+            <h2 className="font-bold mb-4">Топ категорий</h2>
+            {pieData.length > 0 ? (
+              <div className="card-premium p-5 space-y-4">
+                {pieData.slice(0, 5).map((category, index) => (
+                  <div key={category.name}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg font-bold text-muted-foreground">#{index + 1}</span>
+                        <span className="font-medium">{category.name}</span>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold">{category.value.toLocaleString('ru-RU')} ₽</p>
+                        <p className="text-xs text-muted-foreground">{category.percentage.toFixed(1)}%</p>
+                      </div>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all" style={{ width: `${category.percentage}%`, backgroundColor: category.color }} />
                     </div>
                   </div>
                 ))}
               </div>
-            </>
-          ) : (
-            <p className="text-center text-muted-foreground py-8">Нет данных</p>
-          )}
-        </div>
-      </div>
-      </motion.section>
-
-      {/* Income Pie */}
-      {incomePieData.length > 0 && (
-        <motion.section custom={6} variants={sectionVariants} initial="hidden" animate="visible">
-        <div className="px-5 py-4">
-          <h2 className="font-bold mb-4">Структура доходов</h2>
-          <div className="card-premium p-5">
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie data={incomePieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2} dataKey="value">
-                  {incomePieData.map((entry, index) => <Cell key={`income-cell-${index}`} fill={entry.color} />)}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="space-y-2 mt-4">
-              {incomePieData.slice(0, 5).map(category => (
-                <div key={category.name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.color }} />
-                    <span className="text-sm">{category.name}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">{category.percentage.toFixed(1)}%</span>
-                    <span className="text-sm font-semibold">{category.value.toLocaleString('ru-RU')} ₽</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+            ) : (
+              <div className="card-premium p-8 text-center text-muted-foreground">Нет данных</div>
+            )}
           </div>
-        </div>
-        </motion.section>
+          </motion.section>
+        </>
       )}
 
-      {/* Top Categories */}
-      <motion.section custom={7} variants={sectionVariants} initial="hidden" animate="visible">
-      <div className="px-5 pb-4">
-        <h2 className="font-bold mb-4">Топ категорий</h2>
-        {pieData.length > 0 ? (
-          <div className="card-premium p-5 space-y-4">
-            {pieData.slice(0, 5).map((category, index) => (
-              <div key={category.name}>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-bold text-muted-foreground">#{index + 1}</span>
-                    <span className="font-medium">{category.name}</span>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold">{category.value.toLocaleString('ru-RU')} ₽</p>
-                    <p className="text-xs text-muted-foreground">{category.percentage.toFixed(1)}%</p>
-                  </div>
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full rounded-full transition-all" style={{ width: `${category.percentage}%`, backgroundColor: category.color }} />
-                </div>
+      {mainTab === 'pro' && (
+        <div className="px-4 pt-2">
+          {isPremium ? (
+            <>
+              {/* Pro period picker */}
+              <div className="flex gap-1 p-1 bg-muted/60 rounded-xl mb-2">
+                {PERIODS.map(p => (
+                  <button
+                    key={p.key}
+                    onClick={() => setProPeriod(p.key)}
+                    className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      proPeriod === p.key
+                        ? 'bg-white dark:bg-card shadow-sm text-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="card-premium p-8 text-center text-muted-foreground">Нет данных</div>
-        )}
-      </div>
-      </motion.section>
+
+              {/* Pro sub-tabs */}
+              <div className="flex gap-1 mb-4">
+                {([
+                  { key: 'predictive',  Icon: TrendingUp, label: 'Прогнозы'  },
+                  { key: 'comparative', Icon: BarChart2,  label: 'Сравнения' },
+                  { key: 'health',      Icon: Heart,      label: 'Здоровье'  },
+                  { key: 'ai',          Icon: Sparkles,   label: 'AI'        },
+                ] as const).map(({ key, Icon, label }) => {
+                  const active = proTab === key;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => setProTab(key)}
+                      className={`flex-1 flex flex-col items-center gap-0.5 py-2 rounded-xl text-[11px] font-semibold transition-all ${
+                        active
+                          ? 'bg-violet-600/10 text-violet-600 dark:text-violet-400'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                      }`}
+                    >
+                      <Icon className={`w-4 h-4 ${active ? 'text-violet-600 dark:text-violet-400' : ''}`} />
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Pro tab content */}
+              {proTab === 'predictive'  && <PredictiveTab  period={proPeriod} />}
+              {proTab === 'comparative' && <ComparativeTab period={proPeriod} />}
+              {proTab === 'health'      && <HealthTab      period={proPeriod} />}
+              {proTab === 'ai'          && <AIInsightsPanel />}
+            </>
+          ) : (
+            <ProUpsellCompact />
+          )}
+        </div>
+      )}
 
       {/* Period Picker BottomSheet */}
       <BottomSheet
@@ -500,8 +576,8 @@ export const Analytics = () => {
                   onChange={e => {
                     const val = e.target.value;
                     if (!val) return;
-                    setCustomStart(new Date(val + 'T00:00:00').getTime()); 
-                    setPeriod('custom'); 
+                    setCustomStart(new Date(val + 'T00:00:00').getTime());
+                    setPeriod('custom');
                   }}
                   className="flex-1 bg-transparent outline-none text-sm"
                 />
