@@ -16,7 +16,7 @@ const INTERVAL_LABELS: Record<string, string> = {
 };
 
 export const Recurring = () => {
-  const { templates, add, update, remove, toggleActive } = useRecurringTemplates();
+  const { templates, add, update, remove, toggleActive, loading } = useRecurringTemplates();
   const { categories } = useCategories();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -80,8 +80,26 @@ export const Recurring = () => {
       </div>
       </motion.section>
 
+      {/* Skeleton while loading */}
+      {loading && (
+        <div className="px-5 py-4 space-y-3">
+          {[0, 1, 2].map(i => (
+            <div key={i} className="card-premium p-5 animate-pulse">
+              <div className="flex items-start gap-3">
+                <div className="w-12 h-12 rounded-xl bg-muted flex-shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-5 bg-muted rounded w-24" />
+                  <div className="h-4 bg-muted rounded w-32" />
+                  <div className="h-3 bg-muted rounded w-48 mt-2" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Templates List */}
-      <div className="px-5 py-4 space-y-3">
+      {!loading && <div className="px-5 py-4 space-y-3">
         {templates.map((template, index) => {
           const category = categories.find(c => c.id === template.categoryId);
           const daysUntil = Math.ceil((template.nextDate - Date.now()) / (24 * 60 * 60 * 1000));
@@ -189,10 +207,10 @@ export const Recurring = () => {
             </motion.div>
           );
         })}
-      </div>
+      </div>}
 
       {/* Empty State */}
-      {templates.length === 0 && (
+      {!loading && templates.length === 0 && (
         <motion.section custom={0} variants={sectionVariants} initial="hidden" animate="visible">
         <div className="px-5 py-16 text-center">
           <div className="w-20 h-20 mx-auto mb-6 bg-muted rounded-full flex items-center justify-center shadow-sm">
@@ -214,7 +232,7 @@ export const Recurring = () => {
       )}
 
       {/* Add Button (when templates exist) */}
-      {templates.length > 0 && (
+      {!loading && templates.length > 0 && (
         <motion.section custom={templates.length} variants={sectionVariants} initial="hidden" animate="visible">
         <div className="px-5 py-4">
           <button
@@ -229,7 +247,7 @@ export const Recurring = () => {
       )}
 
       {/* Stats Card */}
-      {templates.length > 0 && (() => {
+      {!loading && templates.length > 0 && (() => {
         const activeTemplates = templates.filter(t => t.isActive);
         const monthlyTotal = activeTemplates.reduce((sum, t) => {
           let monthly = t.amount;
