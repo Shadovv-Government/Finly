@@ -55,12 +55,21 @@ function BalanceCard({ totalBalance, income, expense, savingsAmount, freeBalance
           )}
         </div>
         {savingsAmount > 0 && (
-          <div className="px-2.5 py-1 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-900">
-            <p className="text-[10px] text-green-700 dark:text-green-400 font-semibold leading-tight">Свободно</p>
-            <p className="text-sm font-bold text-green-700 dark:text-green-400 text-numeric">
-              {freeBalance.toLocaleString('ru-RU')} ₽
-            </p>
-          </div>
+          freeBalance >= 0 ? (
+            <div className="px-2.5 py-1 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-900">
+              <p className="text-[10px] text-green-700 dark:text-green-400 font-semibold leading-tight">Свободно</p>
+              <p className="text-sm font-bold text-green-700 dark:text-green-400 text-numeric">
+                {freeBalance.toLocaleString('ru-RU')} ₽
+              </p>
+            </div>
+          ) : (
+            <div className="px-2.5 py-1 bg-red-50 dark:bg-red-950 rounded-lg border border-red-200 dark:border-red-900">
+              <p className="text-[10px] text-red-600 dark:text-red-400 font-semibold leading-tight">Превышение</p>
+              <p className="text-sm font-bold text-red-600 dark:text-red-400 text-numeric">
+                {Math.abs(freeBalance).toLocaleString('ru-RU')} ₽
+              </p>
+            </div>
+          )
         )}
       </div>
 
@@ -78,7 +87,7 @@ function BalanceCard({ totalBalance, income, expense, savingsAmount, freeBalance
             Расходы
           </p>
           <p className="text-base font-bold text-red-700 dark:text-red-400 text-numeric">
-            −{expense.toLocaleString('ru-RU')} ₽
+            {expense > 0 ? '−' : ''}{expense.toLocaleString('ru-RU')} ₽
           </p>
         </div>
       </div>

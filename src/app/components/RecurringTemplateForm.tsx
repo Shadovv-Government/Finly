@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Clock } from 'lucide-react';
+import { Calendar, Clock, SkipForward, Zap } from 'lucide-react';
 import { Wallet } from 'lucide-react';
 import { RecurringTemplate, RecurringInterval } from '../../db/types';
+import { getNextDate } from '../../db/recurring';
 import { BottomSheet } from './BottomSheet';
 import { useNotifications } from '../hooks/useNotifications';
 import { useCategories } from '../hooks/useCategories';
@@ -44,6 +45,7 @@ export const RecurringTemplateForm: React.FC<RecurringTemplateFormProps> = ({
   const [firstDate, setFirstDate] = useState('');
   const [comment, setComment] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [skipFirstPayment, setSkipFirstPayment] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Заполнить форму данными при редактировании
@@ -64,6 +66,7 @@ export const RecurringTemplateForm: React.FC<RecurringTemplateFormProps> = ({
       setFirstDate(formatDateInputValue(new Date()));
       setComment('');
       setIsActive(true);
+      setSkipFirstPayment(false);
     }
   }, [initialData, isOpen]);
 
@@ -94,12 +97,14 @@ export const RecurringTemplateForm: React.FC<RecurringTemplateFormProps> = ({
 
     setIsSubmitting(true);
     try {
+      const baseDate = parseDateInputValue(firstDate).getTime();
+      const nextDate = skipFirstPayment ? getNextDate(baseDate, interval) : baseDate;
       await onSubmit({
         amount: templateAmount,
         type,
         categoryId: selectedCategoryId,
         interval,
-        nextDate: parseDateInputValue(firstDate).getTime(),
+        nextDate,
         isActive,
         comment: comment.trim() || undefined,
       });
@@ -241,6 +246,44 @@ export const RecurringTemplateForm: React.FC<RecurringTemplateFormProps> = ({
             />
           </div>
         </div>
+
+        {/* Первое списание */}
+        {!initialData && (
+          <div className="px-4 py-4">
+            <label className="text-sm font-medium mb-3 block">Первое списание</label>
+            <div className="flex gap-1 p-1 bg-muted rounded-xl">
+              <button
+                type="button"
+                onClick={() => setSkipFirstPayment(false)}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                  !skipFirstPayment
+                    ? 'bg-card shadow-sm text-primary'
+                    : 'text-muted-foreground'
+                }`}
+              >
+                <Zap className="w-4 h-4" />
+                Списать сразу
+              </button>
+              <button
+                type="button"
+                onClick={() => setSkipFirstPayment(true)}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                  skipFirstPayment
+                    ? 'bg-card shadow-sm text-primary'
+                    : 'text-muted-foreground'
+                }`}
+              >
+                <SkipForward className="w-4 h-4" />
+                Пропустить
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2 text-center">
+              {skipFirstPayment
+                ? 'Первая транзакция появится через 1 период'
+                : 'Транзакция будет создана в указанную дату'}
+            </p>
+          </div>
+        )}
 
         {/* Комментарий */}
         <div className="px-4 py-4">
