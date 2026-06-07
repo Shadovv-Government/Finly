@@ -1,8 +1,8 @@
-import { Bell, Camera, Calendar, TrendingUp, Wallet, Target, Folder, Repeat, ImagePlus, Clock, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
+import { Bell, Calendar, TrendingUp, Wallet, Target, Folder, Repeat, Clock, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
 import { EmptyState } from '../components/EmptyState';
 import { motion } from 'motion/react';
 import { sectionVariants } from '../utils/animations';
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { CategoryBadge } from '../components/CategoryBadge';
@@ -16,12 +16,6 @@ import { useBudgetNotifications } from '../hooks/useBudgetNotifications';
 import { useBudgets } from '../hooks/useBudgets';
 import { useRecurringTemplates } from '../hooks/useRecurringTemplates';
 import { RecurringTemplate } from '../../db/types';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '../components/ui/dialog';
 import { NotificationsPanel } from '../components/NotificationsPanel';
 import { usePremium } from '../hooks/usePremium';
 import { PremiumAvatarWrapper } from '../components/PremiumAvatarWrapper';
@@ -343,15 +337,6 @@ function getGreeting() {
 
 // ==================== Dashboard ====================
 
-const AVATAR_COLORS = [
-  'from-amber-400 to-pink-500',
-  'from-indigo-500 to-blue-600',
-  'from-blue-400 to-cyan-500',
-  'from-green-400 to-emerald-500',
-  'from-orange-400 to-red-500',
-  'from-pink-400 to-rose-500',
-];
-
 export const Dashboard = () => {
   const [period, setPeriod] = useState<PeriodType>('month');
   const [customStartDate, setCustomStartDate] = useState<Date>(new Date(Date.now() - MS_PER_MONTH));
@@ -365,14 +350,12 @@ export const Dashboard = () => {
   const { balance, currentBalance, expensesByCategory: analyticsExpenses, savingsAmount, freeBalance } = useAnalytics({ period, startDate: periodRange.start, endDate: periodRange.end });
   const { transactions } = useTransactions({ period, startDate: periodRange.start, endDate: periodRange.end });
   const { categories } = useCategories();
-  const { user, updateProfile } = useAuth();
+  const { user } = useAuth();
   const { isPremium } = usePremium();
   const { hasUnread, notifications: panelNotifications, markAllRead, clearRead } = useNotificationPanel();
   const { checkBudgets } = useBudgetNotifications();
   const { templates } = useRecurringTemplates();
-  const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     checkBudgets();
@@ -396,46 +379,6 @@ export const Dashboard = () => {
 
   const getInitial = (name: string) => name.charAt(0).toUpperCase();
   const hasPhoto = !!user?.avatarDataUrl;
-
-  const handleAvatarSelect = async (color: string) => {
-    await updateProfile({ avatarColor: color, avatarDataUrl: undefined });
-    setIsAvatarDialogOpen(false);
-  };
-
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const dataUrl = reader.result as string;
-      const img = new Image();
-      img.onload = async () => {
-        try {
-          const canvas = document.createElement('canvas');
-          const size = 200;
-          const ratio = Math.min(size / img.width, size / img.height, 1);
-          canvas.width = img.width * ratio;
-          canvas.height = img.height * ratio;
-          const ctx = canvas.getContext('2d')!;
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          const compressed = canvas.toDataURL('image/jpeg', 0.8);
-          await updateProfile({ avatarDataUrl: compressed });
-          setIsAvatarDialogOpen(false);
-        } finally {
-          img.src = '';
-        }
-      };
-      img.onerror = () => { img.src = ''; };
-      img.src = dataUrl;
-    };
-    reader.readAsDataURL(file);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const handleRemovePhoto = async () => {
-    await updateProfile({ avatarDataUrl: undefined });
-  };
 
   const handlePeriodChange = (value: PeriodType) => {
     if (value === 'custom') {
@@ -466,10 +409,8 @@ export const Dashboard = () => {
               )}
             </button>
             <PremiumAvatarWrapper isPremium={isPremium} size="sm">
-              <button
-                aria-label="Выбрать аватар"
-                onClick={() => setIsAvatarDialogOpen(true)}
-                className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white relative group shadow-md overflow-hidden ${
+              <div
+                className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shadow-md overflow-hidden ${
                   !hasPhoto ? `bg-gradient-to-br ${user?.avatarColor || 'from-amber-400 to-pink-500'}` : ''
                 }`}
               >
@@ -478,10 +419,7 @@ export const Dashboard = () => {
                 ) : (
                   getInitial(user?.name || 'U')
                 )}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 sm:opacity-0 transition-opacity flex items-center justify-center">
-                  <Camera className="w-4 h-4" />
-                </div>
-              </button>
+              </div>
             </PremiumAvatarWrapper>
           </div>
         </div>
@@ -583,52 +521,6 @@ export const Dashboard = () => {
       <motion.section custom={5} variants={sectionVariants} initial="hidden" animate="visible">
         <RecentTransactions transactions={recentTransactions} categories={categories} />
       </motion.section>
-
-      {/* Avatar Selection Dialog */}
-      <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
-        <DialogContent className="rounded-2xl">
-          <DialogHeader>
-            <DialogTitle>Выберите аватар</DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-3 gap-4 py-4">
-            {AVATAR_COLORS.map((color) => (
-              <button
-                key={color}
-                onClick={() => handleAvatarSelect(color)}
-                className={`w-16 h-16 rounded-full bg-gradient-to-br ${color} flex items-center justify-center font-bold text-white text-xl hover:scale-110 transition-transform ${
-                  !hasPhoto && user?.avatarColor === color ? 'ring-4 ring-primary' : ''
-                }`}
-              >
-                {getInitial(user?.name || 'U')}
-              </button>
-            ))}
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="w-16 h-16 rounded-full bg-muted border-2 border-dashed border-muted-foreground/30 flex items-center justify-center hover:scale-110 transition-transform"
-            >
-              <ImagePlus className="w-6 h-6 text-muted-foreground" />
-            </button>
-          </div>
-          {hasPhoto && (
-            <div className="flex items-center justify-center pb-2">
-              <button
-                onClick={handleRemovePhoto}
-                className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
-              >
-                Убрать фото
-              </button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handlePhotoUpload}
-      />
 
       {/* Custom Period BottomSheet */}
       <BottomSheet
