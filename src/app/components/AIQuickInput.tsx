@@ -399,7 +399,7 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
                     onChange={e => {
                       const raw = e.target.value;
                       const val = parseFloat(raw.replace(',', '.')) || 0;
-                      setParsedResult(prev => prev ? { ...prev, amount: val, amountStr: raw, needsAmount: val === 0 } : null);
+                      setParsedResult(prev => prev ? { ...prev, amount: val, amountStr: raw } : null);
                     }}
                     className={`text-2xl font-bold w-28 bg-transparent border-b-2 border-violet-400 focus:outline-none placeholder:text-muted-foreground ${parsedResult.type === 'expense' ? 'text-red-500' : 'text-green-500'}`}
                   />
