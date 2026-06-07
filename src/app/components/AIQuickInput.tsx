@@ -260,7 +260,6 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
         .map((r: any) => r[0].transcript)
         .join('');
       liveTranscriptRef.current = transcript;
-      setStatusText(transcript);
 
       if (e.results[e.results.length - 1].isFinal) {
         shouldProcessOnEndRef.current = false;
@@ -497,15 +496,21 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
               0%   { transform: scaleY(0.15); }
               100% { transform: scaleY(1); }
             }
+            @keyframes micBreath {
+              0%   { transform: scale(1);    box-shadow: 0 0 0 0px rgba(139,92,246,0.5); }
+              50%  { transform: scale(1.13); box-shadow: 0 0 0 14px rgba(139,92,246,0); }
+              100% { transform: scale(1);    box-shadow: 0 0 0 0px rgba(139,92,246,0); }
+            }
           `}</style>
           <div className="flex flex-col items-center gap-5">
             <button
               onClick={handleMicPress}
               aria-label={isRecording ? 'Остановить запись' : 'Начать запись'}
-              className={`w-20 h-20 rounded-full flex items-center justify-center shadow-xl transition-all duration-200 active:scale-95 ${
+              style={isRecording ? { animation: 'micBreath 1.4s ease-in-out infinite' } : undefined}
+              className={`w-20 h-20 rounded-full flex items-center justify-center shadow-xl active:scale-95 ${
                 isRecording
-                  ? 'bg-gradient-to-br from-violet-500 to-indigo-600 scale-110'
-                  : 'bg-gradient-to-br from-violet-600 to-indigo-700'
+                  ? 'bg-gradient-to-br from-violet-500 to-indigo-600'
+                  : 'bg-gradient-to-br from-violet-600 to-indigo-700 transition-all duration-200'
               }`}
             >
               <Mic className="w-9 h-9 text-white" />
@@ -543,9 +548,11 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
             </div>
           </div>
 
-          <p className="text-sm text-muted-foreground text-center max-w-[220px] min-h-[40px]">
-            {hasVoice ? statusText : 'Голосовой ввод не поддерживается в этом браузере'}
-          </p>
+          {!isRecording && (
+            <p className="text-sm text-muted-foreground text-center max-w-[220px] min-h-[40px]">
+              {hasVoice ? statusText : 'Голосовой ввод не поддерживается в этом браузере'}
+            </p>
+          )}
         </div>
       )}
 
