@@ -1,4 +1,4 @@
-import { Bell, Camera, Calendar, TrendingUp, Wallet, Target, Folder, Repeat, Sparkles, ImagePlus, Clock, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
+import { Bell, Camera, Calendar, TrendingUp, Wallet, Target, Folder, Repeat, ImagePlus, Clock, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
 import { EmptyState } from '../components/EmptyState';
 import { motion } from 'motion/react';
 import { sectionVariants } from '../utils/animations';
@@ -576,16 +576,6 @@ export const Dashboard = () => {
             </div>
           </Link>
 
-          <Link to="/ai-assistant" className="col-span-2 card-premium p-4 flex items-center gap-3 hover:shadow-md transition-shadow duration-200 active:scale-[0.98]">
-            <div className="w-10 h-10 shrink-0 rounded-xl bg-primary/10 dark:bg-primary/15 flex items-center justify-center shadow-xs">
-              <Sparkles className="w-5 h-5 text-primary" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-semibold">AI Помощник</p>
-              <p className="text-xs text-muted-foreground">Аналитика и советы</p>
-            </div>
-            <span className="text-muted-foreground">→</span>
-          </Link>
         </div>
       </div>
       </motion.section>
