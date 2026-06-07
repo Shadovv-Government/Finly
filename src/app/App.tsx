@@ -8,6 +8,8 @@ import { router } from './routes';
 import { useEffect, useState } from 'react';
 import { processRecurringIfNeeded } from './utils/recurringProcessor';
 import { useReducedMotion } from './hooks/useReducedMotion';
+import { toast } from 'sonner';
+import { PWAUpdateProvider, usePWAUpdate } from './contexts/PWAUpdateContext';
 
 const AUTH_TIMEOUT_MS = 8000;
 
@@ -43,6 +45,19 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 }
 
 function AppContent() {
+  const { needRefresh, updateApp } = usePWAUpdate();
+
+  useEffect(() => {
+    if (!needRefresh) return;
+    toast('Доступно обновление Finly', {
+      duration: Infinity,
+      action: {
+        label: 'Обновить',
+        onClick: updateApp,
+      },
+    });
+  }, [needRefresh, updateApp]);
+
   return (
     <AuthGuard>
       <RouterProvider router={router} />
@@ -55,10 +70,12 @@ export default function App() {
     <ErrorBoundary>
       <ThemeProvider>
         <SettingsProvider>
-          <AuthProvider>
-            <AppContent />
-            <Toaster />
-          </AuthProvider>
+          <PWAUpdateProvider>
+            <AuthProvider>
+              <AppContent />
+              <Toaster />
+            </AuthProvider>
+          </PWAUpdateProvider>
         </SettingsProvider>
       </ThemeProvider>
     </ErrorBoundary>
