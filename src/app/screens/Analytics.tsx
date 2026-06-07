@@ -482,21 +482,23 @@ export const Analytics = () => {
           {isPremium ? (
             <>
               {/* Pro period picker */}
-              <div className="flex gap-1 p-1 bg-muted/60 rounded-xl mb-2">
-                {PERIODS.map(p => (
-                  <button
-                    key={p.key}
-                    onClick={() => setProPeriod(p.key)}
-                    className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                      proPeriod === p.key
-                        ? 'bg-white dark:bg-card shadow-sm text-foreground'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
+              {proTab !== 'ai' && (
+                <div className="flex gap-1 p-1 bg-muted/60 rounded-xl mb-2">
+                  {PERIODS.map(p => (
+                    <button
+                      key={p.key}
+                      onClick={() => setProPeriod(p.key)}
+                      className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                        proPeriod === p.key
+                          ? 'bg-white dark:bg-card shadow-sm text-foreground'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               {/* Pro sub-tabs */}
               <div className="flex gap-1 mb-4">
