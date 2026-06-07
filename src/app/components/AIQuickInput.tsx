@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Mic, MicOff, Send, Sparkles, MessageSquare, Brain, Wallet } from 'lucide-react';
+import { Mic, Send, Sparkles, MessageSquare, Brain, Wallet } from 'lucide-react';
 import { parseNaturalLanguage, findBestMatch, inferCategoryId } from '../../db/ai';
 import { useMLModel } from '../hooks/useMLModel';
 import { useCategories } from '../hooks/useCategories';
