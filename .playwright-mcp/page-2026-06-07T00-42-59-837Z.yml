@@ -1,0 +1,166 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - generic [ref=e6]:
+            - button [ref=e7]:
+              - img [ref=e8]
+            - heading "Premium Аналитика" [level=1] [ref=e10]:
+              - img [ref=e11]
+              - text: Premium Аналитика
+          - generic [ref=e13]:
+            - button "Месяц" [ref=e14]
+            - button "Квартал" [ref=e15]
+            - button "Год" [ref=e16]
+          - generic [ref=e17]:
+            - button "🔮Прогнозы" [ref=e18]
+            - button "📊Сравнения" [ref=e19]
+            - button "💚Здоровье" [ref=e20]
+        - generic [ref=e654]:
+          - generic [ref=e656]:
+            - heading "Финансовое здоровье" [level=3] [ref=e657]
+            - generic [ref=e658]:
+              - generic [ref=e663]: "37"
+              - generic [ref=e664]: Требует внимания
+            - generic [ref=e665]:
+              - generic [ref=e666]:
+                - button "Норма сбережений 0/100 0% от дохода" [active] [ref=e667]:
+                  - generic [ref=e669]:
+                    - generic [ref=e670]:
+                      - generic [ref=e671]: Норма сбережений
+                      - generic [ref=e672]: 0/100
+                    - generic [ref=e674]: 0% от дохода
+                  - img [ref=e775]
+                - generic [ref=e778]:
+                  - paragraph [ref=e779]: "Доля дохода, которую вы откладываете. Норма: ≥ 20%. Рассчитывается как (доход − расходы) / доход × 100%."
+                  - generic [ref=e780]:
+                    - generic [ref=e781]: "Как улучшить:"
+                    - list [ref=e782]:
+                      - listitem [ref=e783]:
+                        - generic [ref=e784]: •
+                        - generic [ref=e785]: Автоматически переводить 10–20% дохода на сберегательный счёт сразу после получения
+                      - listitem [ref=e786]:
+                        - generic [ref=e787]: •
+                        - generic [ref=e788]: "Использовать правило 50/30/20: нужды / желания / сбережения"
+                      - listitem [ref=e789]:
+                        - generic [ref=e790]: •
+                        - generic [ref=e791]: Найти 1–2 категории с перерасходом и сократить их на 10%
+              - button "Обязательные расходы 100/100 0% от расходов" [ref=e679]:
+                - generic [ref=e681]:
+                  - generic [ref=e682]:
+                    - generic [ref=e683]: Обязательные расходы
+                    - generic [ref=e684]: 100/100
+                  - generic [ref=e687]: 0% от расходов
+                - img [ref=e689]
+              - 'button "Регулярность доходов 30/100 CV: 100%" [ref=e692]':
+                - generic [ref=e694]:
+                  - generic [ref=e695]:
+                    - generic [ref=e696]: Регулярность доходов
+                    - generic [ref=e697]: 30/100
+                  - generic [ref=e700]: "CV: 100%"
+                - img [ref=e702]
+              - button "Резервный фонд 0/100 0.0 мес. расходов" [ref=e705]:
+                - generic [ref=e707]:
+                  - generic [ref=e708]:
+                    - generic [ref=e709]: Резервный фонд
+                    - generic [ref=e710]: 0/100
+                  - generic [ref=e712]: 0.0 мес. расходов
+                - img [ref=e714]
+              - 'button "Диверсификация 25/100 HHI: 100" [ref=e717]':
+                - generic [ref=e719]:
+                  - generic [ref=e720]:
+                    - generic [ref=e721]: Диверсификация
+                    - generic [ref=e722]: 25/100
+                  - generic [ref=e725]: "HHI: 100"
+                - img [ref=e727]
+              - button "Долговая нагрузка 100/100 Нет долгов" [ref=e730]:
+                - generic [ref=e732]:
+                  - generic [ref=e733]:
+                    - generic [ref=e734]: Долговая нагрузка
+                    - generic [ref=e735]: 100/100
+                  - generic [ref=e738]: Нет долгов
+                - img [ref=e740]
+          - generic [ref=e744]: Нет активных целей — создайте их в разделе «Цели»
+          - generic [ref=e746]:
+            - heading "План улучшения" [level=3] [ref=e747]
+            - generic [ref=e748]:
+              - generic [ref=e749]:
+                - generic [ref=e750]: "1."
+                - generic [ref=e751]: Увеличьте норму сбережений до 20% от доходов. Попробуйте правило 50/30/20.
+              - generic [ref=e752]:
+                - generic [ref=e753]: "2."
+                - generic [ref=e754]: Доходы нерегулярны. Постарайтесь создать резервный фонд на 3-6 месяцев.
+              - generic [ref=e755]:
+                - generic [ref=e756]: "3."
+                - generic [ref=e757]: Создайте резервный фонд — минимум 3 месяца расходов.
+              - generic [ref=e758]:
+                - generic [ref=e759]: "4."
+                - generic [ref=e760]: Расходы сконцентрированы в нескольких категориях. Проверьте баланс трат.
+          - generic [ref=e762]:
+            - heading "Детектор проблем" [level=3] [ref=e763]
+            - generic [ref=e764]:
+              - generic [ref=e765]:
+                - generic [ref=e766]:
+                  - generic [ref=e767]: ⚠️
+                  - generic [ref=e768]: Критически низкая норма сбережений
+                - paragraph [ref=e769]: За последние 6 месяцев вы сохранили всего 0.0% дохода. Рекомендуется откладывать минимум 10-20%.
+              - generic [ref=e770]:
+                - generic [ref=e771]:
+                  - generic [ref=e772]: ⚡
+                  - generic [ref=e773]: У вас нет активных бюджетов
+                - paragraph [ref=e774]: Бюджеты помогают контролировать расходы по категориям. Создайте бюджет для ключевых категорий.
+        - generic [ref=e67]:
+          - generic [ref=e69]:
+            - generic [ref=e70]:
+              - heading "Инсайты" [level=3] [ref=e71]:
+                - img [ref=e72]
+                - text: Инсайты
+              - generic [ref=e74]: "1"
+            - generic [ref=e76]:
+              - img [ref=e78]
+              - generic [ref=e81]:
+                - paragraph [ref=e82]: Без трат сегодня
+                - paragraph [ref=e83]: Вы ещё ничего не потратили сегодня — отличный результат!
+          - generic [ref=e85]:
+            - heading "Спросить AI" [level=3] [ref=e87]
+            - generic [ref=e89]:
+              - button "Мой баланс" [ref=e90]
+              - button "Расходы за месяц" [ref=e91]
+              - button "Состояние бюджетов" [ref=e92]
+              - button "Мои цели" [ref=e93]
+              - button "Прогноз до конца месяца" [ref=e94]
+            - generic [ref=e95]:
+              - textbox "Введите вопрос…" [ref=e96]
+              - button [disabled] [ref=e97]:
+                - img [ref=e98]
+          - generic [ref=e102]:
+            - heading "Еженедельный AI-отчёт" [level=3] [ref=e103]:
+              - img [ref=e104]
+              - text: Еженедельный AI-отчёт
+            - button "Сгенерировать отчёт" [ref=e106]
+      - navigation:
+        - generic [ref=e107]:
+          - generic [ref=e108]:
+            - link "Главная" [ref=e109] [cursor=pointer]:
+              - /url: /
+              - img [ref=e110]
+              - generic [ref=e113]: Главная
+            - link "История" [ref=e114] [cursor=pointer]:
+              - /url: /history
+              - img [ref=e115]
+              - generic [ref=e119]: История
+            - link "Аналитика" [ref=e120] [cursor=pointer]:
+              - /url: /analytics
+              - img [ref=e121]
+              - generic [ref=e123]: Аналитика
+            - link "Настройки" [ref=e124] [cursor=pointer]:
+              - /url: /settings
+              - img [ref=e125]
+              - generic [ref=e128]: Настройки
+          - generic [ref=e129]:
+            - button "Открыть быстрый AI-ввод" [ref=e130]:
+              - img [ref=e131]
+            - paragraph [ref=e133]: AI ввод
+    - region "Notifications alt+T"
+  - generic [ref=e134]: "0"

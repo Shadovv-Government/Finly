@@ -14,7 +14,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return;
   }
 
-  const body = req.body as { messages?: Array<{ role: string; content: string }> } | undefined;
+  const body = req.body as {
+    messages?: Array<{ role: string; content: string }>;
+    systemPrompt?: string;
+  } | undefined;
+
   if (!body?.messages?.length) {
     res.status(400).json({ error: 'Missing messages' });
     return;
@@ -25,9 +29,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return;
   }
 
-  const validMessages = body.messages.filter(m => 
-    (m.role === 'user' || m.role === 'assistant') && 
-    typeof m.content === 'string' && 
+  const validMessages = body.messages.filter(m =>
+    (m.role === 'user' || m.role === 'assistant') &&
+    typeof m.content === 'string' &&
     m.content.length <= 10000
   ).map(m => ({ role: m.role, content: m.content }));
 
@@ -36,8 +40,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return;
   }
 
+  const FALLBACK_PROMPT = 'Ты финансовый ассистент приложения Finly. Отвечай кратко и по делу на русском языке. Не придумывай цифры.';
+  const systemPromptRaw = typeof body.systemPrompt === 'string' ? body.systemPrompt.trim() : '';
+  const systemPrompt = systemPromptRaw.length > 0 && systemPromptRaw.length <= 4000
+    ? systemPromptRaw
+    : FALLBACK_PROMPT;
+
   const model = process.env.OPENROUTER_MODEL ?? 'openai/gpt-4o-mini';
-  const SYSTEM_PROMPT = 'You are a helpful AI financial assistant for the Finly app. You help users classify transactions, give advice on budgets and savings. Keep your answers short, professional and clear.';
 
   try {
     const controller = new AbortController();
@@ -53,7 +62,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       },
       body: JSON.stringify({
         model,
-        messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...validMessages],
+        messages: [{ role: 'system', content: systemPrompt }, ...validMessages],
         temperature: 0.7,
         max_tokens: 800,
       }),

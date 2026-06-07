@@ -194,7 +194,7 @@ export const Analytics = () => {
             }`}
           >
             <Crown className={`w-3.5 h-3.5 ${mainTab === 'pro' ? 'text-violet-600' : ''}`} />
-            Pro
+            <span className="text-base font-bold">Pro</span>
           </button>
         </div>
 

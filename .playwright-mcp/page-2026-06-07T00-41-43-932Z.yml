@@ -1,0 +1,96 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - generic [ref=e6]:
+            - button [ref=e7]:
+              - img [ref=e8]
+            - heading "Premium Аналитика" [level=1] [ref=e10]:
+              - img [ref=e11]
+              - text: Premium Аналитика
+          - generic [ref=e13]:
+            - button "Месяц" [ref=e14]
+            - button "Квартал" [ref=e15]
+            - button "Год" [ref=e16]
+          - generic [ref=e17]:
+            - button "🔮Прогнозы" [ref=e18]
+            - button "📊Сравнения" [ref=e19]
+            - button "💚Здоровье" [ref=e20]
+        - generic [ref=e22]:
+          - generic [ref=e24]:
+            - heading "ML-Прогноз расходов на 30 дней" [level=3] [ref=e25]
+            - paragraph [ref=e26]: "Точность: 0% (R²) — низкая, нужно больше данных"
+            - generic [ref=e27]:
+              - img [ref=e29]
+              - heading "Нет данных для прогноза" [level=3] [ref=e32]
+              - paragraph [ref=e33]: Добавьте транзакции за последние 90 дней
+          - generic [ref=e35]:
+            - heading "Прогноз баланса на 3 месяца" [level=3] [ref=e36]
+            - img [ref=e39]:
+              - generic [ref=e41]:
+                - generic [ref=e43]: июль 26 г.
+                - generic [ref=e45]: авг. 26 г.
+                - generic [ref=e47]: сент. 26 г.
+              - generic [ref=e49]:
+                - generic [ref=e51]: "0"
+                - generic [ref=e53]: "1"
+                - generic [ref=e55]: "2"
+                - generic [ref=e57]: "3"
+                - generic [ref=e59]: "4"
+          - generic [ref=e62]: Недостаточно данных для симулятора
+          - generic [ref=e65]: Недостаточно регулярных трат для анализа
+        - generic [ref=e67]:
+          - generic [ref=e69]:
+            - generic [ref=e70]:
+              - heading "Инсайты" [level=3] [ref=e71]:
+                - img [ref=e72]
+                - text: Инсайты
+              - generic [ref=e74]: "1"
+            - generic [ref=e76]:
+              - img [ref=e78]
+              - generic [ref=e81]:
+                - paragraph [ref=e82]: Без трат сегодня
+                - paragraph [ref=e83]: Вы ещё ничего не потратили сегодня — отличный результат!
+          - generic [ref=e85]:
+            - heading "Спросить AI" [level=3] [ref=e87]
+            - generic [ref=e89]:
+              - button "Мой баланс" [ref=e90]
+              - button "Расходы за месяц" [ref=e91]
+              - button "Состояние бюджетов" [ref=e92]
+              - button "Мои цели" [ref=e93]
+              - button "Прогноз до конца месяца" [ref=e94]
+            - generic [ref=e95]:
+              - textbox "Введите вопрос…" [ref=e96]
+              - button [disabled] [ref=e97]:
+                - img [ref=e98]
+          - generic [ref=e102]:
+            - heading "Еженедельный AI-отчёт" [level=3] [ref=e103]:
+              - img [ref=e104]
+              - text: Еженедельный AI-отчёт
+            - button "Сгенерировать отчёт" [ref=e106]
+      - navigation:
+        - generic [ref=e107]:
+          - generic [ref=e108]:
+            - link "Главная" [ref=e109] [cursor=pointer]:
+              - /url: /
+              - img [ref=e110]
+              - generic [ref=e113]: Главная
+            - link "История" [ref=e114] [cursor=pointer]:
+              - /url: /history
+              - img [ref=e115]
+              - generic [ref=e119]: История
+            - link "Аналитика" [ref=e120] [cursor=pointer]:
+              - /url: /analytics
+              - img [ref=e121]
+              - generic [ref=e123]: Аналитика
+            - link "Настройки" [ref=e124] [cursor=pointer]:
+              - /url: /settings
+              - img [ref=e125]
+              - generic [ref=e128]: Настройки
+          - generic [ref=e129]:
+            - button "Открыть быстрый AI-ввод" [ref=e130]:
+              - img [ref=e131]
+            - paragraph [ref=e133]: AI ввод
+    - region "Notifications alt+T"
+  - generic [ref=e134]: "0"

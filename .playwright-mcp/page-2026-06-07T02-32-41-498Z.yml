@@ -1,0 +1,61 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - heading "Аналитика" [level=1] [ref=e6]
+        - generic [ref=e7]:
+          - button "Базовая" [ref=e8]
+          - button "Pro" [ref=e9]:
+            - img [ref=e10]
+            - text: Pro
+        - button "1 — 30 июня 2026 г. Изменить" [ref=e12]:
+          - generic [ref=e13]:
+            - img [ref=e14]
+            - generic [ref=e16]: 1 — 30 июня 2026 г.
+          - generic [ref=e17]: Изменить
+      - generic [ref=e20]:
+        - generic [ref=e21]:
+          - paragraph [ref=e22]: Доходы
+          - paragraph [ref=e23]: "+0"
+        - generic [ref=e24]:
+          - paragraph [ref=e25]: Расходы
+          - paragraph [ref=e26]: −0
+        - generic [ref=e27]:
+          - paragraph [ref=e28]: Баланс
+          - paragraph [ref=e29]: "+0"
+      - generic [ref=e31]:
+        - heading "Доходы vs Расходы" [level=2] [ref=e32]
+        - generic [ref=e34]:
+          - img [ref=e36]
+          - heading "Нет данных за период" [level=3] [ref=e38]
+          - paragraph [ref=e39]: Добавьте транзакции, и мы покажем красивую аналитику
+      - generic [ref=e41]:
+        - heading "Структура расходов" [level=2] [ref=e42]
+        - paragraph [ref=e44]: Нет данных
+      - generic [ref=e46]:
+        - heading "Топ категорий" [level=2] [ref=e47]
+        - generic [ref=e48]: Нет данных
+    - navigation:
+      - generic [ref=e49]:
+        - generic [ref=e50]:
+          - link "Главная" [ref=e51] [cursor=pointer]:
+            - /url: /
+            - img [ref=e52]
+            - generic [ref=e55]: Главная
+          - link "История" [ref=e56] [cursor=pointer]:
+            - /url: /history
+            - img [ref=e57]
+            - generic [ref=e61]: История
+          - link "Аналитика" [ref=e62] [cursor=pointer]:
+            - /url: /analytics
+            - img [ref=e63]
+            - generic [ref=e65]: Аналитика
+          - link "Настройки" [ref=e66] [cursor=pointer]:
+            - /url: /settings
+            - img [ref=e67]
+            - generic [ref=e70]: Настройки
+        - generic [ref=e71]:
+          - button "Открыть быстрый AI-ввод" [ref=e72]:
+            - img [ref=e73]
+          - paragraph [ref=e75]: AI ввод
+  - region "Notifications alt+T"

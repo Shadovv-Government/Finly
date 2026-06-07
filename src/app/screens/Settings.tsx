@@ -34,6 +34,8 @@ import { Input } from '../components/ui/input';
 import { BottomSheet } from '../components/BottomSheet';
 import { exportToFile, exportCSVToFile, importFromFile, ImportResult } from '../../db/exportImport';
 import { useNotifications } from '../hooks/useNotifications';
+import { usePremium } from '../hooks/usePremium';
+import { PremiumAvatarWrapper } from '../components/PremiumAvatarWrapper';
 import { db } from '../../db/db';
 
 // ==================== Helpers ====================
@@ -53,6 +55,7 @@ const getInitial = (name: string) => name.charAt(0).toUpperCase();
 
 function ProfileSection() {
   const { user, updateProfile } = useAuth();
+  const { isPremium } = usePremium();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
   const [editName, setEditName] = useState('');
@@ -113,18 +116,20 @@ function ProfileSection() {
     <div className="px-4 py-4">
       <div className="bg-card rounded-2xl p-4 border border-border">
         <div className="flex items-center gap-4 mb-4">
-          <button
-            onClick={() => setIsAvatarDialogOpen(true)}
-            className={`w-16 h-16 rounded-full overflow-hidden flex items-center justify-center text-white text-2xl font-bold hover:opacity-90 transition-opacity ${
-              !hasPhoto ? `bg-gradient-to-br ${user?.avatarColor || 'from-amber-400 to-pink-500'}` : ''
-            }`}
-          >
-            {hasPhoto ? (
-              <img src={user!.avatarDataUrl} alt="Аватар" className="w-full h-full object-cover" />
-            ) : (
-              user ? getInitial(user.name) : 'U'
-            )}
-          </button>
+          <PremiumAvatarWrapper isPremium={isPremium}>
+            <button
+              onClick={() => setIsAvatarDialogOpen(true)}
+              className={`w-16 h-16 rounded-full overflow-hidden flex items-center justify-center text-white text-2xl font-bold hover:opacity-90 transition-opacity ${
+                !hasPhoto ? `bg-gradient-to-br ${user?.avatarColor || 'from-amber-400 to-pink-500'}` : ''
+              }`}
+            >
+              {hasPhoto ? (
+                <img src={user!.avatarDataUrl} alt="Аватар" className="w-full h-full object-cover" />
+              ) : (
+                user ? getInitial(user.name) : 'U'
+              )}
+            </button>
+          </PremiumAvatarWrapper>
           <div className="flex-1">
             <h2 className="font-bold text-lg">{user?.name || 'Гость'}</h2>
             <p className="text-sm text-muted-foreground">Локальный аккаунт</p>

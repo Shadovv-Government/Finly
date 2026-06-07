@@ -1,0 +1,45 @@
+<h2>3 Подхода к Премиум-Аналитике</h2>
+<p class="subtitle">Выберите архитектурный подход — или предложите гибрид</p>
+
+<div class="options" data-multiselect>
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Premium Dashboard — Отдельный Экран</h3>
+      <p>Новый экран <code>PremiumAnalytics.tsx</code>, доступный только после покупки. Все 3 категории фич на одном экране с вкладками.</p>
+      <div class="pros-cons" style="margin-top: 12px;">
+        <div class="pros"><h4>Плюсы</h4><ul><li>Чёткий водораздел free/premium</li><li>Легко продавать ценность</li><li>Код изолирован, не ломает бесплатное</li></ul></div>
+        <div class="cons"><h4>Минусы</h4><ul><li>Два разных экрана аналитики</li><li>Возможное дублирование данных</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Integrated — Расширение Существующей Аналитики</h3>
+      <p>Премиум-секции встраиваются в текущий <code>Analytics.tsx</code>, разблокируются по флагу premium.</p>
+      <div class="pros-cons" style="margin-top: 12px;">
+        <div class="pros"><h4>Плюсы</h4><ul><li>Единый опыт аналитики</li><li>Нет дублирования</li></ul></div>
+        <div class="cons"><h4>Минусы</h4><ul><li>Смешивание кода</li><li>Сложнее тестировать</li><li>Раздувается файл</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>AI Insights Hub — AI-Центричный</h3>
+      <p>Новый экран с AI-финансовым ассистентом, который генерирует персональные инсайты, прогнозы и отчёты на естественном языке.</p>
+      <div class="pros-cons" style="margin-top: 12px;">
+        <div class="pros"><h4>Плюсы</h4><ul><li>Сильный дифференциатор</li><li>Использует существующий AI-стек</li><li>"Вау-эффект"</li></ul></div>
+        <div class="cons"><h4>Минусы</h4><ul><li>Требует интернет для AI-части</li><li>Дороже в эксплуатации (API)</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Моя рекомендация: A + C (Гибрид)</h3>
+  <p>Отдельный <strong>PremiumAnalytics</strong> экран с тремя вкладками (Прогнозы, Сравнения, Health Score) + AI-инсайты как сквозная функция. Большинство данных считается локально (ML), AI генерирует только текстовые инсайты по запросу — через существующий OpenRouter прокси.</p>
+</div>

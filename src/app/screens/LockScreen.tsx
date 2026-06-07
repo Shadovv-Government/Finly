@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Fingerprint, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { usePremium } from '../hooks/usePremium';
+import { PremiumAvatarWrapper } from '../components/PremiumAvatarWrapper';
 import { Button } from '../components/ui/button';
 import {
   AlertDialog,
@@ -17,6 +19,7 @@ const MAX_FAILURES = 3;
 
 export const LockScreen = () => {
   const { user, biometric } = useAuth();
+  const { isPremium } = usePremium();
   const [error, setError] = useState('');
   const [failureCount, setFailureCount] = useState(0);
   const [isUnlocking, setIsUnlocking] = useState(false);
@@ -71,17 +74,19 @@ export const LockScreen = () => {
         {/* Контентная карточка */}
         <div className="card-featured w-full flex flex-col items-center gap-6 p-8">
           {/* Аватар */}
-          <div
-            className={`w-20 h-20 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-md overflow-hidden ${
-              !hasPhoto ? `bg-gradient-to-br ${user?.avatarColor || 'from-amber-400 to-pink-500'}` : ''
-            }`}
-          >
-            {hasPhoto ? (
-              <img src={user!.avatarDataUrl} alt="Аватар" className="w-full h-full object-cover" />
-            ) : (
-              user ? getInitial(user.name) : 'U'
-            )}
-          </div>
+          <PremiumAvatarWrapper isPremium={isPremium}>
+            <div
+              className={`w-20 h-20 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-md overflow-hidden ${
+                !hasPhoto ? `bg-gradient-to-br ${user?.avatarColor || 'from-amber-400 to-pink-500'}` : ''
+              }`}
+            >
+              {hasPhoto ? (
+                <img src={user!.avatarDataUrl} alt="Аватар" className="w-full h-full object-cover" />
+              ) : (
+                user ? getInitial(user.name) : 'U'
+              )}
+            </div>
+          </PremiumAvatarWrapper>
 
           {/* Имя */}
           <div className="text-center">

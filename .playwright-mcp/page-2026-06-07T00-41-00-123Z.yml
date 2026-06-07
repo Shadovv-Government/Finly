@@ -1,0 +1,15 @@
+- generic [ref=e2]:
+  - generic [ref=e9]:
+    - generic [ref=e12]: F
+    - heading "Finly" [level=1] [ref=e13]
+    - paragraph [ref=e14]: Умное приложение для управления личными финансами
+    - generic [ref=e15]:
+      - generic [ref=e16]:
+        - text: Как к вам обращаться?
+        - textbox "Как к вам обращаться?" [active] [ref=e17]:
+          - /placeholder: Введите ваше имя
+      - button "Начать" [ref=e18]:
+        - text: Начать
+        - img [ref=e19]
+      - paragraph [ref=e21]: Локальный аккаунт на этом устройстве
+  - region "Notifications alt+T"

@@ -1,0 +1,79 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - heading "Аналитика" [level=1] [ref=e8]
+          - generic [ref=e9]:
+            - button "Базовая" [ref=e10]
+            - button "Pro" [ref=e11]:
+              - img [ref=e12]
+              - text: Pro
+        - generic [ref=e14]:
+          - generic [ref=e19]:
+            - button "Прогнозы" [ref=e20]:
+              - img [ref=e21]
+              - text: Прогнозы
+            - button "Сравнения" [ref=e24]:
+              - img [ref=e25]
+              - text: Сравнения
+            - button "Здоровье" [ref=e26]:
+              - img [ref=e27]
+              - text: Здоровье
+            - button "AI" [active] [ref=e29]:
+              - img [ref=e30]
+              - text: AI
+          - generic [ref=e744]:
+            - generic [ref=e746]:
+              - generic [ref=e747]:
+                - heading "Инсайты" [level=3] [ref=e748]:
+                  - img [ref=e749]
+                  - text: Инсайты
+                - generic [ref=e751]: "1"
+              - generic [ref=e753]:
+                - img [ref=e755]
+                - generic [ref=e758]:
+                  - paragraph [ref=e759]: Без трат сегодня
+                  - paragraph [ref=e760]: Вы ещё ничего не потратили сегодня — отличный результат!
+            - generic [ref=e762]:
+              - heading "Спросить AI" [level=3] [ref=e764]
+              - generic [ref=e766]:
+                - button "Мой баланс" [ref=e767]
+                - button "Расходы за месяц" [ref=e768]
+                - button "Состояние бюджетов" [ref=e769]
+                - button "Мои цели" [ref=e770]
+                - button "Прогноз до конца месяца" [ref=e771]
+              - generic [ref=e772]:
+                - textbox "Введите вопрос…" [ref=e773]
+                - button [disabled] [ref=e774]:
+                  - img [ref=e775]
+            - generic [ref=e779]:
+              - heading "Еженедельный AI-отчёт" [level=3] [ref=e780]:
+                - img [ref=e781]
+                - text: Еженедельный AI-отчёт
+              - button "Сгенерировать отчёт" [ref=e783]
+      - navigation:
+        - generic [ref=e76]:
+          - generic [ref=e77]:
+            - link "Главная" [ref=e78] [cursor=pointer]:
+              - /url: /
+              - img [ref=e79]
+              - generic [ref=e82]: Главная
+            - link "История" [ref=e83] [cursor=pointer]:
+              - /url: /history
+              - img [ref=e84]
+              - generic [ref=e88]: История
+            - link "Аналитика" [ref=e89] [cursor=pointer]:
+              - /url: /analytics
+              - img [ref=e90]
+              - generic [ref=e92]: Аналитика
+            - link "Настройки" [ref=e93] [cursor=pointer]:
+              - /url: /settings
+              - img [ref=e94]
+              - generic [ref=e97]: Настройки
+          - generic [ref=e98]:
+            - button "Открыть быстрый AI-ввод" [ref=e99]:
+              - img [ref=e100]
+            - paragraph [ref=e102]: AI ввод
+    - region "Notifications alt+T"
+  - generic [ref=e103]: "0"

@@ -1,0 +1,128 @@
+<style>
+.issue-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+.issue-card {
+  background: var(--bg-secondary, #1e1e2e);
+  border: 1px solid var(--border, #333);
+  border-radius: 12px;
+  padding: 14px;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.issue-card:hover { border-color: #7c3aed; box-shadow: 0 0 0 2px #7c3aed33; }
+.issue-card.selected { border-color: #7c3aed; box-shadow: 0 0 0 2px #7c3aed66; }
+.tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.tag.bug { background: #dc262620; color: #f87171; border: 1px solid #dc262640; }
+.tag.missing { background: #d9770620; color: #fb923c; border: 1px solid #d9770640; }
+.tag.polish { background: #7c3aed20; color: #a78bfa; border: 1px solid #7c3aed40; }
+.tag.code { background: #0284c720; color: #38bdf8; border: 1px solid #0284c740; }
+.issue-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+.issue-desc { font-size: 12px; opacity: 0.65; line-height: 1.5; }
+.impact-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+.impact-high { background: #f87171; }
+.impact-med  { background: #fbbf24; }
+.impact-low  { background: #60a5fa; }
+.legend { display: flex; gap: 16px; margin-bottom: 12px; font-size: 12px; opacity: 0.6; }
+</style>
+
+<h2>Что мешает «конфетке» — находки после ревью кода</h2>
+<p class="subtitle">Выбери приоритеты для доработки (можно несколько)</p>
+
+<div class="legend">
+  <span><span class="impact-dot impact-high"></span>Высокий приоритет</span>
+  <span><span class="impact-dot impact-med"></span>Средний</span>
+  <span><span class="impact-dot impact-low"></span>Низкий</span>
+</div>
+
+<div class="issue-grid" data-multiselect>
+
+  <div class="option issue-card" data-choice="ci-band" onclick="toggleSelect(this)">
+    <div class="letter" style="display:none"></div>
+    <span class="tag bug">Баг</span>
+    <div style="margin-bottom:4px"><span class="impact-dot impact-high"></span><span class="issue-title">CI-диапазон невидим на графике</span></div>
+    <div class="issue-desc">
+      Прогноз расходов должен показывать закрашенную зону доверительного интервала (±CI), но <code>stroke="transparent"</code> делает её невидимой. Ключевая фича прогнозирования не работает визуально.
+    </div>
+  </div>
+
+  <div class="option issue-card" data-choice="hardcoded-income" onclick="toggleSelect(this)">
+    <div class="letter" style="display:none"></div>
+    <span class="tag bug">Баг</span>
+    <div style="margin-bottom:4px"><span class="impact-dot impact-high"></span><span class="issue-title">Доход захардкожен: 100 000 ₽</span></div>
+    <div class="issue-desc">
+      В <code>PredictiveTab.tsx</code> WhatIfSimulator получает <code>totalIncome={100000}</code> вместо реального дохода пользователя. Все расчёты нормы сбережений в симуляторе — неверные.
+    </div>
+  </div>
+
+  <div class="option issue-card" data-choice="heatmap-colors" onclick="toggleSelect(this)">
+    <div class="letter" style="display:none"></div>
+    <span class="tag polish">UX-полировка</span>
+    <div style="margin-bottom:4px"><span class="impact-dot impact-high"></span><span class="issue-title">CalendarHeatmap: зелёный = больше трат?</span></div>
+    <div class="issue-desc">
+      Сейчас <em>больше расходов</em> = <em>темнее зелёный</em>. Но зелёный — цвет «хорошо». Правильная семантика: больше трат → тёплый цвет (янтарный/красный). Показать сравнение.
+    </div>
+  </div>
+
+  <div class="option issue-card" data-choice="heatmap-months" onclick="toggleSelect(this)">
+    <div class="letter" style="display:none"></div>
+    <span class="tag missing">Не хватает</span>
+    <div style="margin-bottom:4px"><span class="impact-dot impact-high"></span><span class="issue-title">CalendarHeatmap без меток месяцев</span></div>
+    <div class="issue-desc">
+      GitHub-style heatmap без меток месяцев сверху — пользователь не понимает, где январь, где июнь. Нужна строка с 12 метками месяцев над колонками.
+    </div>
+  </div>
+
+  <div class="option issue-card" data-choice="markdown-ai" onclick="toggleSelect(this)">
+    <div class="letter" style="display:none"></div>
+    <span class="tag missing">Не хватает</span>
+    <div style="margin-bottom:4px"><span class="impact-dot impact-med"></span><span class="issue-title">AI-ответы без markdown-рендеринга</span></div>
+    <div class="issue-desc">
+      Спека требует «markdown rendering», но AI-ответы выводятся как <code>whitespace-pre-line</code> простым текстом. Заголовки, списки, bold — всё слипается в одну кашу.
+    </div>
+  </div>
+
+  <div class="option issue-card" data-choice="ai-presets" onclick="toggleSelect(this)">
+    <div class="letter" style="display:none"></div>
+    <span class="tag polish">UX-полировка</span>
+    <div style="margin-bottom:4px"><span class="impact-dot impact-med"></span><span class="issue-title">AI-чат без пресетов вопросов</span></div>
+    <div class="issue-desc">
+      Пустое поле ввода создаёт blank page problem — пользователь не знает что спросить. Пресеты-пилюли: «Где я трачу больше всего?», «На чём сэкономить?», «Прогноз на месяц».
+    </div>
+  </div>
+
+  <div class="option issue-card" data-choice="radix-slider" onclick="toggleSelect(this)">
+    <div class="letter" style="display:none"></div>
+    <span class="tag polish">UX-полировка</span>
+    <div style="margin-bottom:4px"><span class="impact-dot impact-med"></span><span class="issue-title">WhatIf: нативный range вместо Radix Slider</span></div>
+    <div class="issue-desc">
+      <code>@radix-ui/react-slider</code> уже установлен, но используется нативный <code>&lt;input range&gt;</code>. Radix даёт лучший тактильный отклик, доступность, стилизацию. Слайдеры — центральный UI симулятора.
+    </div>
+  </div>
+
+  <div class="option issue-card" data-choice="online-reactive" onclick="toggleSelect(this)">
+    <div class="letter" style="display:none"></div>
+    <span class="tag code">Код</span>
+    <div style="margin-bottom:4px"><span class="impact-dot impact-low"></span><span class="issue-title">isOnline не реактивный</span></div>
+    <div class="issue-desc">
+      <code>navigator.onLine</code> вычисляется один раз при рендере. Если пользователь отключился после загрузки страницы — UI не обновится. Нужен <code>useEffect</code> с событиями <code>online</code>/<code>offline</code>.
+    </div>
+  </div>
+
+  <div class="option issue-card" data-choice="any-types" onclick="toggleSelect(this)">
+    <div class="letter" style="display:none"></div>
+    <span class="tag code">Код</span>
+    <div style="margin-bottom:4px"><span class="impact-dot impact-low"></span><span class="issue-title">useState&lt;any&gt; в PredictiveTab</span></div>
+    <div class="issue-desc">
+      Три state-поля типизированы как <code>any</code>. TypeScript теряет проверку типов для всего прогнозного кода. Легко фиксится — типы уже есть в <code>db/premium.ts</code>.
+    </div>
+  </div>
+
+</div>

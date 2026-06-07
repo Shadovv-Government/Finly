@@ -1,0 +1,78 @@
+<h2>Тестирование и Граничные Случаи</h2>
+<p class="subtitle">Что может пойти не так — и как мы это проверим</p>
+
+<div class="section">
+  <h3>Граничные Случаи</h3>
+  <div class="cards">
+    <div class="card">
+      <div class="card-body">
+        <h3>Нет данных</h3>
+        <p>Пользователь только что зарегистрировался. Ни одной транзакции. Все премиум-функции показывают EmptyState с понятным CTA: "Добавьте первые транзакции, чтобы разблокировать аналитику".</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <h3>Мало данных</h3>
+        <p>Меньше 7 дней или меньше 10 транзакций. Прогнозы и тренды показываются с предупреждением о низкой точности ("Накоплено данных: 4 дня из 90. Точность прогноза низкая").</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <h3>Офлайн</h3>
+        <p>AI-инсайты и AI-диалог недоступны без интернета. Вместо них: сообщение "Для AI-инсайтов нужен интернет" + локальный инсайты (детектор проблем, аномалии) работают всегда.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <h3>Премиум не куплен</h3>
+        <p>PremiumGate показывает апселл с демо-превью (скриншоты) и описанием всех функций. Кнопка покупки. Без премиума — только базовая аналитика.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <h3>Восстановление премиума</h3>
+        <p>При импорте данных из JSON (export/import) — флаг premium переносится. При сбросе данных — премиум сохраняется в отдельном ключе settings.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <h3>Большие данные</h3>
+        <p>2000+ транзакций. Все аггрегации используют IndexedDB индексы (O(log n)), не загружают всё в память. Прогнозы лимитированы последними 90 днями.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Стратегия Тестирования</h3>
+  <div class="mockup">
+    <div class="mockup-header">Test Plan</div>
+    <div class="mockup-body">
+      <table style="width:100%;font-size:13px;border-collapse:collapse;">
+        <tr style="background:var(--muted);"><th style="padding:8px;text-align:left;">Уровень</th><th style="padding:8px;text-align:left;">Что тестируем</th><th style="padding:8px;text-align:left;">Инструменты</th></tr>
+        <tr><td style="padding:8px;"><strong>Unit</strong></td><td style="padding:8px;"><code>healthScore.ts</code>, <code>forecasting.ts</code>, <code>seasonality.ts</code>, <code>premium.ts</code></td><td style="padding:8px;">Vitest + fake-indexeddb</td></tr>
+        <tr style="background:var(--muted);"><td style="padding:8px;"><strong>Component</strong></td><td style="padding:8px;">PremiumGate, HealthScoreGauge, WhatIfSimulator, CalendarHeatmap</td><td style="padding:8px;">Vitest + Testing Library</td></tr>
+        <tr><td style="padding:8px;"><strong>Integration</strong></td><td style="padding:8px;">PremiumAnalytics (весь экран с данными)</td><td style="padding:8px;">Vitest + fake-indexeddb</td></tr>
+        <tr style="background:var(--muted);"><td style="padding:8px;"><strong>E2E</strong></td><td style="padding:8px;">Сценарий: покупка → аналитика → AI-отчёт</td><td style="padding:8px;">Playwright</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Метрики Успеха</h3>
+  <div class="cards">
+    <div class="card"><div class="card-body">
+      <h3>⚡ &lt; 2 сек</h3><p>Загрузка премиум-дашборда (все вычисления локальные)</p>
+    </div></div>
+    <div class="card"><div class="card-body">
+      <h3>📱 Офлайн-first</h3><p>9 из 11 функций работают без интернета</p>
+    </div></div>
+    <div class="card"><div class="card-body">
+      <h3>🧪 &gt; 80% coverage</h3><p>Покрытие нового кода тестами</p>
+    </div></div>
+    <div class="card"><div class="card-body">
+      <h3>♿ a11y</h3><p>Все графики имеют текстовые альтернативы и keyboard navigation</p>
+    </div></div>
+  </div>
+</div>

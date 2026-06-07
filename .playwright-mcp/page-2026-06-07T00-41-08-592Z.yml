@@ -1,0 +1,12 @@
+- generic [ref=e2]:
+  - generic [ref=e22]:
+    - img [ref=e24]
+    - generic [ref=e33]:
+      - generic [ref=e34]:
+        - img [ref=e35]
+        - paragraph [ref=e38]: Защитите приложение
+      - paragraph [ref=e39]: Используйте Face ID или отпечаток пальца для быстрого входа
+    - generic [ref=e40]:
+      - button "Включить" [ref=e41]
+      - button "Пропустить" [ref=e42]
+  - region "Notifications alt+T"

@@ -1,0 +1,17 @@
+- generic [ref=e2]:
+  - generic [ref=e296]:
+    - generic [ref=e299]: F
+    - heading "Finly" [level=1] [ref=e300]
+    - paragraph [ref=e301]: Умное приложение для управления личными финансами
+    - generic [ref=e302]:
+      - generic [ref=e303]:
+        - text: Как к вам обращаться?
+        - textbox "Как к вам обращаться?" [ref=e304]:
+          - /placeholder: Введите ваше имя
+          - text: Test
+        - paragraph [ref=e309]: Ошибка регистрации. Попробуйте снова.
+      - button "Начать" [ref=e305]:
+        - text: Начать
+        - img [ref=e310]
+      - paragraph [ref=e308]: Локальный аккаунт на этом устройстве
+  - region "Notifications alt+T"

@@ -633,7 +633,7 @@ export class FinlyClassifier {
     this.rules = [...(this.cfg.customRules ?? []), ...BUILTIN_RULES]
       .sort((a, b) => b.priority - a.priority);
 
-    // 7. Warm-up: dummy pass through both models to compile WebGL kernels
+    // 7. Warm-up: dummy pass through both models to compile kernels
     const warmup = (m: tf.LayersModel) => tf.tidy(() => {
       const tD = tf.zeros([1, textDim]);
       const nD = tf.zeros([1, numericDim]);

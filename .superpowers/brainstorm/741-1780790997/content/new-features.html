@@ -1,0 +1,133 @@
+<style>
+.feat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+.feat-card {
+  background: var(--bg-secondary, #1e1e2e);
+  border: 1px solid var(--border, #333);
+  border-radius: 12px;
+  padding: 14px;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.feat-card:hover { border-color: #7c3aed; box-shadow: 0 0 0 2px #7c3aed33; }
+.feat-card.selected { border-color: #7c3aed; box-shadow: 0 0 0 2px #7c3aed66; background: #7c3aed0d; }
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10px; font-weight: 600; padding: 2px 8px;
+  border-radius: 20px; margin-bottom: 8px;
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+.badge.new     { background: #7c3aed20; color: #a78bfa; border: 1px solid #7c3aed40; }
+.badge.improve { background: #0284c720; color: #38bdf8; border: 1px solid #0284c740; }
+.badge.connect { background: #16a34a20; color: #4ade80; border: 1px solid #16a34a40; }
+.feat-title { font-weight: 600; font-size: 14px; margin-bottom: 5px; }
+.feat-desc  { font-size: 12px; opacity: 0.65; line-height: 1.5; }
+.feat-preview {
+  margin-top: 10px; padding: 8px; border-radius: 8px;
+  background: #00000030; font-size: 11px; opacity: 0.7;
+  border: 1px solid #ffffff10;
+  font-family: monospace; line-height: 1.6;
+}
+.effort { display: flex; align-items: center; gap: 4px; margin-top: 8px; font-size: 11px; opacity: 0.5; }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.effort.easy  { color: #4ade80; }
+.effort.med   { color: #fbbf24; }
+.effort.hard  { color: #f87171; }
+</style>
+
+<h2>Что добавляем — новые фичи и улучшения</h2>
+<p class="subtitle">Выбери всё что нравится (можно несколько)</p>
+
+<div class="feat-grid" data-multiselect>
+
+  <!-- NEW PANELS -->
+  <div class="option feat-card" data-choice="dow-chart" onclick="toggleSelect(this)">
+    <div class="letter" style="display:none"></div>
+    <span class="badge new">📅 Новая панель</span>
+    <div class="feat-title">День недели — когда больше тратишь?</div>
+    <div class="feat-desc">Bar chart: Пн–Вс, высота = средние траты. Сразу видно «пятничный эффект». Данные уже есть в <code>getSpendByDayOfWeek</code>.</div>
+    <div class="feat-preview">Пн ▓▓░░  2 100 ₽
+Пт ▓▓▓▓▓ 5 800 ₽  ← пик
+Сб ▓▓▓░░ 3 400 ₽</div>
+    <div class="effort easy"><span class="dot"></span> Лёгко — функция уже в analytics.ts</div>
+  </div>
+
+  <div class="option feat-card" data-choice="goals-timeline" onclick="toggleSelect(this)">
+    <div class="letter" style="display:none"></div>
+    <span class="badge connect">🔗 Интеграция с Goals</span>
+    <div class="feat-title">Прогноз достижения целей</div>
+    <div class="feat-desc">В HealthTab: список активных целей с прогресс-баром и датой «при текущей норме сбережений достигнешь через N месяцев». Мотивирует.</div>
+    <div class="feat-preview">🏖 Отпуск   ████████░░ 80%
+   Ещё 12 000 ₽ → через ~1.5 мес
+🚗 Машина   ███░░░░░░░ 30%
+   Ещё 150 000 ₽ → через ~8 мес</div>
+    <div class="effort easy"><span class="dot"></span> Лёгко — <code>getGoalsProgress</code> уже есть</div>
+  </div>
+
+  <div class="option feat-card" data-choice="top-transactions" onclick="toggleSelect(this)">
+    <div class="letter" style="display:none"></div>
+    <span class="badge new">💸 Новая панель</span>
+    <div class="feat-title">Топ-10 крупнейших трат</div>
+    <div class="feat-desc">Список самых больших одиночных транзакций за период. Иногда одна трата всё портит — здесь её сразу видно. Tap → детали транзакции.</div>
+    <div class="feat-preview">1. Авиабилеты   −18 500 ₽  15 мая
+2. Ремонт ПК    −12 000 ₽  3 мая
+3. Продукты     −7 400 ₽   28 мая</div>
+    <div class="effort easy"><span class="dot"></span> Лёгко — <code>getLargestTransactions</code> уже есть</div>
+  </div>
+
+  <div class="option feat-card" data-choice="budget-vs-actual" onclick="toggleSelect(this)">
+    <div class="letter" style="display:none"></div>
+    <span class="badge connect">🔗 Интеграция с Budgets</span>
+    <div class="feat-title">Бюджет vs Факт</div>
+    <div class="feat-desc">Горизонтальные bar chart: план vs факт по каждой категории с бюджетом. Сразу видно перерасход. Только у кого есть бюджеты.</div>
+    <div class="feat-preview">Продукты  ████████░░ 80% (8к/10к)
+Кафе      ██████████ 120% ⚠️ перерасход
+Транспорт ██████░░░░ 60% (3к/5к)</div>
+    <div class="effort med"><span class="dot"></span> Средне — <code>getAllBudgetsProgress</code> уже есть</div>
+  </div>
+
+  <div class="option feat-card" data-choice="period-picker" onclick="toggleSelect(this)">
+    <div class="letter" style="display:none"></div>
+    <span class="badge improve">⚙️ Улучшение</span>
+    <div class="feat-title">Выбор периода для всей аналитики</div>
+    <div class="feat-desc">Сегментед-контрол в шапке: «Месяц / Квартал / Год». Все три вкладки переключаются вместе. Сейчас всё захардкожено на текущий месяц.</div>
+    <div class="feat-preview">[  Месяц  ] [ Квартал ] [   Год   ]
+        ↑ выбрано
+→ все графики пересчитываются</div>
+    <div class="effort hard"><span class="dot"></span> Сложнее — рефакторинг data-fetching во всех вкладках</div>
+  </div>
+
+  <div class="option feat-card" data-choice="whatif-presets" onclick="toggleSelect(this)">
+    <div class="letter" style="display:none"></div>
+    <span class="badge improve">⚙️ Улучшение WhatIf</span>
+    <div class="feat-title">Сценарии + кнопка сброса в симуляторе</div>
+    <div class="feat-desc">Кнопка «Сбросить всё» + пресетные сценарии: «Правило 50/30/20», «Режим экономии −20%», «Откладываю X₽ в месяц». Делает симулятор живым.</div>
+    <div class="feat-preview">[ Правило 50/30/20 ] [ −20% везде ] [ Сброс ]
+— применяет значения слайдеров одним кликом</div>
+    <div class="effort easy"><span class="dot"></span> Лёгко — только UI поверх готового симулятора</div>
+  </div>
+
+  <div class="option feat-card" data-choice="health-drilldown" onclick="toggleSelect(this)">
+    <div class="letter" style="display:none"></div>
+    <span class="badge improve">⚙️ Улучшение HealthTab</span>
+    <div class="feat-title">Кликабельные метрики здоровья</div>
+    <div class="feat-desc">Сейчас метрики — просто полоски. По клику → sheet с объяснением: «Что это?», «Ваш показатель: X», «Как улучшить?» с конкретными шагами.</div>
+    <div class="feat-preview">📊 Норма сбережений  72/100  →  [нажал]
+┌─ Что это? Доля дохода которую вы сберегаете
+│  Ваш показатель: 15% (норма: 20%+)
+│  Как улучшить: Автоматически откладывать...
+└────────────────────────────────────────────</div>
+    <div class="effort med"><span class="dot"></span> Средне — bottomsheet с контентом на каждую метрику</div>
+  </div>
+
+  <div class="option feat-card" data-choice="coffee-effect" onclick="toggleSelect(this)">
+    <div class="letter" style="display:none"></div>
+    <span class="badge new">✨ Новая фича</span>
+    <div class="feat-title">«Эффект кофе» — маленькие траты × год</div>
+    <div class="feat-desc">Находит регулярные небольшие траты (кафе, подписки) и показывает: «Вы тратите 350₽/день на кофе → 127 750₽ в год». Wow-moment который врезается в память.</div>
+    <div class="feat-preview">☕ Кофе/кафе:  350 ₽/день
+   → 2 450 ₽/нед  → 127 750 ₽/год
+   → хватило бы на: 8.5 мес. отпуска</div>
+    <div class="effort med"><span class="dot"></span> Средне — нужна логика для группировки частых трат</div>
+  </div>
+
+</div>

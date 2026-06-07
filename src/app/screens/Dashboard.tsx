@@ -23,6 +23,8 @@ import {
   DialogTitle,
 } from '../components/ui/dialog';
 import { NotificationsPanel } from '../components/NotificationsPanel';
+import { usePremium } from '../hooks/usePremium';
+import { PremiumAvatarWrapper } from '../components/PremiumAvatarWrapper';
 import { BottomSheet } from '../components/BottomSheet';
 import { MS_PER_MONTH, MS_PER_WEEK } from '../constants';
 import { formatDateInputValue, parseDateInputValue } from '../utils/formatCurrency';
@@ -364,6 +366,7 @@ export const Dashboard = () => {
   const { transactions } = useTransactions({ period, startDate: periodRange.start, endDate: periodRange.end });
   const { categories } = useCategories();
   const { user, updateProfile } = useAuth();
+  const { isPremium } = usePremium();
   const { hasUnread, notifications: panelNotifications, markAllRead, clearRead } = useNotificationPanel();
   const { checkBudgets } = useBudgetNotifications();
   const { templates } = useRecurringTemplates();
@@ -462,22 +465,24 @@ export const Dashboard = () => {
                 <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-card" />
               )}
             </button>
-            <button
-              aria-label="Выбрать аватар"
-              onClick={() => setIsAvatarDialogOpen(true)}
-              className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white relative group shadow-md overflow-hidden ${
-                !hasPhoto ? `bg-gradient-to-br ${user?.avatarColor || 'from-amber-400 to-pink-500'}` : ''
-              }`}
-            >
-              {hasPhoto ? (
-                <img src={user!.avatarDataUrl} alt="Аватар" className="w-full h-full object-cover" />
-              ) : (
-                getInitial(user?.name || 'U')
-              )}
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 sm:opacity-0 transition-opacity flex items-center justify-center">
-                <Camera className="w-4 h-4" />
-              </div>
-            </button>
+            <PremiumAvatarWrapper isPremium={isPremium} size="sm">
+              <button
+                aria-label="Выбрать аватар"
+                onClick={() => setIsAvatarDialogOpen(true)}
+                className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white relative group shadow-md overflow-hidden ${
+                  !hasPhoto ? `bg-gradient-to-br ${user?.avatarColor || 'from-amber-400 to-pink-500'}` : ''
+                }`}
+              >
+                {hasPhoto ? (
+                  <img src={user!.avatarDataUrl} alt="Аватар" className="w-full h-full object-cover" />
+                ) : (
+                  getInitial(user?.name || 'U')
+                )}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 sm:opacity-0 transition-opacity flex items-center justify-center">
+                  <Camera className="w-4 h-4" />
+                </div>
+              </button>
+            </PremiumAvatarWrapper>
           </div>
         </div>
 

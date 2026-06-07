@@ -69,6 +69,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@tensorflow/tfjs-backend-webgl': path.resolve(__dirname, './src/lib/classifier/tfjs-webgl-stub.ts'),
     },
   },
   build: {
@@ -81,7 +82,6 @@ export default defineConfig({
             if (id.includes('@tensorflow')) {
               if (id.includes('@tensorflow/tfjs-core')) return 'vendor-tfjs-core'
               if (id.includes('@tensorflow/tfjs-backend-cpu')) return 'vendor-tfjs-backend-cpu'
-              if (id.includes('@tensorflow/tfjs-backend-webgl')) return 'vendor-tfjs-backend-webgl'
               if (id.includes('@tensorflow/tfjs-converter')) return 'vendor-tfjs-converter'
               if (id.includes('@tensorflow/tfjs-layers')) return 'vendor-tfjs-layers'
               return 'vendor-tfjs'
