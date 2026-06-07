@@ -47,7 +47,7 @@ const INTENTS: Intent[] = [
     id: 'help',
     patterns: [/помощ|что.*умеешь|что.*спросить|help|справк|команд|возможност/],
     handle: async () => ({ answer: HELP_TEXT }),
-    suggestions: ['Расходы за месяц', 'Баланс', 'Мои цели'],
+    suggestions: ['Аномальные траты', 'На чём сэкономить?', 'Прогноз до конца месяца'],
   },
   {
     id: 'recurring',
@@ -61,7 +61,7 @@ const INTENTS: Intent[] = [
       }).join('\n');
       return { answer: `Ближайшие платежи:\n${list}` };
     },
-    suggestions: ['Бюджеты', 'Прогноз до конца месяца', 'Аномальные траты'],
+    suggestions: ['Когда следующая зарплата?', 'Прогноз до конца месяца', 'Аномальные траты'],
   },
   {
     id: 'income-pattern',
@@ -73,7 +73,7 @@ const INTENTS: Intent[] = [
         answer: `Обычно доход приходит ~${pat.typicalDay}-го числа. Средняя сумма: ${fmt(pat.avgAmount)} ₽ (по ${pat.occurrences} поступлениям за 6 мес.).`,
       };
     },
-    suggestions: ['Доходы за месяц', 'Норма сбережений', 'Баланс'],
+    suggestions: ['Норма сбережений', 'Прогноз до конца месяца', 'На чём сэкономить?'],
   },
   {
     id: 'anomalies',
@@ -87,7 +87,7 @@ const INTENTS: Intent[] = [
       }).join('\n');
       return { answer: `Аномальные траты ${period.label.toLowerCase()}:\n${list}` };
     },
-    suggestions: ['Самые крупные траты', 'Расходы по категориям', 'Как сэкономить?'],
+    suggestions: ['На чём сэкономить?', 'В какой день больше трачу?', 'Сравнить с прошлым'],
   },
   {
     id: 'day-of-week',
@@ -105,7 +105,7 @@ const INTENTS: Intent[] = [
         answer: `Больше всего тратите в ${max.dayLabel} (${fmt(max.amount)} ₽), меньше всего в ${min.dayLabel} (${fmt(min.amount)} ₽).\n\nТоп-3 дня:\n${list}`,
       };
     },
-    suggestions: ['Средний расход в день', 'Расходы за неделю', 'Аномальные траты'],
+    suggestions: ['Аномальные траты', 'На чём сэкономить?', 'Прогноз до конца месяца'],
   },
   {
     id: 'advice',
@@ -125,7 +125,7 @@ const INTENTS: Intent[] = [
       if (byCat.length > 1) lines.push(`\nДругие крупные категории: ${byCat.slice(1, 3).map(c => `${c.categoryName} (${fmt(c.amount)} ₽)`).join(', ')}.`);
       return { answer: lines.join('\n') };
     },
-    suggestions: ['Бюджеты', 'Расходы по категориям', 'Прогноз до конца месяца'],
+    suggestions: ['Аномальные траты', 'В какой день больше трачу?', 'Прогноз до конца месяца'],
   },
   {
     id: 'largest',
@@ -139,7 +139,7 @@ const INTENTS: Intent[] = [
       }).join('\n');
       return { answer: `Крупнейшие расходы ${period.label.toLowerCase()}:\n${list}` };
     },
-    suggestions: ['Аномальные траты', 'Расходы по категориям', 'А за прошлый месяц?'],
+    suggestions: ['Аномальные траты', 'На чём сэкономить?', 'А за прошлый месяц?'],
   },
   {
     id: 'daily-avg',
@@ -148,7 +148,7 @@ const INTENTS: Intent[] = [
       const avg = await getAverageDailySpend(period.start, period.end);
       return { answer: `Средние расходы в день ${period.label.toLowerCase()}: ${fmt(avg)} ₽/день.` };
     },
-    suggestions: ['Прогноз до конца месяца', 'Расходы за месяц', 'Сравнить с прошлым'],
+    suggestions: ['Прогноз до конца месяца', 'На чём сэкономить?', 'Сравнить с прошлым'],
   },
   {
     id: 'goals-timeline',
@@ -166,7 +166,7 @@ const INTENTS: Intent[] = [
       });
       return { answer: `При темпе ${fmt(sr.saved)} ₽/мес:\n${lines.join('\n')}` };
     },
-    suggestions: ['Мои цели', 'Норма сбережений', 'Баланс'],
+    suggestions: ['Норма сбережений', 'На чём сэкономить?', 'Прогноз до конца месяца'],
   },
   {
     id: 'goals',
@@ -180,7 +180,7 @@ const INTENTS: Intent[] = [
       );
       return { answer: `Ваши цели:\n${lines.join('\n')}` };
     },
-    suggestions: ['Когда накоплю?', 'Норма сбережений', 'Баланс'],
+    suggestions: ['Когда накоплю?', 'Норма сбережений', 'На чём сэкономить?'],
   },
   {
     id: 'budget',
@@ -201,7 +201,7 @@ const INTENTS: Intent[] = [
       );
       return { answer: `Бюджеты этого месяца:\n${lines.join('\n')}` };
     },
-    suggestions: ['Как сэкономить?', 'Расходы по категориям', 'Прогноз до конца месяца'],
+    suggestions: ['Как сэкономить?', 'Аномальные траты', 'Прогноз до конца месяца'],
   },
   {
     id: 'forecast',
@@ -212,7 +212,7 @@ const INTENTS: Intent[] = [
         answer: `Прогноз до конца месяца: ~${fmt(f.forecastTotal)} ₽\nУже потрачено: ${fmt(f.spent)} ₽\nОсталось дней: ${f.daysLeft}\nТемп: ${fmt(f.dailyRate)} ₽/день`,
       };
     },
-    suggestions: ['Средний расход в день', 'Бюджеты', 'Сравнить с прошлым'],
+    suggestions: ['Средний расход в день', 'На чём сэкономить?', 'Сравнить с прошлым'],
   },
   {
     id: 'compare',
@@ -231,7 +231,7 @@ const INTENTS: Intent[] = [
         answer: `Расходы: ${fmt(lastM.expenses)} ₽ → ${fmt(thisM.expenses)} ₽\nИзменение: ${sign}${fmt(diff)} ₽ (${sign}${pct}%)`,
       };
     },
-    suggestions: ['Расходы по категориям', 'Норма сбережений', 'Баланс'],
+    suggestions: ['Норма сбережений', 'Аномальные траты', 'Прогноз до конца месяца'],
   },
   {
     id: 'savings',
@@ -243,7 +243,7 @@ const INTENTS: Intent[] = [
         answer: `Норма сбережений ${period.label.toLowerCase()}: ${Math.round(sr.savingsRate)}%\nДоходы: ${fmt(sr.income)} ₽\nРасходы: ${fmt(sr.expenses)} ₽\nСохранено: ${fmt(sr.saved)} ₽`,
       };
     },
-    suggestions: ['Баланс', 'Как сэкономить?', 'Мои цели'],
+    suggestions: ['Когда накоплю?', 'Как сэкономить?', 'Прогноз до конца месяца'],
   },
   {
     id: 'balance',
@@ -254,7 +254,7 @@ const INTENTS: Intent[] = [
         answer: `Баланс ${period.label.toLowerCase()}: ${fmt(balance)} ₽\nДоходы: ${fmt(income)} ₽\nРасходы: ${fmt(expenses)} ₽`,
       };
     },
-    suggestions: ['Расходы за месяц', 'Прогноз до конца месяца', 'Норма сбережений'],
+    suggestions: ['Аномальные траты', 'Прогноз до конца месяца', 'Норма сбережений'],
   },
   {
     id: 'income',
@@ -263,7 +263,7 @@ const INTENTS: Intent[] = [
       const { income } = await getBalanceByPeriod(period.start, period.end);
       return { answer: `Доходы ${period.label.toLowerCase()}: ${fmt(income)} ₽` };
     },
-    suggestions: ['Баланс', 'Норма сбережений', 'Когда зарплата?'],
+    suggestions: ['Норма сбережений', 'Когда зарплата?', 'Прогноз до конца месяца'],
   },
   {
     id: 'category',
@@ -284,7 +284,7 @@ const INTENTS: Intent[] = [
         extra: { lastCategoryId: catMatch.id, lastCategoryName: catMatch.name },
       };
     },
-    suggestions: ['А за прошлый месяц?', 'Расходы по категориям', 'Бюджеты'],
+    suggestions: ['А за прошлый месяц?', 'Аномальные траты', 'На чём сэкономить?'],
   },
   {
     id: 'expenses',
@@ -296,11 +296,11 @@ const INTENTS: Intent[] = [
       const top = byCat.slice(0, 3).map(c => `${c.categoryName}: ${fmt(c.amount)} ₽`).join(', ');
       return { answer: `Расходы ${period.label.toLowerCase()}: ${fmt(total)} ₽\nТоп: ${top}` };
     },
-    suggestions: ['Расходы по категориям', 'Самые крупные траты', 'Прогноз до конца месяца'],
+    suggestions: ['Аномальные траты', 'Самые крупные траты', 'Прогноз до конца месяца'],
   },
 ];
 
-const FALLBACK_SUGGESTIONS = ['Помощь', 'Расходы за месяц', 'Баланс'];
+const FALLBACK_SUGGESTIONS = ['Помощь', 'Аномальные траты', 'Прогноз до конца месяца'];
 
 export async function answerQuery(text: string, ctx: ChatCtx): Promise<ChatAnswer> {
   const q = text.toLowerCase();
