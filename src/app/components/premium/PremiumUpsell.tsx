@@ -1,4 +1,6 @@
-import { Crown } from 'lucide-react';
+import { useState } from 'react';
+import { Crown, Loader2 } from 'lucide-react';
+import { db } from '../../../db/db';
 
 const FEATURES = [
   '🔮 ML-Прогнозы расходов на 30 дней',
@@ -15,6 +17,21 @@ const FEATURES = [
 ];
 
 export const PremiumUpsell = () => {
+  const [activating, setActivating] = useState(false);
+  const [activated, setActivated] = useState(false);
+
+  const handleActivate = async () => {
+    setActivating(true);
+    try {
+      await db.settings.put({ key: 'premium', value: true });
+      setActivated(true);
+      // Перезагружаем страницу, чтобы PremiumGate увидел флаг
+      window.location.reload();
+    } catch {
+      setActivating(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-5">
       <div className="text-center max-w-md">
@@ -38,11 +55,24 @@ export const PremiumUpsell = () => {
           ))}
         </div>
 
-        <button className="w-full py-4 bg-amber-500 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-amber-600 transition-colors active:scale-[0.98]">
-          Купить Premium
+        <button
+          onClick={handleActivate}
+          disabled={activating || activated}
+          className="w-full py-4 bg-amber-500 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-amber-600 transition-colors active:scale-[0.98] disabled:opacity-60"
+        >
+          {activating ? (
+            <span className="inline-flex items-center gap-2">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              Активируем...
+            </span>
+          ) : activated ? (
+            '✅ Активировано!'
+          ) : (
+            'Купить Premium'
+          )}
         </button>
         <p className="text-xs text-muted-foreground mt-3">
-          Без подписок. Все будущие обновления включены.
+          {activated ? 'Перезагружаем...' : 'Тестовый режим: нажмите для мгновенной активации'}
         </p>
       </div>
     </div>
