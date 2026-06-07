@@ -10,6 +10,7 @@ import {
   formatAmountInput,
   formatDateInputValue,
   parseAmountInput,
+  parseDateInputValue,
 } from '../utils/formatCurrency';
 import { getLucideIcon } from '../utils/lucideIcons';
 
@@ -98,7 +99,7 @@ export const RecurringTemplateForm: React.FC<RecurringTemplateFormProps> = ({
         type,
         categoryId: selectedCategoryId,
         interval,
-        nextDate: new Date(firstDate).getTime(),
+        nextDate: parseDateInputValue(firstDate).getTime(),
         isActive,
         comment: comment.trim() || undefined,
       });

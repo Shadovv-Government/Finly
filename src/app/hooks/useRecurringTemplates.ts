@@ -6,6 +6,7 @@ import {
   updateRecurringTemplate as updateRecurringDb,
   deleteRecurringTemplate as deleteRecurringDb,
 } from '../../db/operations';
+import { processDueTemplates } from '../../db/recurring';
 import { AppError, DatabaseError, logError, formatErrorForUser } from '../utils/errorHandler';
 
 export function useRecurringTemplates() {
@@ -37,6 +38,7 @@ export function useRecurringTemplates() {
   const add = useCallback(async (template: Omit<RecurringTemplate, 'id'>) => {
     try {
       const id = await addRecurringDb(template);
+      await processDueTemplates();
       await loadTemplates();
       return id;
     } catch (err) {
