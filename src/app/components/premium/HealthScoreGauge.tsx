@@ -22,29 +22,53 @@ const statusColor = (status: string) => {
   }
 };
 
+const CX = 100, CY = 100;
+const R = 80, r = 52;
+
+const SEGMENTS = [
+  { a1: -180, a2: -135, fill: '#ef4444' },
+  { a1: -135, a2:  -90, fill: '#f97316' },
+  { a1:  -90, a2:  -45, fill: '#eab308' },
+  { a1:  -45, a2:    0, fill: '#22c55e' },
+];
+
+const toRad = (d: number) => d * Math.PI / 180;
+
+function segPath(a1: number, a2: number): string {
+  const pt = (a: number, rad: number) => [CX + rad * Math.cos(toRad(a)), CY + rad * Math.sin(toRad(a))] as const;
+  const [ox1, oy1] = pt(a1, R);
+  const [ox2, oy2] = pt(a2, R);
+  const [ix2, iy2] = pt(a2, r);
+  const [ix1, iy1] = pt(a1, r);
+  return `M ${ox1} ${oy1} A ${R} ${R} 0 0 1 ${ox2} ${oy2} L ${ix2} ${iy2} A ${r} ${r} 0 0 0 ${ix1} ${iy1} Z`;
+}
+
 export const HealthScoreGauge = ({ score, metrics }: HealthScoreGaugeProps) => {
   const clamped = Math.max(0, Math.min(100, Math.round(score)));
   const label = getLabel(clamped);
-  const angle = (clamped / 100) * 180;
+  // Needle: -180deg (left, score=0) → 0deg (right, score=100)
+  const needleRot = -180 + (clamped / 100) * 180;
 
   return (
     <div className="flex flex-col items-center">
-      {/* Half-circle gauge */}
-      <div className="relative w-48 h-24 overflow-hidden mb-2">
-        <div
-          className="absolute bottom-0 left-1/2 -translate-x-1/2 w-48 h-48 rounded-full"
+      {/* viewBox crops just the top-half arc + center cap, no overflow-hidden needed */}
+      <svg viewBox="0 14 200 92" className="w-48" style={{ height: 88, display: 'block' }}>
+        {SEGMENTS.map(({ a1, a2, fill }) => (
+          <path key={a1} d={segPath(a1, a2)} fill={fill} />
+        ))}
+        <g
           style={{
-            background: 'conic-gradient(from 180deg, #22c55e 0deg, #eab308 60deg, #f97316 120deg, #ef4444 180deg)',
-            mask: 'radial-gradient(circle at 50% 100%, transparent 55%, black 55%)',
-            WebkitMask: 'radial-gradient(circle at 50% 100%, transparent 55%, black 55%)',
+            transform: `rotate(${needleRot + 90}deg)`,
+            transformOrigin: `${CX}px ${CY}px`,
+            transition: 'transform 700ms ease',
           }}
-        />
-        <div
-          className="absolute bottom-0 left-1/2 w-0.5 h-20 bg-white shadow-md origin-bottom transition-transform duration-700"
-          style={{ transform: `translateX(-50%) rotate(${angle - 90}deg)` }}
-        />
-        <div className="absolute bottom-[-6px] left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-white shadow" />
-      </div>
+        >
+          {/* Dark outline for contrast on any background */}
+          <line x1={CX} y1={CY} x2={CX} y2={CY - 66} stroke="rgba(0,0,0,0.25)" strokeWidth="4" strokeLinecap="round" />
+          <line x1={CX} y1={CY} x2={CX} y2={CY - 66} stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+        </g>
+        <circle cx={CX} cy={CY} r="5" fill="white" stroke="rgba(0,0,0,0.2)" strokeWidth="1" />
+      </svg>
 
       <div className={`text-3xl font-bold ${label.color}`}>{clamped}</div>
       <div className={`text-sm font-medium ${label.color} mb-4`}>{label.text}</div>
