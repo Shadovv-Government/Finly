@@ -21,14 +21,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { Switch } from '../components/ui/switch';
 import { Link } from 'react-router';
 import { useState, useRef, useCallback, useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '../components/ui/dialog';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { BottomSheet } from '../components/BottomSheet';
@@ -150,32 +142,27 @@ function ProfileSection() {
         </div>
       </div>
 
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Редактировать имя</DialogTitle>
-            <DialogDescription>
-              Введите новое имя для отображения в приложении
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <Input
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              placeholder="Ваше имя"
-              autoFocus
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+      <BottomSheet isOpen={isEditDialogOpen} onClose={() => setIsEditDialogOpen(false)} title="Редактировать имя" side="top">
+        <div className="px-4 py-4 space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Введите новое имя для отображения в приложении
+          </p>
+          <Input
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            placeholder="Ваше имя"
+            autoFocus
+          />
+          <div className="flex gap-3 pt-2">
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} className="flex-1">
               Отмена
             </Button>
-            <Button onClick={handleSaveName} disabled={editName.trim().length < 2}>
+            <Button onClick={handleSaveName} disabled={editName.trim().length < 2} className="flex-1">
               Сохранить
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      </BottomSheet>
 
       <input
         ref={fileInputRef}
@@ -185,12 +172,9 @@ function ProfileSection() {
         onChange={handlePhotoUpload}
       />
 
-      <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Выберите аватар</DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-3 gap-4 py-4">
+      <BottomSheet isOpen={isAvatarDialogOpen} onClose={() => setIsAvatarDialogOpen(false)} title="Выберите аватар" side="top">
+        <div className="px-4 py-4 space-y-4">
+          <div className="flex flex-wrap justify-center gap-4">
             {AVATAR_COLORS.map((color) => (
               <button
                 key={color}
@@ -210,7 +194,7 @@ function ProfileSection() {
             </button>
           </div>
           {hasPhoto && (
-            <div className="flex items-center justify-center pb-2">
+            <div className="flex items-center justify-center">
               <button
                 onClick={handleRemovePhoto}
                 className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
@@ -219,8 +203,8 @@ function ProfileSection() {
               </button>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
+        </div>
+      </BottomSheet>
     </div>
   );
 }
