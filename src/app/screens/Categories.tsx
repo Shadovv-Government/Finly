@@ -3,17 +3,33 @@ import { Wallet } from 'lucide-react';
 import { motion } from 'motion/react';
 import { sectionVariants, cardVariants } from '../utils/animations';
 import { useCategories } from '../hooks/useCategories';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Category } from '../../db/types';
 import { CategoryForm } from '../components/CategoryForm';
 import { useNotifications } from '../hooks/useNotifications';
 import { getLucideIcon } from '../utils/lucideIcons';
 import { reassignCategoryTransactions, deleteCategoryWithTransactions } from '../../db/operations';
+import { db } from '../../db/db';
 
 export const Categories = () => {
   const { categories, add, update, remove } = useCategories();
   const { notify } = useNotifications();
   const [editMode, setEditMode] = useState(false);
+  const [usageCounts, setUsageCounts] = useState<Map<string, number>>(new Map());
+
+  useEffect(() => {
+    if (categories.length === 0) return;
+    db.transactions.toArray().then(txs => {
+      const counts = new Map<string, number>();
+      for (const t of txs) {
+        if (t.categoryId) counts.set(t.categoryId, (counts.get(t.categoryId) ?? 0) + 1);
+      }
+      setUsageCounts(counts);
+    });
+  }, [categories]);
+
+  const sortByUsage = (cats: Category[]) =>
+    [...cats].sort((a, b) => (usageCounts.get(b.id) ?? 0) - (usageCounts.get(a.id) ?? 0));
   
   // Состояние для формы категории
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -130,8 +146,7 @@ export const Categories = () => {
       <div className="px-5 py-4">
         <h2 className="font-bold mb-3 text-red-600 dark:text-red-400">Расходы</h2>
         <div className="grid grid-cols-3 gap-3">
-          {categories
-            .filter(c => c.type === 'expense')
+          {sortByUsage(categories.filter(c => c.type === 'expense'))
             .map((category, index) => {
               const IconComponent = getLucideIcon(category.icon, Wallet);
               return (
@@ -199,8 +214,7 @@ export const Categories = () => {
       <div className="px-5 py-4">
         <h2 className="font-bold mb-3 text-green-600 dark:text-green-400">Доходы</h2>
         <div className="grid grid-cols-3 gap-3">
-          {categories
-            .filter(c => c.type === 'income')
+          {sortByUsage(categories.filter(c => c.type === 'income'))
             .map((category, index) => {
               const IconComponent = getLucideIcon(category.icon, Wallet);
               return (

@@ -1,4 +1,4 @@
-import { Bell, Camera, Calendar, TrendingUp, Wallet, Target, Folder, Repeat, Sparkles, ImagePlus } from 'lucide-react';
+import { Bell, Camera, Calendar, TrendingUp, Wallet, Target, Folder, Repeat, Sparkles, ImagePlus, Clock, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
 import { EmptyState } from '../components/EmptyState';
 import { motion } from 'motion/react';
 import { sectionVariants } from '../utils/animations';
@@ -14,6 +14,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNotificationPanel } from '../hooks/useNotificationPanel';
 import { useBudgetNotifications } from '../hooks/useBudgetNotifications';
 import { useBudgets } from '../hooks/useBudgets';
+import { useRecurringTemplates } from '../hooks/useRecurringTemplates';
+import { RecurringTemplate } from '../../db/types';
 import {
   Dialog,
   DialogContent,
@@ -34,9 +36,10 @@ interface BalanceCardProps {
   expense: number;
   savingsAmount: number;
   freeBalance: number;
+  savingsRate: number | null;
 }
 
-function BalanceCard({ totalBalance, income, expense, savingsAmount, freeBalance }: BalanceCardProps) {
+function BalanceCard({ totalBalance, income, expense, savingsAmount, freeBalance, savingsRate }: BalanceCardProps) {
   return (
     <div className="card-featured mb-5">
       <div className="flex items-start justify-between mb-1">
@@ -45,6 +48,15 @@ function BalanceCard({ totalBalance, income, expense, savingsAmount, freeBalance
           <p className="text-3xl font-bold tracking-[-0.02em] text-numeric">
             {totalBalance.toLocaleString('ru-RU')} ₽
           </p>
+          {savingsRate !== null && (
+            <div className={`inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full text-xs font-semibold ${
+              savingsRate >= 0
+                ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400'
+                : 'bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400'
+            }`}>
+              {savingsRate >= 0 ? '↑' : '↓'} {Math.abs(savingsRate)}% сбережений
+            </div>
+          )}
         </div>
         {savingsAmount > 0 && (
           <div className="px-2.5 py-1 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-900">
@@ -257,6 +269,68 @@ function BudgetProgressSection({ expensesByCategory, categories }: BudgetProgres
   );
 }
 
+// ==================== UpcomingPaymentsSection ====================
+
+interface UpcomingPaymentsSectionProps {
+  templates: RecurringTemplate[];
+  categories: Category[];
+}
+
+function UpcomingPaymentsSection({ templates, categories }: UpcomingPaymentsSectionProps) {
+  const now = Date.now();
+  const weekFromNow = now + 7 * 24 * 60 * 60 * 1000;
+
+  const upcoming = templates
+    .filter(t => t.isActive && t.nextDate <= weekFromNow)
+    .sort((a, b) => a.nextDate - b.nextDate)
+    .slice(0, 4);
+
+  if (upcoming.length === 0) return null;
+
+  const getDaysLabel = (nextDate: number) => {
+    const days = Math.ceil((nextDate - now) / (24 * 60 * 60 * 1000));
+    if (days <= 0) return { label: 'Сегодня', urgent: true };
+    if (days === 1) return { label: 'Завтра', urgent: true };
+    return { label: `Через ${days} дн.`, urgent: false };
+  };
+
+  return (
+    <div className="px-5 pb-2">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="font-bold">Ближайшие платежи</h2>
+        <Link to="/recurring" className="text-sm text-primary dark:text-primary-light font-medium flex items-center gap-1">
+          <Clock className="w-3.5 h-3.5" />
+          Все
+        </Link>
+      </div>
+      <div className="card-premium overflow-hidden">
+        {upcoming.map(({ id, categoryId, amount, type, nextDate }, index) => {
+          const cat = categories.find(c => c.id === categoryId);
+          const { label, urgent } = getDaysLabel(nextDate);
+          return (
+            <div key={id} className={`flex items-center gap-3 p-4 ${index !== upcoming.length - 1 ? 'border-b border-border' : ''}`}>
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: (cat?.color ?? '#888') + '20' }}>
+                {type === 'income'
+                  ? <ArrowUpCircle className="w-5 h-5" style={{ color: cat?.color ?? '#22c55e' }} />
+                  : <ArrowDownCircle className="w-5 h-5" style={{ color: cat?.color ?? '#ef4444' }} />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{cat?.name ?? 'Без категории'}</p>
+                <span className={`text-xs font-semibold ${urgent ? 'text-red-500 dark:text-red-400' : 'text-muted-foreground'}`}>
+                  {label}
+                </span>
+              </div>
+              <p className={`text-sm font-bold ${type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                {type === 'income' ? '+' : '−'}{amount.toLocaleString('ru-RU')} ₽
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function getGreeting() {
   const h = new Date().getHours();
   if (h < 6) return 'Доброй ночи';
@@ -292,6 +366,7 @@ export const Dashboard = () => {
   const { user, updateProfile } = useAuth();
   const { hasUnread, notifications: panelNotifications, markAllRead, clearRead } = useNotificationPanel();
   const { checkBudgets } = useBudgetNotifications();
+  const { templates } = useRecurringTemplates();
   const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -307,6 +382,7 @@ export const Dashboard = () => {
 
   const income = balance?.income ?? 0;
   const expense = balance?.expenses ?? analyticsExpenses.reduce((sum, c) => sum + c.amount, 0);
+  const savingsRate = income > 0 ? Math.round((income - expense) / income * 100) : null;
 
   const expensesByCategory = useMemo(() =>
     analyticsExpenses.map(c => ({ name: c.categoryName, value: c.amount, color: c.color, categoryId: c.categoryId })),
@@ -412,6 +488,7 @@ export const Dashboard = () => {
             expense={expense}
             savingsAmount={savingsAmount}
             freeBalance={freeBalance}
+            savingsRate={savingsRate}
           />
         </motion.section>
 
@@ -447,6 +524,10 @@ export const Dashboard = () => {
       </motion.section>
 
       <motion.section custom={3} variants={sectionVariants} initial="hidden" animate="visible">
+        <UpcomingPaymentsSection templates={templates} categories={categories} />
+      </motion.section>
+
+      <motion.section custom={4} variants={sectionVariants} initial="hidden" animate="visible">
       {/* Quick Links */}
       <div className="px-5 py-4">
         <div className="grid grid-cols-2 gap-2.5">
@@ -485,7 +566,7 @@ export const Dashboard = () => {
               <Repeat className="w-5 h-5 text-amber-600 dark:text-amber-400" />
             </div>
             <div>
-              <p className="text-sm font-semibold">Повтор</p>
+              <p className="text-sm font-semibold">Регулярные</p>
               <p className="text-xs text-muted-foreground">Регулярные платежи</p>
             </div>
           </Link>
@@ -504,7 +585,7 @@ export const Dashboard = () => {
       </div>
       </motion.section>
 
-      <motion.section custom={4} variants={sectionVariants} initial="hidden" animate="visible">
+      <motion.section custom={5} variants={sectionVariants} initial="hidden" animate="visible">
         <RecentTransactions transactions={recentTransactions} categories={categories} />
       </motion.section>
 

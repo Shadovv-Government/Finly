@@ -7,18 +7,19 @@ interface CalendarHeatmapProps {
 }
 
 const DAY_LABELS = ['', 'Пн', '', 'Ср', '', 'Пт', ''];
+const MONTH_LABELS = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
 
 function getColor(amount: number, maxAmount: number): string {
   if (amount === 0) return 'bg-muted';
   const intensity = maxAmount > 0 ? amount / maxAmount : 0;
-  if (intensity <= 0.25) return 'bg-emerald-200 dark:bg-emerald-900';
-  if (intensity <= 0.5) return 'bg-emerald-400 dark:bg-emerald-700';
-  if (intensity <= 0.75) return 'bg-emerald-600';
-  return 'bg-emerald-800 dark:bg-emerald-400';
+  if (intensity <= 0.25) return 'bg-amber-100 dark:bg-amber-900/50';
+  if (intensity <= 0.5)  return 'bg-amber-300 dark:bg-amber-700';
+  if (intensity <= 0.75) return 'bg-orange-400 dark:bg-orange-600';
+  return 'bg-red-500 dark:bg-red-500';
 }
 
 export const CalendarHeatmap = ({ year, data }: CalendarHeatmapProps) => {
-  const { weeks, maxAmount } = useMemo(() => {
+  const { weeks, maxAmount, monthLabels } = useMemo(() => {
     const dataMap = new Map<number, number>();
     for (const d of data) {
       const day = new Date(d.date).setHours(0, 0, 0, 0);
@@ -28,7 +29,7 @@ export const CalendarHeatmap = ({ year, data }: CalendarHeatmapProps) => {
     const maxA = Math.max(1, ...dataMap.values());
     const yearStart = new Date(year, 0, 1);
     const yearEnd = new Date(year + 1, 0, 1);
-    const weeks: { date: number; amount: number; inMonth: boolean }[][] = [];
+    const weeksArr: { date: number; amount: number; inMonth: boolean }[][] = [];
 
     const cursor = new Date(yearStart);
     const startDay = yearStart.getDay();
@@ -46,18 +47,39 @@ export const CalendarHeatmap = ({ year, data }: CalendarHeatmapProps) => {
         });
         cursor.setDate(cursor.getDate() + 1);
       }
-      weeks.push(week);
+      weeksArr.push(week);
     }
 
-    return { weeks, maxAmount: maxA };
+    // Compute month label positions
+    const labels: { label: string; weekIndex: number }[] = [];
+    let lastMonth = -1;
+    weeksArr.forEach((week, wi) => {
+      for (const day of week) {
+        if (day.inMonth) {
+          const month = new Date(day.date).getMonth();
+          if (month !== lastMonth) {
+            labels.push({ label: MONTH_LABELS[month], weekIndex: wi });
+            lastMonth = month;
+          }
+          break;
+        }
+      }
+    });
+
+    return { weeks: weeksArr, maxAmount: maxA, monthLabels: labels };
   }, [year, data]);
+
+  // Each cell: w-3 (12px) + gap-1 (4px) = 16px per column
+  const CELL_WIDTH = 16;
 
   return (
     <div>
       <h3 className="font-semibold mb-3">Расходы за {year}</h3>
 
       <div className="flex gap-1">
+        {/* Day-of-week labels column */}
         <div className="flex flex-col gap-1 mr-1">
+          <div className="h-4" /> {/* spacer for month labels row */}
           {DAY_LABELS.map((l, i) => (
             <div key={i} className="w-6 h-3 text-[10px] text-muted-foreground flex items-center justify-center">
               {l}
@@ -65,7 +87,25 @@ export const CalendarHeatmap = ({ year, data }: CalendarHeatmapProps) => {
           ))}
         </div>
 
+        {/* Month labels + week grid */}
         <div className="overflow-x-auto">
+          {/* Month labels row */}
+          <div
+            className="relative h-4 mb-1"
+            style={{ width: `${weeks.length * CELL_WIDTH}px` }}
+          >
+            {monthLabels.map((ml, i) => (
+              <span
+                key={i}
+                className="absolute text-[10px] text-muted-foreground"
+                style={{ left: `${ml.weekIndex * CELL_WIDTH}px` }}
+              >
+                {ml.label}
+              </span>
+            ))}
+          </div>
+
+          {/* Week columns */}
           <div className="flex gap-1">
             {weeks.map((week, wi) => (
               <div key={wi} className="flex flex-col gap-1">
@@ -84,12 +124,13 @@ export const CalendarHeatmap = ({ year, data }: CalendarHeatmapProps) => {
         </div>
       </div>
 
+      {/* Legend */}
       <div className="flex items-center gap-1 mt-3 justify-end text-[10px] text-muted-foreground">
         <span>Меньше</span>
-        <div className="w-3 h-3 rounded-sm bg-emerald-200 dark:bg-emerald-900" />
-        <div className="w-3 h-3 rounded-sm bg-emerald-400 dark:bg-emerald-700" />
-        <div className="w-3 h-3 rounded-sm bg-emerald-600" />
-        <div className="w-3 h-3 rounded-sm bg-emerald-800 dark:bg-emerald-400" />
+        <div className="w-3 h-3 rounded-sm bg-amber-100 dark:bg-amber-900/50" />
+        <div className="w-3 h-3 rounded-sm bg-amber-300 dark:bg-amber-700" />
+        <div className="w-3 h-3 rounded-sm bg-orange-400" />
+        <div className="w-3 h-3 rounded-sm bg-red-500" />
         <span>Больше</span>
       </div>
     </div>

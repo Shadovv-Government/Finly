@@ -40,6 +40,16 @@ export const Budgets = () => {
 
   const totalRemaining = totalBudget - totalSpent;
 
+  const daysLeft = useMemo(() => {
+    const now = new Date();
+    if (periodFilter === 'month') {
+      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      return Math.max(1, lastDay - now.getDate() + 1);
+    }
+    const dayOfWeek = now.getDay() === 0 ? 7 : now.getDay();
+    return Math.max(1, 8 - dayOfWeek);
+  }, [periodFilter]);
+
   // Открыть форму для нового бюджета
   const handleAddBudget = () => {
     setEditingBudget(undefined);
@@ -238,6 +248,11 @@ export const Budgets = () => {
                 <div className="flex items-center justify-between text-sm">
                   <span className={isOver ? 'text-red-600 dark:text-red-500 font-semibold' : 'text-muted-foreground'}>
                     Осталось: {Math.max(0, remaining).toLocaleString('ru-RU')} ₽
+                    {!isOver && remaining > 0 && (
+                      <span className="ml-1 text-xs text-muted-foreground">
+                        ≈ {Math.round(remaining / daysLeft).toLocaleString('ru-RU')} ₽/день
+                      </span>
+                    )}
                   </span>
                   <span className={`font-semibold ${
                     isOver ? 'text-red-600 dark:text-red-500' : 'text-foreground'

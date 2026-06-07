@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Search, Filter, X, Calendar, ChevronDown, Wallet, MessageSquare } from 'lucide-react';
+import { Search, Filter, X, Calendar, ChevronDown, Wallet, MessageSquare, Download } from 'lucide-react';
 import { motion } from 'motion/react';
 import { sectionVariants } from '../utils/animations';
 import { EmptyState } from '../components/EmptyState';
@@ -53,6 +53,7 @@ interface EditTransactionSheetProps {
   categories: Category[];
   onClose: () => void;
   onSave: (id: number, updates: Partial<Transaction>) => Promise<void>;
+  onDuplicate: (t: Omit<Transaction, 'id'>) => Promise<void>;
 }
 
 function CategoryIcon({ name, className, color }: { name: string; className?: string; color?: string }) {
@@ -75,7 +76,7 @@ function parseRuAmount(v: string): number {
   return parseFloat(s) || 0;
 }
 
-function EditTransactionSheet({ transaction, categories, onClose, onSave }: EditTransactionSheetProps) {
+function EditTransactionSheet({ transaction, categories, onClose, onSave, onDuplicate }: EditTransactionSheetProps) {
   const [type, setType] = useState<'income' | 'expense'>(transaction?.type ?? 'expense');
   const [amount, setAmount] = useState(transaction ? String(transaction.amount) : '');
   const [categoryId, setCategoryId] = useState(transaction?.categoryId ?? '');
@@ -206,16 +207,29 @@ function EditTransactionSheet({ transaction, categories, onClose, onSave }: Edit
         </div>
 
         {/* Кнопки */}
-        <div className="px-4 pb-[calc(1rem+env(safe-area-inset-bottom)+4rem)] flex gap-3">
-          <button onClick={onClose} className="flex-1 py-3 bg-muted rounded-xl font-medium text-sm">
-            Отмена
-          </button>
+        <div className="px-4 pb-[calc(1rem+env(safe-area-inset-bottom)+4rem)] space-y-2">
+          <div className="flex gap-3">
+            <button onClick={onClose} className="flex-1 py-3 bg-muted rounded-xl font-medium text-sm">
+              Отмена
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={!amount || !categoryId || saving}
+              className="flex-[2] py-4 text-white rounded-xl font-semibold text-sm disabled:opacity-50 shadow-lg transition-all duration-200 hover:scale-[1.01] active:scale-[0.98]" style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-light))' }}
+            >
+              Сохранить
+            </button>
+          </div>
           <button
-            onClick={handleSave}
+            onClick={async () => {
+              if (!transaction) return;
+              await onDuplicate({ type, amount: parseRuAmount(amount), categoryId, date: date.getTime(), comment: comment.trim() || undefined, currency: transaction.currency ?? 'RUB', rate: transaction.rate ?? 1, createdAt: Date.now() });
+              onClose();
+            }}
             disabled={!amount || !categoryId || saving}
-            className="flex-[2] py-4 text-white rounded-xl font-semibold text-sm disabled:opacity-50 shadow-lg transition-all duration-200 hover:scale-[1.01] active:scale-[0.98]" style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-light))' }}
+            className="w-full py-3 bg-muted rounded-xl font-medium text-sm disabled:opacity-50"
           >
-            Сохранить
+            Дублировать
           </button>
         </div>
       </div>
@@ -354,7 +368,7 @@ function TransactionFilters({
 // ==================== TransactionHistory ====================
 
 export const TransactionHistory = () => {
-  const { transactions, loading, remove, update } = useTransactions();
+  const { transactions, loading, remove, update, add } = useTransactions();
   const { categories } = useCategories();
   const categoriesMap = useMemo(() => new Map(categories.map(c => [c.id, c])), [categories]);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
@@ -418,6 +432,12 @@ export const TransactionHistory = () => {
 
   const hasActiveFilters = searchQuery || selectedCategory || dateFrom || dateTo || filterType !== 'all';
 
+  const filteredTotals = useMemo(() => {
+    const inc = filteredTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+    const exp = filteredTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    return { inc, exp };
+  }, [filteredTransactions]);
+
   const clearAllFilters = () => {
     setSearchQuery('');
     setSelectedCategory(null);
@@ -427,6 +447,26 @@ export const TransactionHistory = () => {
   };
 
   useEffect(() => { setVisiblePages(1); }, [searchQuery, selectedCategory, dateFrom, dateTo, filterType]);
+
+  const handleExportCSV = () => {
+    if (filteredTransactions.length === 0) return;
+    const header = 'Дата;Тип;Сумма;Категория;Комментарий';
+    const rows = filteredTransactions.map(t => {
+      const cat = categories.find(c => c.id === t.categoryId);
+      const date = new Date(t.date).toLocaleDateString('ru-RU');
+      const type = t.type === 'income' ? 'Доход' : 'Расход';
+      const comment = (t.comment ?? '').replace(/;/g, ',');
+      return `${date};${type};${t.amount};${cat?.name ?? ''};${comment}`;
+    });
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `finly-transactions-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="pb-28 bg-background min-h-screen">
@@ -495,8 +535,35 @@ export const TransactionHistory = () => {
         </div>
 
         {hasActiveFilters && (
-          <div className="mt-2 text-sm text-muted-foreground">
-            Найдено: {filteredTransactions.length} операций
+          <div className="mt-2 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">
+                Найдено: {filteredTransactions.length} операций
+              </span>
+              {filteredTransactions.length > 0 && (
+                <button
+                  onClick={handleExportCSV}
+                  className="flex items-center gap-1.5 text-sm text-primary dark:text-primary-light font-medium"
+                >
+                  <Download className="w-4 h-4" />
+                  CSV
+                </button>
+              )}
+            </div>
+            {filteredTransactions.length > 0 && (
+              <div className="flex gap-2">
+                {filteredTotals.inc > 0 && (
+                  <div className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-green-100 dark:bg-green-950">
+                    <span className="text-xs text-green-700 dark:text-green-400 font-medium">+{filteredTotals.inc.toLocaleString('ru-RU')} ₽</span>
+                  </div>
+                )}
+                {filteredTotals.exp > 0 && (
+                  <div className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-red-100 dark:bg-red-950">
+                    <span className="text-xs text-red-600 dark:text-red-400 font-medium">−{filteredTotals.exp.toLocaleString('ru-RU')} ₽</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -549,14 +616,16 @@ export const TransactionHistory = () => {
                 <div className="mb-6">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-sm font-medium text-muted-foreground">{date}</h3>
-                    <span className="text-sm text-muted-foreground">
-                      {dayTransactions.length} {
-                        ['операция', 'операции', 'операций'][
-                          (dayTransactions.length % 100 > 4 && dayTransactions.length % 100 < 20) ? 2 :
-                          [2, 0, 1, 1, 1, 2][Math.min(dayTransactions.length % 10, 5)]
-                        ]
-                      }
-                    </span>
+                    {(() => {
+                      const dayIncome = dayTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+                      const dayExpense = dayTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+                      const net = dayIncome - dayExpense;
+                      return (
+                        <span className={`text-sm font-medium ${net >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
+                          {net >= 0 ? '+' : ''}{net.toLocaleString('ru-RU')} ₽
+                        </span>
+                      );
+                    })()}
                   </div>
                   <div className="card-premium overflow-hidden">
                     {dayTransactions.map((transaction, index) => {
@@ -629,6 +698,7 @@ export const TransactionHistory = () => {
         categories={categories}
         onClose={() => setEditingTransaction(null)}
         onSave={async (id, updates) => { await update(id, updates); setVisiblePages(1); }}
+        onDuplicate={async (t) => { await add(t); setVisiblePages(1); }}
       />
     </div>
   );

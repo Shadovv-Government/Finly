@@ -44,7 +44,7 @@ export const Analytics = () => {
   const { isPremium } = usePremium();
   const navigate = useNavigate();
 
-  const { balance, expensesByCategory, loading } = useAnalytics({
+  const { balance, expensesByCategory, incomeByCategory, loading } = useAnalytics({
     period,
     startDate: period === 'custom' ? customStart : undefined,
     endDate: period === 'custom' ? customEnd : undefined,
@@ -135,6 +135,22 @@ export const Analytics = () => {
       .sort((a, b) => b.value - a.value);
   }, [expensesByCategory, expense]);
 
+  const incomePieData = useMemo(() => {
+    return incomeByCategory
+      .map(c => ({ name: c.categoryName, value: c.amount, color: c.color, percentage: income > 0 ? (c.amount / income) * 100 : 0 }))
+      .filter(c => c.value > 0)
+      .sort((a, b) => b.value - a.value);
+  }, [incomeByCategory, income]);
+
+  const metricsData = useMemo(() => {
+    const daysInPeriod = Math.max(1, Math.ceil((periodRange.end - periodRange.start) / (24 * 60 * 60 * 1000)));
+    const expenses = transactions.filter(t => t.type === 'expense');
+    const avgDaily = expenses.length > 0 ? expense / daysInPeriod : 0;
+    const biggest = expenses.length > 0 ? Math.max(...expenses.map(t => t.amount)) : 0;
+    const savingsRate = income > 0 ? Math.round((income - expense) / income * 100) : null;
+    return { avgDaily, count: transactions.length, biggest, savingsRate };
+  }, [transactions, expense, income, periodRange]);
+
   const periodLabel = period === 'custom'
     ? formatDateRange(customStart, customEnd)
     : (() => { const r = getPeriodRange(period); return formatDateRange(r.start, r.end - 1); })();
@@ -212,8 +228,36 @@ export const Analytics = () => {
       </div>
       </motion.section>
 
+      {/* Metrics Strip */}
+      {!loading && transactions.length > 0 && (
+        <motion.section custom={1} variants={sectionVariants} initial="hidden" animate="visible">
+        <div className="px-5 pb-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="card-premium p-4">
+              <p className="text-xs text-muted-foreground mb-1">Ср. расход/день</p>
+              <p className="text-base font-bold">{formatShort(metricsData.avgDaily)} ₽</p>
+            </div>
+            <div className="card-premium p-4">
+              <p className="text-xs text-muted-foreground mb-1">Операций</p>
+              <p className="text-base font-bold">{metricsData.count}</p>
+            </div>
+            <div className="card-premium p-4">
+              <p className="text-xs text-muted-foreground mb-1">Крупнейший расход</p>
+              <p className="text-base font-bold">{metricsData.biggest > 0 ? `${formatShort(metricsData.biggest)} ₽` : '—'}</p>
+            </div>
+            <div className="card-premium p-4">
+              <p className="text-xs text-muted-foreground mb-1">Норма сбережений</p>
+              <p className={`text-base font-bold ${metricsData.savingsRate === null ? '' : metricsData.savingsRate >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                {metricsData.savingsRate === null ? '—' : `${metricsData.savingsRate > 0 ? '+' : ''}${metricsData.savingsRate}%`}
+              </p>
+            </div>
+          </div>
+        </div>
+        </motion.section>
+      )}
+
       {/* Bar Chart */}
-      <motion.section custom={1} variants={sectionVariants} initial="hidden" animate="visible">
+      <motion.section custom={3} variants={sectionVariants} initial="hidden" animate="visible">
       <div className="px-5 py-4">
         <h2 className="font-bold mb-4">Доходы vs Расходы</h2>
         <div className="card-premium p-5">
@@ -277,7 +321,7 @@ export const Analytics = () => {
 
       {/* Trend Chart */}
       {trendData.length > 1 && (
-        <motion.section custom={2} variants={sectionVariants} initial="hidden" animate="visible">
+        <motion.section custom={4} variants={sectionVariants} initial="hidden" animate="visible">
         <div className="px-5 py-4">
           <h2 className="font-bold mb-4">Динамика</h2>
           <div className="card-premium p-5">
@@ -319,7 +363,7 @@ export const Analytics = () => {
       )}
 
       {/* Pie Chart */}
-      <motion.section custom={3} variants={sectionVariants} initial="hidden" animate="visible">
+      <motion.section custom={5} variants={sectionVariants} initial="hidden" animate="visible">
       <div className="px-5 py-4">
         <h2 className="font-bold mb-4">Структура расходов</h2>
         <div className="card-premium p-5">
@@ -354,8 +398,40 @@ export const Analytics = () => {
       </div>
       </motion.section>
 
+      {/* Income Pie */}
+      {incomePieData.length > 0 && (
+        <motion.section custom={6} variants={sectionVariants} initial="hidden" animate="visible">
+        <div className="px-5 py-4">
+          <h2 className="font-bold mb-4">Структура доходов</h2>
+          <div className="card-premium p-5">
+            <ResponsiveContainer width="100%" height={200}>
+              <PieChart>
+                <Pie data={incomePieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2} dataKey="value">
+                  {incomePieData.map((entry, index) => <Cell key={`income-cell-${index}`} fill={entry.color} />)}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="space-y-2 mt-4">
+              {incomePieData.slice(0, 5).map(category => (
+                <div key={category.name} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.color }} />
+                    <span className="text-sm">{category.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">{category.percentage.toFixed(1)}%</span>
+                    <span className="text-sm font-semibold">{category.value.toLocaleString('ru-RU')} ₽</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        </motion.section>
+      )}
+
       {/* Top Categories */}
-      <motion.section custom={4} variants={sectionVariants} initial="hidden" animate="visible">
+      <motion.section custom={7} variants={sectionVariants} initial="hidden" animate="visible">
       <div className="px-5 pb-4">
         <h2 className="font-bold mb-4">Топ категорий</h2>
         {pieData.length > 0 ? (

@@ -69,7 +69,7 @@ export const Recurring = () => {
       <motion.section custom={0} variants={sectionVariants} initial="hidden" animate="visible">
       <div className="px-5 pt-4 pb-4">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-xl font-bold tracking-[-0.01em]">Повтор</h1>
+          <h1 className="text-xl font-bold tracking-[-0.01em]">Регулярные платежи</h1>
           <button
             onClick={handleAdd}
             className="w-9 h-9 bg-primary hover:bg-primary/90 text-white rounded-xl flex items-center justify-center transition-colors"
@@ -84,6 +84,9 @@ export const Recurring = () => {
       <div className="px-5 py-4 space-y-3">
         {templates.map((template, index) => {
           const category = categories.find(c => c.id === template.categoryId);
+          const daysUntil = Math.ceil((template.nextDate - Date.now()) / (24 * 60 * 60 * 1000));
+          const daysLabel = daysUntil <= 0 ? 'Сегодня!' : daysUntil === 1 ? 'Завтра' : `Через ${daysUntil} дн.`;
+          const isUrgent = daysUntil <= 1;
 
           return (
             <motion.div
@@ -150,15 +153,24 @@ export const Recurring = () => {
                   </div>
 
                   {/* Meta info */}
-                  <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                  <div className="flex items-center flex-wrap gap-2 mt-2 text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <Clock className="w-3.5 h-3.5" />
                       <span>{INTERVAL_LABELS[template.interval]}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <CalendarDays className="w-3.5 h-3.5" />
-                      <span>С {formatDate(template.nextDate)}</span>
+                      <span>{formatDate(template.nextDate)}</span>
                     </div>
+                    {template.isActive && (
+                      <span className={`px-2 py-0.5 rounded-full font-medium ${
+                        isUrgent
+                          ? 'bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400'
+                          : 'bg-muted text-muted-foreground'
+                      }`}>
+                        {daysLabel}
+                      </span>
+                    )}
                   </div>
 
                   {template.comment && (

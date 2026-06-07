@@ -3,6 +3,16 @@ import {
   Pencil, Fingerprint, AlertTriangle, Target, FileJson, FileSpreadsheet, Sparkles,
   ImagePlus,
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../components/ui/alert-dialog';
 import { motion } from 'motion/react';
 import { sectionVariants } from '../utils/animations';
 import { useTheme } from '../contexts/ThemeContext';
@@ -10,7 +20,7 @@ import { useSettings } from '../contexts/SettingsContext';
 import { useAuth } from '../contexts/AuthContext';
 import { Switch } from '../components/ui/switch';
 import { Link } from 'react-router';
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -24,6 +34,7 @@ import { Input } from '../components/ui/input';
 import { BottomSheet } from '../components/BottomSheet';
 import { exportToFile, exportCSVToFile, importFromFile, ImportResult } from '../../db/exportImport';
 import { useNotifications } from '../hooks/useNotifications';
+import { db } from '../../db/db';
 
 // ==================== Helpers ====================
 
@@ -128,10 +139,7 @@ function ProfileSection() {
         <div className="pt-4 border-t border-border">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">Валюта</span>
-            <button className="flex items-center gap-2 text-sm text-muted-foreground">
-              RUB (₽)
-              <ChevronRight className="w-4 h-4" />
-            </button>
+            <span className="text-sm text-muted-foreground">RUB (₽)</span>
           </div>
         </div>
       </div>
@@ -458,20 +466,73 @@ function SecuritySection() {
 
 // ==================== Settings ====================
 
+// ==================== StatsSection ====================
+
+function StatsSection() {
+  const [stats, setStats] = useState<{ txCount: number; catCount: number; goalCount: number; firstDate: string | null } | null>(null);
+
+  useEffect(() => {
+    Promise.all([
+      db.transactions.count(),
+      db.categories.count(),
+      db.goals.count(),
+      db.transactions.orderBy('date').first(),
+    ]).then(([txCount, catCount, goalCount, firstTx]) => {
+      setStats({
+        txCount,
+        catCount,
+        goalCount,
+        firstDate: firstTx ? new Date(firstTx.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }) : null,
+      });
+    });
+  }, []);
+
+  if (!stats) return null;
+
+  return (
+    <div className="px-4 py-4">
+      <h2 className="font-bold mb-3">Статистика</h2>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-card rounded-2xl border border-border p-4">
+          <p className="text-2xl font-bold">{stats.txCount}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Операций</p>
+        </div>
+        <div className="bg-card rounded-2xl border border-border p-4">
+          <p className="text-2xl font-bold">{stats.catCount}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Категорий</p>
+        </div>
+        <div className="bg-card rounded-2xl border border-border p-4">
+          <p className="text-2xl font-bold">{stats.goalCount}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Целей</p>
+        </div>
+        <div className="bg-card rounded-2xl border border-border p-4">
+          <p className="text-sm font-bold leading-tight">{stats.firstDate ?? '—'}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Первая запись</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export const Settings = () => {
   const { logout } = useAuth();
+  const {
+    notifPush, setNotifPush,
+    notifBudgets, setNotifBudgets,
+    notifGoals, setNotifGoals,
+    notifRecurring, setNotifRecurring,
+  } = useSettings();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   const handleLogout = async () => {
-    if (window.confirm('Вы уверены, что хотите выйти? Все данные останутся на этом устройстве.')) {
-      setIsLoggingOut(true);
-      try {
-        await logout();
-      } catch (error) {
-        console.error('Logout error:', error);
-      } finally {
-        setIsLoggingOut(false);
-      }
+    setIsLoggingOut(true);
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -511,7 +572,7 @@ export const Settings = () => {
                 <p className="text-xs text-muted-foreground">Браузерные уведомления</p>
               </div>
             </div>
-            <Switch defaultChecked />
+            <Switch checked={notifPush} onCheckedChange={setNotifPush} />
           </div>
 
           <div className="flex items-center justify-between p-4 border-b border-border">
@@ -524,7 +585,7 @@ export const Settings = () => {
                 <p className="text-xs text-muted-foreground">Превышение лимитов</p>
               </div>
             </div>
-            <Switch defaultChecked />
+            <Switch checked={notifBudgets} onCheckedChange={setNotifBudgets} />
           </div>
 
           <div className="flex items-center justify-between p-4 border-b border-border">
@@ -537,7 +598,7 @@ export const Settings = () => {
                 <p className="text-xs text-muted-foreground">Достижения и дедлайны</p>
               </div>
             </div>
-            <Switch defaultChecked />
+            <Switch checked={notifGoals} onCheckedChange={setNotifGoals} />
           </div>
 
           <div className="flex items-center justify-between p-4">
@@ -550,14 +611,19 @@ export const Settings = () => {
                 <p className="text-xs text-muted-foreground">Шаблоны платежей</p>
               </div>
             </Link>
-            <Switch defaultChecked />
+            <Switch checked={notifRecurring} onCheckedChange={setNotifRecurring} />
           </div>
         </div>
       </div>
       </motion.section>
 
-      {/* О приложении */}
+      {/* Статистика */}
       <motion.section custom={6} variants={sectionVariants} initial="hidden" animate="visible">
+      <StatsSection />
+      </motion.section>
+
+      {/* О приложении */}
+      <motion.section custom={8} variants={sectionVariants} initial="hidden" animate="visible">
       <div className="px-4 py-4">
         <div className="bg-card rounded-2xl border border-border overflow-hidden">
           <Link to="/components" className="w-full flex items-center justify-between p-4 border-b border-border">
@@ -579,10 +645,10 @@ export const Settings = () => {
       </motion.section>
 
       {/* Выход */}
-      <motion.section custom={7} variants={sectionVariants} initial="hidden" animate="visible">
+      <motion.section custom={9} variants={sectionVariants} initial="hidden" animate="visible">
       <div className="px-4 py-4">
         <button
-          onClick={handleLogout}
+          onClick={() => setShowLogoutDialog(true)}
           disabled={isLoggingOut}
           className="w-full flex items-center justify-center gap-2 p-4 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-500 rounded-2xl font-medium disabled:opacity-50"
         >
@@ -591,6 +657,26 @@ export const Settings = () => {
         </button>
       </div>
       </motion.section>
+
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Выйти из аккаунта?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Все данные останутся на этом устройстве. Вы сможете войти снова.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleLogout}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Выйти
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

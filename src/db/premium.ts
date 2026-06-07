@@ -371,3 +371,47 @@ export async function buildAIContext(): Promise<AIAnalyticsContext> {
     })),
   };
 }
+
+// ==================== Coffee Effect ====================
+
+export interface CoffeeEffect {
+  categoryName: string;
+  dailyAvg: number;
+  monthlyAvg: number;
+  yearlyTotal: number;
+  transactionCount: number;
+}
+
+export async function getCoffeeEffects(start: number, end: number): Promise<CoffeeEffect[]> {
+  const transactions = await db.transactions
+    .where('date').between(start, end)
+    .filter(t => t.type === 'expense')
+    .toArray();
+
+  const categories = await db.categories.toArray();
+  const catMap = new Map(categories.map(c => [c.id, c]));
+
+  const byCat = new Map<string, { total: number; count: number; name: string }>();
+  for (const t of transactions) {
+    const key = t.categoryId ?? '__none__';
+    const name = catMap.get(t.categoryId ?? '')?.name ?? 'Другое';
+    const prev = byCat.get(key) ?? { total: 0, count: 0, name };
+    byCat.set(key, { total: prev.total + t.amount * t.rate, count: prev.count + 1, name });
+  }
+
+  const periodDays = Math.max(1, (end - start) / MS_PER_DAY);
+  // "Frequent" = at least one transaction every 3 days on average
+  const frequentThreshold = periodDays / 3;
+
+  return Array.from(byCat.values())
+    .filter(v => v.count >= frequentThreshold && v.count >= 5)
+    .map(v => ({
+      categoryName: v.name,
+      dailyAvg: v.total / periodDays,
+      monthlyAvg: (v.total / periodDays) * 30,
+      yearlyTotal: (v.total / periodDays) * 365,
+      transactionCount: v.count,
+    }))
+    .sort((a, b) => b.yearlyTotal - a.yearlyTotal)
+    .slice(0, 4);
+}

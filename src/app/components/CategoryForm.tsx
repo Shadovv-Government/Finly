@@ -73,6 +73,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
   const [selectedType, setSelectedType] = useState<'income' | 'expense'>('expense');
   const [selectedIcon, setSelectedIcon] = useState('ShoppingCart');
   const [selectedColor, setSelectedColor] = useState(PRESET_COLORS[0]);
+  const [isEssential, setIsEssential] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Заполнить форму данными при редактировании
@@ -82,12 +83,13 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
       setSelectedType(initialData.type);
       setSelectedIcon(initialData.icon);
       setSelectedColor(initialData.color);
+      setIsEssential(initialData.isEssential ?? false);
     } else {
-      // Сброс для новой категории
       setName('');
       setSelectedType(initialType || 'expense');
       setSelectedIcon('ShoppingCart');
       setSelectedColor(PRESET_COLORS[0]);
+      setIsEssential(false);
     }
   }, [initialData, isOpen, initialType]);
 
@@ -104,6 +106,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
         type: selectedType,
         icon: selectedIcon,
         color: selectedColor,
+        isEssential: selectedType === 'expense' ? isEssential : false,
       });
 
       notify(
@@ -224,6 +227,25 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
             ))}
           </div>
         </div>
+
+        {/* Обязательный расход (только для расходов) */}
+        {selectedType === 'expense' && (
+          <div className="px-4 py-4">
+            <button
+              type="button"
+              onClick={() => setIsEssential(v => !v)}
+              className="w-full flex items-center justify-between p-3 bg-muted rounded-xl"
+            >
+              <div>
+                <p className="text-sm font-medium text-left">Обязательный расход</p>
+                <p className="text-xs text-muted-foreground text-left">Аренда, ЖКХ, еда — учитывается в Health Score</p>
+              </div>
+              <div className={`w-11 h-6 rounded-full transition-colors flex items-center ${isEssential ? 'bg-primary' : 'bg-muted-foreground/30'}`}>
+                <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform mx-0.5 ${isEssential ? 'translate-x-5' : 'translate-x-0'}`} />
+              </div>
+            </button>
+          </div>
+        )}
 
         {/* Кнопка сохранения */}
         <div className="px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom)+4rem)]">

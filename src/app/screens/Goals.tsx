@@ -76,7 +76,7 @@ export const Goals = () => {
 
       {/* Goals List */}
       <div className="px-5 py-4 space-y-4">
-        {goals.length > 0 && goals.map((goal, index) => {
+        {goals.length > 0 && goals.filter(g => g.isActive).map((goal, index) => {
           const percentage = Math.min((goal.currentAmount / goal.targetAmount) * 100, 100);
           const remaining = goal.targetAmount - goal.currentAmount;
           const daysUntil = goal.deadline ? Math.ceil((goal.deadline - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0;
@@ -166,13 +166,22 @@ export const Goals = () => {
                 )}
 
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => openContribute(goal)}
-                    disabled={!goal.isActive}
-                    className="flex-1 py-2 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all duration-200 hover:scale-[1.01] active:scale-[0.98]" style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-light))' }}
-                  >
-                    Пополнить
-                  </button>
+                  {percentage >= 100 ? (
+                    <button
+                      onClick={() => editGoal(goal.id!, { ...goal, isActive: false })}
+                      className="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium shadow-md transition-all duration-200 hover:scale-[1.01] active:scale-[0.98]"
+                    >
+                      Завершить цель
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => openContribute(goal)}
+                      className="flex-1 py-2 text-white rounded-xl font-medium shadow-md transition-all duration-200 hover:scale-[1.01] active:scale-[0.98]"
+                      style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-light))' }}
+                    >
+                      Пополнить
+                    </button>
+                  )}
                   <button
                     onClick={() => openEdit(goal)}
                     className="w-8 h-8 bg-blue-100 dark:bg-blue-950 rounded-lg flex items-center justify-center hover:bg-blue-200 dark:hover:bg-blue-900 transition-colors"
@@ -190,10 +199,56 @@ export const Goals = () => {
             </motion.div>
           );
         })}
-        {goals.length === 0 && (
+        {goals.filter(g => g.isActive).length === 0 && goals.filter(g => !g.isActive).length === 0 && (
           <motion.section custom={0} variants={sectionVariants} initial="hidden" animate="visible">
           <EmptyState icon="Target" title="Нет целей" description="Поставьте финансовую цель и начните копить" action={{ label: 'Создать первую цель', onClick: () => setIsCreateFormOpen(true) }} />
           </motion.section>
+        )}
+
+        {/* Completed goals */}
+        {goals.filter(g => !g.isActive).length > 0 && (
+          <>
+            <motion.section custom={goals.filter(g => g.isActive).length} variants={sectionVariants} initial="hidden" animate="visible">
+              <div className="flex items-center gap-2 pt-2 pb-1">
+                <Trophy className="w-4 h-4 text-green-600" />
+                <h3 className="text-sm font-semibold text-green-700 dark:text-green-400">Достигнуто</h3>
+              </div>
+            </motion.section>
+            {goals.filter(g => !g.isActive).map((goal, index) => {
+              const percentage = Math.min((goal.currentAmount / goal.targetAmount) * 100, 100);
+              return (
+                <motion.div
+                  key={goal.id}
+                  custom={goals.filter(g => g.isActive).length + 1 + index}
+                  variants={cardVariants}
+                  initial="hidden"
+                  animate="visible"
+                  className="card-premium p-5 opacity-75"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: goal.color + '20' }}>
+                        {(() => { const IconComponent = getLucideIcon(goal.icon, Target); return <IconComponent className="w-5 h-5" style={{ color: goal.color }} />; })()}
+                      </div>
+                      <div>
+                        <h3 className="font-bold">{goal.name}</h3>
+                        <p className="text-xs text-muted-foreground">{goal.currentAmount.toLocaleString('ru-RU')} ₽ из {goal.targetAmount.toLocaleString('ru-RU')} ₽</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 px-2 py-1 rounded-full font-medium">{percentage.toFixed(0)}%</span>
+                      <button onClick={() => handleDeleteGoal(goal)} className="w-7 h-7 bg-muted rounded-lg flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-950 transition-colors">
+                        <Trash2 className="w-3.5 h-3.5 text-muted-foreground hover:text-red-600" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div className="h-full rounded-full bg-green-500" style={{ width: '100%' }} />
+                  </div>
+                </motion.div>
+              );
+            })}
+          </>
         )}
       </div>
 

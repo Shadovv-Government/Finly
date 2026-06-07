@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import * as Slider from '@radix-ui/react-slider';
 import type { CategoryAnalytics } from '../../../db/analytics';
 
 interface WhatIfSimulatorProps {
@@ -7,11 +8,36 @@ interface WhatIfSimulatorProps {
   totalExpenses: number;
 }
 
+const PRESETS = [
+  { label: 'Правило 50/30/20', key: '5030' },
+  { label: 'Режим экономии −20%', key: '-20' },
+  { label: 'Сброс', key: 'reset' },
+] as const;
+
 export const WhatIfSimulator = ({ categories, totalIncome, totalExpenses }: WhatIfSimulatorProps) => {
   const topCategories = categories.slice(0, 4);
   const [reductions, setReductions] = useState<Record<string, number>>(
     Object.fromEntries(topCategories.map(c => [c.categoryId, 0]))
   );
+
+  function applyPreset(key: string) {
+    if (key === 'reset') {
+      setReductions(Object.fromEntries(topCategories.map(c => [c.categoryId, 0])));
+      return;
+    }
+    if (key === '-20') {
+      setReductions(Object.fromEntries(topCategories.map(c => [c.categoryId, 20])));
+      return;
+    }
+    if (key === '5030') {
+      // Compute reduction needed to hit 20% savings rate: targetExpenses = 0.8 * income
+      if (totalIncome <= 0 || totalExpenses <= 0) return;
+      const targetExpenses = 0.8 * totalIncome;
+      const rawPct = ((totalExpenses - targetExpenses) / totalExpenses) * 100;
+      const pct = Math.max(0, Math.min(100, Math.round(rawPct / 5) * 5));
+      setReductions(Object.fromEntries(topCategories.map(c => [c.categoryId, pct])));
+    }
+  }
 
   const totalMonthlySaving = useMemo(() => {
     return topCategories.reduce((sum, c) => {
@@ -38,33 +64,59 @@ export const WhatIfSimulator = ({ categories, totalIncome, totalExpenses }: What
 
   return (
     <div>
-      <h3 className="font-semibold mb-4">Что если сократить расходы?</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-semibold">Что если сократить расходы?</h3>
+      </div>
 
-      <div className="space-y-4 mb-6">
-        {topCategories.map(cat => (
-          <div key={cat.categoryId}>
-            <div className="flex justify-between text-sm mb-1">
-              <span>{cat.categoryName}</span>
-              <span className="font-medium">
-                {Math.round(cat.amount).toLocaleString('ru-RU')} ₽ →{' '}
-                {Math.round(cat.amount * (1 - (reductions[cat.categoryId] || 0) / 100)).toLocaleString('ru-RU')} ₽
-              </span>
-            </div>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={reductions[cat.categoryId] || 0}
-              onChange={e => setReductions(prev => ({ ...prev, [cat.categoryId]: Number(e.target.value) }))}
-              className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer
-                [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5
-                [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow"
-            />
-            <div className="text-xs text-muted-foreground text-right">
-              −{reductions[cat.categoryId] || 0}%
-            </div>
-          </div>
+      {/* Presets */}
+      <div className="flex flex-wrap gap-2 mb-5">
+        {PRESETS.map(p => (
+          <button
+            key={p.key}
+            onClick={() => applyPreset(p.key)}
+            className="text-xs px-3 py-1.5 rounded-full border border-border/50 bg-muted/50 hover:bg-muted active:scale-95 transition-all"
+          >
+            {p.label}
+          </button>
         ))}
+      </div>
+
+      <div className="space-y-5 mb-6">
+        {topCategories.map(cat => {
+          const reduction = reductions[cat.categoryId] || 0;
+          const newAmount = Math.round(cat.amount * (1 - reduction / 100));
+          return (
+            <div key={cat.categoryId}>
+              <div className="flex justify-between text-sm mb-2">
+                <span className="font-medium">{cat.categoryName}</span>
+                <span className="text-muted-foreground tabular-nums">
+                  {Math.round(cat.amount).toLocaleString('ru-RU')} →{' '}
+                  <span className={reduction > 0 ? 'text-emerald-500 font-semibold' : ''}>
+                    {newAmount.toLocaleString('ru-RU')} ₽
+                  </span>
+                </span>
+              </div>
+              <Slider.Root
+                value={[reduction]}
+                min={0}
+                max={100}
+                step={5}
+                onValueChange={([val]) =>
+                  setReductions(prev => ({ ...prev, [cat.categoryId]: val }))
+                }
+                className="relative flex items-center w-full h-5 cursor-pointer select-none touch-none"
+              >
+                <Slider.Track className="relative bg-muted rounded-full h-2 flex-1">
+                  <Slider.Range className="absolute bg-primary rounded-full h-full" />
+                </Slider.Track>
+                <Slider.Thumb className="block w-5 h-5 bg-white dark:bg-zinc-100 rounded-full shadow-md border border-border/50 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-transform" />
+              </Slider.Root>
+              <div className="text-xs text-muted-foreground text-right mt-0.5">
+                −{reduction}%
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       <div className="grid grid-cols-2 gap-3 p-4 bg-muted rounded-xl">

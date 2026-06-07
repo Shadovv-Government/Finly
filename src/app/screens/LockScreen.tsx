@@ -2,6 +2,16 @@ import { useState, useEffect } from 'react';
 import { Fingerprint, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../components/ui/alert-dialog';
 
 const MAX_FAILURES = 3;
 
@@ -36,15 +46,14 @@ export const LockScreen = () => {
   };
 
   const [cooldownUntil, setCooldownUntil] = useState(0);
+  const [showDisableDialog, setShowDisableDialog] = useState(false);
 
-  const handleForceDisable = async () => {
+  const handleForceDisable = () => {
     if (Date.now() < cooldownUntil) return;
+    setShowDisableDialog(true);
+  };
 
-    const confirmed = window.confirm(
-      'Отключить биометрическую защиту? Все финансовые данные станут доступны без подтверждения.'
-    );
-    if (!confirmed) return;
-
+  const handleForceDisableConfirm = async () => {
     await biometric.disable();
   };
 
@@ -113,6 +122,26 @@ export const LockScreen = () => {
           )}
         </div>
       </div>
+
+      <AlertDialog open={showDisableDialog} onOpenChange={setShowDisableDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Отключить биометрию?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Все финансовые данные станут доступны без подтверждения личности.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleForceDisableConfirm}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Отключить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
