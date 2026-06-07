@@ -1,4 +1,4 @@
-import { createContext, useContext } from 'react';
+import { createContext, useCallback, useContext } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
 interface PWAUpdateContextValue {
@@ -14,7 +14,7 @@ export function PWAUpdateProvider({ children }: { children: React.ReactNode }) {
     updateServiceWorker,
   } = useRegisterSW();
 
-  const updateApp = () => updateServiceWorker(true);
+  const updateApp = useCallback(() => updateServiceWorker(true), [updateServiceWorker]);
 
   return (
     <PWAUpdateContext.Provider value={{ needRefresh, updateApp }}>
