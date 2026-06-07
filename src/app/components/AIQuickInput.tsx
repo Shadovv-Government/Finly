@@ -492,32 +492,57 @@ export const AIQuickInput: React.FC<AIQuickInputProps> = ({
       {/* Voice Mode */}
       {mode === 'voice' && !parsedResult && (
         <div className="flex flex-col items-center gap-6 py-4">
-          <div className="relative flex items-center justify-center">
-            {isRecording && (
-              <>
-                <div className="absolute w-36 h-36 rounded-full bg-violet-400/20 animate-ping" />
-                <div
-                  className="absolute w-28 h-28 rounded-full bg-violet-400/30 animate-ping"
-                  style={{ animationDelay: '0.2s' }}
-                />
-              </>
-            )}
+          <style>{`
+            @keyframes voiceBar {
+              0%   { transform: scaleY(0.15); }
+              100% { transform: scaleY(1); }
+            }
+          `}</style>
+          <div className="flex flex-col items-center gap-5">
             <button
               onClick={handleMicPress}
               aria-label={isRecording ? 'Остановить запись' : 'Начать запись'}
-              className={`relative w-24 h-24 rounded-full flex items-center justify-center shadow-xl transition-all duration-200 active:scale-95 ${
+              className={`w-20 h-20 rounded-full flex items-center justify-center shadow-xl transition-all duration-200 active:scale-95 ${
                 isRecording
-                  ? 'bg-gradient-to-br from-red-500 to-rose-600'
+                  ? 'bg-gradient-to-br from-violet-500 to-indigo-600 scale-110'
                   : 'bg-gradient-to-br from-violet-600 to-indigo-700'
               }`}
             >
-              {isRecording ? (
-                <MicOff className="w-10 h-10 text-white" />
-              ) : (
-                <Mic className="w-10 h-10 text-white" />
-              )}
+              <Mic className="w-9 h-9 text-white" />
             </button>
+
+            {/* Sound bars — Perplexity style */}
+            <div className="flex items-center gap-[5px]" style={{ height: '48px' }}>
+              {[
+                { maxH: 14, dur: 820, delay: 0 },
+                { maxH: 22, dur: 650, delay: 120 },
+                { maxH: 34, dur: 740, delay: 55 },
+                { maxH: 44, dur: 600, delay: 200 },
+                { maxH: 48, dur: 700, delay: 80 },
+                { maxH: 44, dur: 620, delay: 160 },
+                { maxH: 34, dur: 760, delay: 40 },
+                { maxH: 22, dur: 680, delay: 220 },
+                { maxH: 14, dur: 840, delay: 100 },
+              ].map(({ maxH, dur, delay }, i) => (
+                <div
+                  key={i}
+                  style={{
+                    width: '3px',
+                    height: `${maxH}px`,
+                    borderRadius: '2px',
+                    backgroundColor: isRecording ? 'rgb(139, 92, 246)' : 'rgb(196, 181, 253)',
+                    transformOrigin: 'center',
+                    animation: isRecording
+                      ? `voiceBar ${dur}ms ease-in-out ${delay}ms infinite alternate`
+                      : 'none',
+                    transform: isRecording ? undefined : 'scaleY(0.18)',
+                    transition: isRecording ? undefined : 'transform 0.4s ease, background-color 0.3s',
+                  }}
+                />
+              ))}
+            </div>
           </div>
+
           <p className="text-sm text-muted-foreground text-center max-w-[220px] min-h-[40px]">
             {hasVoice ? statusText : 'Голосовой ввод не поддерживается в этом браузере'}
           </p>
