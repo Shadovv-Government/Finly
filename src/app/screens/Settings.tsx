@@ -1,7 +1,7 @@
 import {
   Sun, Moon, Monitor, ChevronRight, Download, Upload, Bell, Repeat, LogOut,
   Pencil, Fingerprint, AlertTriangle, Target, FileJson, FileSpreadsheet, Sparkles,
-  ImagePlus,
+  ImagePlus, RefreshCw,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -35,6 +35,7 @@ import { BottomSheet } from '../components/BottomSheet';
 import { exportToFile, exportCSVToFile, importFromFile, ImportResult } from '../../db/exportImport';
 import { useNotifications } from '../hooks/useNotifications';
 import { usePremium } from '../hooks/usePremium';
+import { usePWAUpdate } from '../contexts/PWAUpdateContext';
 import { PremiumAvatarWrapper } from '../components/PremiumAvatarWrapper';
 import { db } from '../../db/db';
 
@@ -519,6 +520,46 @@ function StatsSection() {
   );
 }
 
+// ==================== AppUpdateSection ====================
+
+function AppUpdateSection() {
+  const { needRefresh, updateApp } = usePWAUpdate();
+
+  return (
+    <div className="px-4 py-4">
+      <h2 className="font-bold mb-3">Приложение</h2>
+      <div className="bg-card rounded-2xl border border-border overflow-hidden">
+        <button
+          onClick={needRefresh ? updateApp : undefined}
+          disabled={!needRefresh}
+          className="w-full flex items-center gap-3 p-4 disabled:opacity-60"
+        >
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+            needRefresh ? 'bg-primary/10 dark:bg-primary/15' : 'bg-muted'
+          }`}>
+            <RefreshCw className={`w-5 h-5 ${
+              needRefresh ? 'text-primary' : 'text-muted-foreground'
+            }`} />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="font-medium">
+              {needRefresh ? 'Доступно обновление' : 'Приложение актуально'}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {needRefresh ? 'Нажмите для установки и перезагрузки' : 'Установлена последняя версия'}
+            </p>
+          </div>
+          {needRefresh && (
+            <span className="px-3 py-1.5 bg-primary text-white text-sm font-medium rounded-lg">
+              Обновить
+            </span>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export const Settings = () => {
   const { logout } = useAuth();
   const {
@@ -625,6 +666,11 @@ export const Settings = () => {
       {/* Статистика */}
       <motion.section custom={6} variants={sectionVariants} initial="hidden" animate="visible">
       <StatsSection />
+      </motion.section>
+
+      {/* Обновления */}
+      <motion.section custom={7} variants={sectionVariants} initial="hidden" animate="visible">
+      <AppUpdateSection />
       </motion.section>
 
       {/* О приложении */}
