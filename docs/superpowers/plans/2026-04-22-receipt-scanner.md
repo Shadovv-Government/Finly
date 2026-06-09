@@ -725,5 +725,6 @@ On first use of the scanner, Tesseract.js downloads `~12MB` of language data for
 
 План реализован полностью. Дополнительно к описанному добавлены:
 - QR-декодирование фискальных чеков (BarcodeDetector API + jsQR fallback) — `useReceiptScanner.ts`
-- AI-распознавание чеков через Gemini 2.5 Flash и Claude Vision — `src/lib/geminiReceiptParser.ts`, `src/lib/claudeReceiptParser.ts`
 - Предобработка изображений для улучшения точности OCR — `src/app/utils/imagePreprocess.ts`
+
+Примечание: AI-распознавание чеков через Gemini/Claude Vision (`geminiReceiptParser.ts`, `claudeReceiptParser.ts`) было удалено из кодовой базы.

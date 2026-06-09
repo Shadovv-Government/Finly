@@ -1,6 +1,24 @@
 # Finly
 
-Finly — это PWA-приложение для управления личными финансами с офлайн-поддержкой и AI-ассистентом. Учебный проект (МАИ, 01.03.02 — Прикладная математика и информатика).
+**Finly** — офлайн-ориентированное PWA-приложение для управления личными финансами с AI-ассистентом, ML-автокатегоризацией и расширенной аналитикой. Работает полностью без интернета (все данные в IndexedDB), устанавливается на домашний экран и поддерживает биометрическую аутентификацию.
+
+**Основные возможности:**
+- 📊 **Трекинг финансов** — доходы и расходы с AI-парсингом естественного языка, голосовым вводом и сканированием чеков (QR + OCR)
+- 🤖 **AI-ассистент** — онлайн-чат через OpenRouter (прокси через Vercel Function) + офлайн-движок с 15+ intent-обработчиками; ML-классификация категорий (TensorFlow.js, 24 признака, 5-уровневый пайплайн)
+- 📈 **Аналитика** — баланс за период, круговые диаграммы расходов/доходов, дневные и месячные тренды, сравнение категорий месяц к месяцу (MoM), анализ по дням недели, прогноз до конца месяца, выявление аномалий и дубликатов
+- 💎 **Premium (Pro)** — расширенный аналитический модуль, доступный по разовой покупке:
+  - *Прогнозы:* ML-прогноз расходов на 30 дней (линейная регрессия с доверительными интервалами, R²), прогноз баланса на 3 месяца, What-If симулятор (слайдеры + пресеты «50/30/20», «Режим экономии −20%»), эффект малых привычек
+  - *Сравнения:* расходы по дням недели (BarChart), год к году (YoY), бюджет vs факт (прогрессбары), календарный heatmap, топ-10 транзакций, STL-декомпозиция тренда
+  - *Здоровье:* Financial Health Score (полукруговой gauge, 6 метрик с drilldown), прогноз достижения целей (GoalsTimeline с ETA), план улучшения, детектор проблем
+  - *AI-инсайты:* авто-карточки по типам alert/warning/tip/positive, полный AI-чат с историей и suggestion pills, еженедельный AI-отчёт с markdown-рендерингом
+  - *Period picker:* Месяц / Квартал / Год — единый переключатель для всех вкладок
+- 🎯 **Бюджеты и цели** — лимиты по категориям (неделя/месяц), финансовые цели с прогрессом и дедлайнами
+- 🔄 **Регулярные платежи** — шаблоны с авто-созданием транзакций по расписанию (daily/weekly/monthly/yearly)
+- 🔐 **Биометрия** — WebAuthn (Face ID / Touch ID / fingerprint) + PIN fallback, авто-lock после 5 мин неактивности
+- 🌓 **Тёмная/светлая тема** — автоматическое переключение по системным настройкам, кастомные CSS-переменные
+- 📱 **PWA** — Service Worker (Workbox), полный офлайн-режим, установка на домашний экран, фоновая синхронизация ML-модели
+
+Учебный проект (МАИ, 01.03.02 — Прикладная математика и информатика).
 
 История изменений: [CHANGELOG.md](./CHANGELOG.md)
 
@@ -105,9 +123,9 @@ npm run test:coverage
 
 #### Сканирование чеков
 - **QR-код:** распознавание фискальных чеков ФНС России через BarcodeDetector API (нативный) или jsQR (fallback)
-- **AI-распознавание:** Gemini Vision (бесплатный) или Claude Vision (по API-ключу) для высокой точности
 - **OCR:** Tesseract.js с поддержкой русского и английского языков
 - Автозаполнение суммы, магазина и даты после распознавания
+- Предобработка изображений для улучшения качества OCR (imagePreprocess.ts)
 - Ручное редактирование результатов перед подтверждением
 - Предупреждение при низкой уверенности распознавания
 
@@ -132,9 +150,9 @@ npm run test:coverage
 - Настройка биометрии при регистрации и в настройках безопасности
 - Кнопка «Войти без биометрии (сброс)» после 3 неудачных попыток — подтверждение через `AlertDialog` (не `window.confirm`, который сломан в PWA standalone)
 
-### Premium Аналитика
+### Pro Аналитика
 
-Раздел `/premium` — расширенный аналитический модуль, требующий разовой покупки (тестовый режим: мгновенная активация).
+Раздел `/premium` — расширенный аналитический модуль, требующий разовой покупки (тестовый режим: мгновенная активация). В пользовательском интерфейсе брендирован как «Pro». Также доступен как вкладка внутри `/analytics`.
 
 #### Вкладка «Прогнозы»
 - **ML-прогноз расходов на 30 дней** — линейная регрессия по 90-дневной истории с доверительным интервалом (CI-полосы, R² точность)
@@ -259,7 +277,7 @@ npm run test:coverage
 - **Tesseract.js 7.0** — OCR для сканирования чеков (rus + eng)
 - **jsQR** — декодирование QR-кодов (фискальные чеки ФНС)
 - **UI-компоненты:** Radix UI (полный набор из 27+ пакетов), shadcn/ui, cmdk, vaul (bottom sheets), embla-carousel
-- **Стили:** Tailwind CSS 4.1, class-variance-authority, tailwind-merge, tw-animate-css
+- **Стили:** Tailwind CSS 4.1, @fontsource/inter, class-variance-authority, tailwind-merge, tw-animate-css
 - **Графики:** Recharts 2.15
 - **Иконки:** Lucide React 0.487, Material Icons 5.15
 - **Анимации:** motion 12.23, canvas-confetti
@@ -275,7 +293,6 @@ npm run test:coverage
 ### AI и ML
 - **Клиентская ML:** TensorFlow.js с кастомным классификатором (WebGL-бэкенд)
 - **AI-чат:** OpenRouter API (OpenAI-совместимый) через Vercel Function-прокси
-- **AI-распознавание чеков:** Gemini 2.5 Flash (бесплатный) / Claude Vision (по API-ключу)
 - **Локальный AI:** правиловый движок, NLP-парсинг, intent-роутер (15+ интентов)
 
 ### PWA
@@ -339,7 +356,9 @@ finly/
 │   │   │   │   ├── BudgetVsActual.tsx     # Прогрессбары бюджет vs факт
 │   │   │   │   ├── GoalsTimeline.tsx      # ETA по целям на основе нормы сбережений
 │   │   │   │   ├── CoffeeEffect.tsx       # Эффект малых привычек (проекция трат)
-│   │   │   │   └── PremiumGate.tsx        # Гейт с paywall и списком фич
+│   │   │   │   ├── PremiumGate.tsx        # Гейт с paywall и списком фич
+│   │   │   │   ├── PremiumUpsell.tsx      # Фулл-скрин апселл Pro
+│   │   │   │   └── ProUpsellCompact.tsx   # Компактный апселл Pro
 │   │   │   ├── AddTransactionForm.tsx
 │   │   │   ├── AIQuickInput.tsx
 │   │   │   ├── AmountDisplay.tsx
@@ -354,12 +373,14 @@ finly/
 │   │   │   ├── ErrorBoundary.tsx
 │   │   │   ├── GoalForm.tsx
 │   │   │   ├── NotificationsPanel.tsx
+│   │   │   ├── PremiumAvatarWrapper.tsx  # Обёртка аватара с Pro-бейджем
 │   │   │   ├── QuickActionBar.tsx
 │   │   │   ├── ReceiptScannerModal.tsx
 │   │   │   ├── RecurringTemplateForm.tsx
 │   │   │   └── SwipeableRow.tsx
 │   │   ├── contexts/
 │   │   │   ├── AuthContext.tsx      # Авторизация, профиль пользователя, биометрия
+│   │   │   ├── PWAUpdateContext.tsx # Мониторинг обновлений PWA
 │   │   │   ├── ThemeContext.tsx     # Темы (light/dark/system)
 │   │   │   └── SettingsContext.tsx  # Настройки приложения (reducedMotion, notifPush/Budgets/Goals/Recurring)
 │   │   ├── hooks/
@@ -375,6 +396,7 @@ finly/
 │   │   │   ├── useMLModel.ts       # Интеграция TF.js классификатора
 │   │   │   ├── useNotificationPanel.ts # Сборка панели уведомлений
 │   │   │   ├── useNotifications.ts # Управление уведомлениями
+│   │   │   ├── usePremium.ts       # Управление Pro-подпиской
 │   │   │   ├── useReceiptScanner.ts # OCR + QR + AI сканирование чеков
 │   │   │   ├── useRecurringTemplates.ts # CRUD повторяющихся платежей
 │   │   │   ├── useReducedMotion.ts # Доступность
@@ -394,8 +416,9 @@ finly/
 │   │   │   ├── RecurringScreen.tsx
 │   │   │   ├── Settings.tsx
 │   │   │   ├── AIAssistant.tsx
-│   │   │   ├── PremiumAnalytics.tsx  # Premium-экран: period picker, 3 таба + AI-панель
+│   │   │   ├── PremiumAnalytics.tsx  # Pro-экран: period picker, 3 таба + AI-панель
 │   │   │   ├── AddTransaction.tsx
+│   │   │   ├── Landing.tsx           # Лендинг для неавторизованных пользователей
 │   │   │   ├── LockScreen.tsx
 │   │   │   ├── Onboarding.tsx
 │   │   │   ├── Registration.tsx
@@ -422,7 +445,6 @@ finly/
 │   │   ├── ai.ts                   # AI-автокатегоризация и NLP-парсинг
 │   │   ├── recurring.ts            # Обработка повторяющихся платежей
 │   │   ├── exportImport.ts         # Экспорт/импорт (JSON с версией, CSV)
-│   │   ├── readme.md               # Документация по БД
 │   │   └── operations/             # CRUD-операции (модульная структура)
 │   │       ├── index.ts            # Ре-экспорт всех операций
 │   │       ├── transactions.ts     # CRUD транзакций
@@ -439,19 +461,25 @@ finly/
 │   │   ├── classifier/
 │   │   │   ├── finly_runtime.ts    # TF.js классификатор v4.3 (MC Dropout)
 │   │   │   ├── finly_runtime.test.ts
-│   │   │   └── finly_db.ts         # Интеграция классификатора с IndexedDB
+│   │   │   ├── finly_db.ts         # Интеграция классификатора с IndexedDB
+│   │   │   └── tfjs-webgl-stub.ts  # Стаб для тестового окружения
 │   │   ├── forecasting.ts          # Линейная регрессия с CI-полосами (predictWithConfidence)
+│   │   ├── forecasting.test.ts     # Тесты forecasting
 │   │   ├── seasonality.ts          # STL-декомпозиция тренда (decompose)
+│   │   ├── seasonality.test.ts     # Тесты seasonality
 │   │   ├── healthScore.ts          # 6-метричный composite health score (calculateHealthScore)
-│   │   ├── period.ts               # Тип Period ('1m'|'3m'|'1y') + getPeriodRange()
-│   │   ├── geminiReceiptParser.ts  # Gemini Vision — распознавание чеков
-│   │   └── claudeReceiptParser.ts  # Claude Vision — распознавание чеков
+│   │   ├── healthScore.test.ts     # Тесты healthScore
+│   │   └── period.ts               # Тип Period ('1m'|'3m'|'1y') + getPeriodRange()
 │   ├── services/
 │   │   └── ai/
 │   │       ├── aiClient.ts         # HTTP-клиент к /api/ai-chat
 │   │       ├── aiClient.test.ts
 │   │       ├── contextBuilder.ts   # Сборка финансового слепка для AI-контекста
 │   │       └── contextBuilder.test.ts
+│   ├── data/
+│   │   └── mockData.ts             # Моковые данные для разработки
+│   ├── i18n/
+│   │   └── ru.ts                   # Русские строки интерфейса
 │   ├── styles/
 │   │   ├── index.css               # Глобальные стили
 │   │   ├── theme.css               # CSS-переменные light/dark + Tailwind тема
@@ -494,7 +522,7 @@ npm run test:watch  # режим наблюдения
 npm run test:ui     # визуальный UI
 ```
 
-Покрытие: 345+ тестов в 27+ тестовых файлах — компоненты (`AddTransactionForm`, `ErrorBoundary`, `ReceiptScannerModal`), хуки (`useCategories`, `useTransactionForm`, `useTransactions`, `useAIChat`, `useReceiptScanner`, `useBudgetNotifications`), утилиты (`errorHandler`, `formatCurrency`, `nlpParser`), операции БД (`transactions`, `categories`, `budgets`, `goals`, `users`), AI-контекст (`chatContext` — 26 тестов, все 20+ интентов), валидаторы, AI-клиент, контекст-билдер, и путь обновления IndexedDB (v1→v2→v3).
+Покрытие: 345+ тестов в 33 тестовых файлах — компоненты (`AddTransactionForm`, `ErrorBoundary`, `ReceiptScannerModal`, `AddTransaction`, `TransactionHistory`), хуки (`useCategories`, `useTransactionForm`, `useTransactions`, `useAIChat`, `useReceiptScanner`, `useBudgetNotifications`), утилиты (`errorHandler`, `formatCurrency`, `nlpParser`), операции БД (`transactions`, `categories`, `budgets`, `goals`, `users`), AI-контекст (`chatContext` — 26 тестов, все 20+ интентов), валидаторы, AI-клиент, контекст-билдер, маршрутизация (`routes`), `bootstrap`, БД (`db`, `db.upgrade`, `exportImport`, `recurring`), либа (`forecasting`, `healthScore`, `seasonality`, `classifier`), и путь обновления IndexedDB (v1→v2→v3).
 
 Порог покрытия: 50% (branches, functions, lines, statements).
 
@@ -534,7 +562,7 @@ CI/CD: сборка и тесты запускаются автоматичес�
 - **Offline-first:** все данные хранятся локально в IndexedDB
 - **Отсутствие бэкенда:** приложение полностью клиентское, кроме AI-прокси на Vercel
 - **Модульная структура:** разделение на screens, components, contexts, hooks, utils, db/operations
-- **Защищённые роуты:** Redirect на /register если пользователь не авторизован; LockScreen если включена биометрия
+- **Защищённые роуты:** Landing page для неавторизованных пользователей; LockScreen если включена биометрия
 - **Background Sync:** фоновое дообучение ML-модели через Service Worker
 
 ### UI/UX

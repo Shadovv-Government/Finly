@@ -21,8 +21,6 @@
 - tesseract.js 7.0 (OCR, русский + английский)
 - jsQR (декодирование QR-кодов фискальных чеков)
 - OpenRouter API (AI-чат, через Vercel Function прокси)
-- Gemini 2.5 Flash (AI-распознавание чеков, бесплатный)
-- Claude Vision API (AI-распознавание чеков, по ключу)
 
 ### UI и дизайн-система
 - @mui/material 5.15
@@ -65,6 +63,7 @@
 ### Стили и визуальные утилиты
 - Tailwind CSS 4.1
 - @tailwindcss/vite
+- @fontsource/inter 5.2
 - class-variance-authority
 - clsx
 - tailwind-merge
@@ -111,8 +110,9 @@
 ## 2) Полный функционал приложения
 
 ### Аутентификация и доступ
+- Лендинг для неавторизованных пользователей (Landing.tsx).
 - Регистрация пользователя с именем и аватаром.
-- Защищённые маршруты (ProtectedRoute).
+- Защищённые маршруты (resolveProtectedRoute).
 - Онбординг для новых пользователей.
 - Экран блокировки (LockScreen) с WebAuthn (Face ID / Touch ID / fingerprint).
 - PIN-код как fallback при недоступности биометрии.
@@ -191,9 +191,8 @@
 
 ### Сканирование чеков
 - **QR-код:** распознавание фискальных чеков ФНС России (BarcodeDetector API / jsQR fallback).
-- **AI-распознавание:** Gemini 2.5 Flash (бесплатный) или Claude Vision (по ключу).
 - **OCR:** Tesseract.js с поддержкой русского и английского языков.
-- Предобработка изображений (imagePreprocess.ts).
+- Предобработка изображений (imagePreprocess.ts) — grayscale, boxBlur.
 - Автозаполнение суммы, магазина и даты.
 - Ручное редактирование результатов перед подтверждением.
 - Предупреждение при низкой уверенности распознавания.
@@ -233,7 +232,8 @@
 - Background Sync для ML-дообучения (тэг `finly-fine-tune`).
 - App shortcuts: «Добавить расход», «Добавить доход».
 
-### Роутинг и экраны (16 экранов)
+### Роутинг и экраны (18 экранов)
+- Landing (неавторизованные пользователи)
 - Dashboard
 - TransactionHistory
 - Analytics
@@ -243,7 +243,8 @@
 - RecurringScreen
 - Categories
 - AIAssistant
-- AddTransaction
+- PremiumAnalytics (Pro)
+- AddTransaction (через BottomSheet/Drawer)
 - LockScreen
 - Registration
 - Onboarding

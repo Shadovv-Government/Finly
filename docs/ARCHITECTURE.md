@@ -36,8 +36,6 @@
 - **Tesseract.js** ^7.0.0 — OCR для сканирования чеков
 - **jsQR** — декодирование QR-кодов (фискальные чеки)
 - **OpenRouter API** — AI-чат (проксируется через Vercel Function)
-- **Gemini 2.5 Flash** — AI-распознавание чеков (бесплатный)
-- **Claude Vision API** — AI-распознавание чеков (по API-ключу)
 
 ### PWA
 - **Vite** 6.3.5 — сборщик проекта
@@ -61,7 +59,8 @@
 │        Context Layer                         │
 │   ThemeContext (light/dark/system)           │
 │   AuthContext (user profile, biometric)      │
-│   SettingsContext (reduced motion)           │
+│   SettingsContext (reduced motion, notifs)   │
+│   PWAUpdateContext (update monitoring)       │
 ├──────────────────────────────────────────────┤
 │        Routing Layer                         │
 │   react-router-dom (ProtectedRoute)          │
@@ -240,6 +239,7 @@ src/db/
 ├── seed.ts            — Начальное заполнение (категории, настройки) + миграции
 ├── validators.ts      — Валидация данных (русскоязычные сообщения)
 ├── analytics.ts       — ~25 аналитических запросов для графиков и дашбордов
+├── premium.ts         — Premium-запросы: YoY, heatmap, health data, coffee effects, AI context
 ├── ai.ts              — Авто-категоризация, NLP-парсинг, рекомендации
 ├── recurring.ts       — Обработка повторяющихся платежей
 ├── exportImport.ts    — Экспорт/импорт (JSON с версией схемы, CSV)
@@ -420,6 +420,7 @@ interface ValidationResult {
 | `ReceiptScannerModal.tsx` | Модальное окно сканера чеков |
 | `RecurringTemplateForm.tsx` | Форма создания/редактирования шаблона |
 | `SwipeableRow.tsx` | Строка со свайп-жестом |
+| `PremiumAvatarWrapper.tsx` | Обёртка аватара с Pro-бейджем |
 | `ui/` | ~50 базовых компонентов shadcn/ui |
 | `figma/` | Компоненты из Figma-макета |
 
@@ -429,7 +430,8 @@ interface ValidationResult {
 |----------|------------|
 | `ThemeContext.tsx` | Темы: light/dark/system, сохранение в IndexedDB |
 | `AuthContext.tsx` | Авторизация: user, register, updateProfile, logout + биометрия |
-| `SettingsContext.tsx` | Настройки: reduced motion |
+| `SettingsContext.tsx` | Настройки: reduced motion, notification preferences (localStorage) |
+| `PWAUpdateContext.tsx` | Мониторинг обновлений PWA |
 
 ### 8.3 Экраны (`screens/`)
 
@@ -444,7 +446,9 @@ interface ValidationResult {
 | `RecurringScreen.tsx` | Управление повторяющимися операциями |
 | `Categories.tsx` | Управление категориями (добавление, редактирование, удаление) |
 | `AIAssistant.tsx` | AI-ассистент: инсайты + чат (онлайн/офлайн) |
-| `AddTransaction.tsx` | Добавление транзакции: NLP-парсинг, голосовой ввод, сканер чеков |
+| `PremiumAnalytics.tsx` | Pro-аналитика: period picker, 3 таба + AI-панель |
+| `AddTransaction.tsx` | Добавление транзакции: NLP-парсинг, голосовой ввод, сканер чеков (через BottomSheet) |
+| `Landing.tsx` | Лендинг для неавторизованных пользователей |
 | `LockScreen.tsx` | Экран блокировки (WebAuthn + PIN fallback) |
 | `Onboarding.tsx` | Онбординг для новых пользователей |
 | `Registration.tsx` | Регистрация пользователя + настройка биометрии |
@@ -452,21 +456,21 @@ interface ValidationResult {
 | `TermsOfService.tsx` | Условия использования |
 | `ComponentShowcase.tsx` | Демонстрация компонентов (dev only) |
 
-**Всего: 16 экранов**
+**Всего: 18 экранов**
 
 ### 8.4 Маршрутизация (`routes.tsx`)
 
 ```typescript
-/                    → Dashboard
+/                    → Dashboard (авторизованные) / Landing (неавторизованные)
 /history             → TransactionHistory
 /analytics           → Analytics
+/premium             → PremiumAnalytics
 /settings            → Settings
 /budgets             → Budgets
 /goals               → Goals
 /recurring           → RecurringScreen
 /categories          → Categories
 /ai-assistant        → AIAssistant
-/add                 → AddTransaction
 /components          → ComponentShowcase (только в development)
 /onboarding          → Onboarding
 /register            → Registration
@@ -474,7 +478,7 @@ interface ValidationResult {
 /terms               → TermsOfService
 ```
 
-**ProtectedRoute:** все маршруты кроме `/onboarding`, `/register`, `/privacy`, `/terms` требуют авторизации. Если включена биометрия и приложение заблокировано, роут рендерит `LockScreen`.
+**ProtectedRoute:** маршруты `/`, `/history`, `/analytics`, `/premium`, `/settings`, `/budgets`, `/goals`, `/recurring`, `/categories`, `/ai-assistant`, `/components` требуют авторизации. Неавторизованные пользователи видят `Landing` на `/`. Если включена биометрия и приложение заблокировано, роут рендерит `LockScreen`. Публичные роуты: `/onboarding`, `/register`, `/privacy`, `/terms`.
 
 ---
 
@@ -616,6 +620,7 @@ this.version(2).stores({
 | `useTransactionForm` | Логика формы транзакций + NLP-парсинг |
 | `useReceiptScanner` | OCR + QR + AI сканирование чеков |
 | `useSpeechInput` | Голосовой ввод (Speech Recognition API) |
+| `usePremium` | Управление Pro-подпиской |
 | `useBiometric` | Биометрическая аутентификация (WebAuthn) |
 | `useBudgetNotifications` | Генерация уведомлений о бюджетах (пороги 80%/99%/100%/120%) |
 | `useNotifications` | Push-уведомления (Sonner + Browser Notification API) |
@@ -623,7 +628,7 @@ this.version(2).stores({
 | `useCountUp` | Анимированный счётчик чисел |
 | `useReducedMotion` | Доступность: режим reduced motion |
 
-**Всего: 17+ хуков**
+**Всего: 18+ хуков**
 
 ### AI модули (не хуки)
 
@@ -645,9 +650,16 @@ this.version(2).stores({
 | `notificationIcons.ts` | Иконки для типов уведомлений |
 | `animations.ts` | Анимационные утилиты |
 | `dataEvents.ts` | События данных |
-| `imagePreprocess.ts` | Предобработка изображений для OCR |
+| `imagePreprocess.ts` | Предобработка изображений для OCR (grayscale, boxBlur) |
 | `lucideIcons.tsx` | Динамический рендер иконок Lucide |
 | `recurringProcessor.ts` | Процессор повторяющихся платежей |
+
+### Дополнительные модули (`src/`)
+
+| Модуль | Назначение |
+|--------|----------|
+| `i18n/ru.ts` | Русские строки интерфейса |
+| `data/mockData.ts` | Моковые данные для разработки |
 
 ---
 
@@ -777,13 +789,13 @@ manifest: {
 | `/` | Dashboard |
 | `/history` | TransactionHistory |
 | `/analytics` | Analytics |
+| `/premium` | PremiumAnalytics |
 | `/settings` | Settings |
 | `/budgets` | Budgets |
 | `/goals` | Goals |
 | `/recurring` | RecurringScreen |
 | `/categories` | Categories |
 | `/ai-assistant` | AIAssistant |
-| `/add` | AddTransaction |
 | `/components` | ComponentShowcase (development-only) |
 
 ### Публичные роуты
@@ -810,8 +822,8 @@ manifest: {
 4. Если пусто → seedDatabase()
 5. Рендер App.tsx с ThemeProvider + AuthProvider
 6. Проверка currentUser
-7. Если нет пользователя → Redirect на /register
-8. Если есть → Переход на /
+7. Если нет пользователя → Показ Landing page
+8. Если есть → Переход на Dashboard (/)
 ```
 
 ### 2. Добавление транзакции
@@ -883,6 +895,7 @@ manifest: {
 | canvas-confetti | 1.9.4 | Анимация конфетти |
 | vaul | 1.1.2 | Drawer-компоненты |
 | embla-carousel-react | 8.6.0 | Карусель |
+| @fontsource/inter | ^5.2.8 | Шрифт Inter |
 | next-themes | 0.4.6 | Абстракция темизации |
 | @tensorflow/tfjs | ^4.22.0 | ML-классификация |
 | tesseract.js | ^7.0.0 | OCR сканирование |
@@ -924,19 +937,22 @@ manifest: {
 ### Покрытие
 
 - **Порог:** 50% branches, functions, lines, statements
-- **Количество:** 345+ тестов в 27+ тестовых файлах
+- **Количество:** 345+ тестов в 33 тестовых файлах
 - **Команды:** `npm run test`, `npm run test:watch`, `npm run test:ui`, `npm run test:coverage`
 
-### Тест-файлы (27+)
+### Тест-файлы (33)
 
 | Категория | Файлы |
 |-----------|-------|
-| **Компоненты** | `AddTransactionForm.test.tsx`, `ErrorBoundary.test.tsx`, `ReceiptScannerModal.test.tsx` |
+| **Компоненты** | `AddTransactionForm.test.tsx`, `ErrorBoundary.test.tsx`, `ReceiptScannerModal.test.tsx`, `AddTransaction.test.tsx`, `TransactionHistory.test.tsx` |
 | **Хуки** | `useTransactions.test.ts`, `useCategories.test.ts`, `useTransactionForm.test.ts`, `useAIChat.test.ts`, `useReceiptScanner.test.ts`, `useBudgetNotifications.test.ts` |
 | **Утилиты** | `formatCurrency.test.ts`, `errorHandler.test.ts`, `nlpParser.test.ts` |
 | **БД операции** | `operations/transactions.test.ts`, `operations/categories.test.ts`, `operations/budgets.test.ts`, `operations/goals.test.ts`, `operations/users.test.ts` |
 | **AI/ML** | `chatContext.test.ts` (26 тестов, 20+ интентов), `aiClient.test.ts`, `contextBuilder.test.ts`, `classifier/finly_runtime.test.ts` |
 | **Валидаторы** | `db/validators.test.ts` |
+| **Маршрутизация** | `routes.test.ts`, `bootstrap.test.tsx` |
+| **БД** | `db.test.ts`, `db.upgrade.test.ts`, `exportImport.test.ts`, `recurring.test.ts` |
+| **Библиотеки** | `forecasting.test.ts`, `healthScore.test.ts`, `seasonality.test.ts` |
 
 ---
 
@@ -970,7 +986,7 @@ npm audit, проверка размера бандла (total JS < 3MB), test c
 - [x] Уведомления о повторяющихся платежах, аномальных тратах, дубликатах, дедлайнах целей
 - [x] Настройки уведомлений (4 переключателя)
 - [x] AI-чат ассистент (OpenRouter + офлайн fallback)
-- [x] Сканер чеков: QR + OCR + AI (Gemini/Claude Vision)
+- [x] Сканер чеков: QR + OCR
 - [x] Голосовой ввод
 - [x] Кастомные аватары (своё фото)
 - [x] Сравнение категорий месяц к месяцу

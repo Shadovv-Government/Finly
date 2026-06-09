@@ -121,7 +121,7 @@
 
 ## Тестовое покрытие 🧪
 
-**Текущее состояние**: 345 тестов, 27 тест-файлов. Порог coverage 50% — минимальный floor.
+**Текущее состояние**: 345+ тестов, 33 тест-файла. Порог coverage 50% — минимальный floor.
 
 - [x] ✅ `addTransaction` → `getBalanceByPeriod` (end-to-end, rate/currency, empty period, period echo)
 - [x] ✅ `deleteCategory` с существующими транзакциями
