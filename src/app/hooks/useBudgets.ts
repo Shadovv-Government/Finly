@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Budget } from '../../db/types';
-import { getBudgets } from '../../db/operations';
+import { getBudgets, addBudget, updateBudget, deleteBudget } from '../../db/operations';
 import { AppError, DatabaseError, logError, formatErrorForUser } from '../utils/errorHandler';
 
 export function useBudgets() {
@@ -27,5 +27,39 @@ export function useBudgets() {
     loadBudgets();
   }, [loadBudgets]);
 
-  return { budgets, loading, error, refresh: loadBudgets };
+  const add = useCallback(async (budget: Omit<Budget, 'id'>) => {
+    try {
+      const id = await addBudget(budget);
+      await loadBudgets();
+      return id;
+    } catch (err) {
+      const appError = err instanceof AppError ? err : new DatabaseError('Не удалось добавить бюджет', err as Error);
+      logError(appError, 'useBudgets.add');
+      throw appError;
+    }
+  }, [loadBudgets]);
+
+  const update = useCallback(async (id: number, updates: Partial<Budget>) => {
+    try {
+      await updateBudget(id, updates);
+      await loadBudgets();
+    } catch (err) {
+      const appError = err instanceof AppError ? err : new DatabaseError('Не удалось обновить бюджет', err as Error);
+      logError(appError, 'useBudgets.update');
+      throw appError;
+    }
+  }, [loadBudgets]);
+
+  const remove = useCallback(async (id: number) => {
+    try {
+      await deleteBudget(id);
+      await loadBudgets();
+    } catch (err) {
+      const appError = err instanceof AppError ? err : new DatabaseError('Не удалось удалить бюджет', err as Error);
+      logError(appError, 'useBudgets.remove');
+      throw appError;
+    }
+  }, [loadBudgets]);
+
+  return { budgets, loading, error, add, update, remove, refresh: loadBudgets };
 }

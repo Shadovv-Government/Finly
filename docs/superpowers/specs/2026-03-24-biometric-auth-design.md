@@ -7,7 +7,7 @@
 
 ## Overview
 
-Add biometric app-lock to Finly using the Web Authentication API (WebAuthn). After 5 minutes of inactivity, the app locks and requires Face ID, Touch ID, or fingerprint to resume. Users can enable/disable biometrics in Settings and are offered setup during Registration.
+Add biometric app-lock to Finly using the Web Authentication API (WebAuthn). After 5 minutes of inactivity, the app locks and requires Face ID, Touch ID, or fingerprint to resume. Users can enable/disable biometrics in Settings and receive a setup prompt during Registration.
 
 ---
 
@@ -128,7 +128,7 @@ navigator.credentials.get({
 })
 ```
 
-> **Note on challenge security:** For a local app-lock with no server, a random challenge is acceptable — we are not verifying a server-side assertion, only proving device biometric presence. The credential never leaves the device's secure enclave.
+> **Note on challenge security:** FFor a local app-lock with no server, a random challenge is acceptable — we are not verifying a server-side assertion, only proving device biometric presence. The credential never leaves the device's secure enclave.
 
 ---
 
